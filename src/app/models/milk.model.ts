@@ -18,6 +18,29 @@ export interface MilkProduction {
   isOrganicCompliant?: boolean;
 }
 
+export interface TankStatus {
+  tankName: string;
+  currentVolume: number;
+  maxCapacity: number;
+  fillPercentage: number;
+  temperature: number;
+  phLevel: number;
+  qualityStatus: string;
+  targetBatch: string;
+  morningVolume: number;
+  eveningVolume: number;
+  collectionDate: string;
+}
+
+export interface MilkHistory {
+  date: string;
+  morningVolume: number;
+  eveningVolume: number;
+  totalVolume: number;
+  avgTemperature: number;
+  cowsMilkedCount: number;
+}
+
 export interface DashboardStats {
   dailyMilkTotal: number;
   morningMilkTotal: number;

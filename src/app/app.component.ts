@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from './services/api.service';
 import { Animal, Pedigree } from './models/animal.model';
 import { HealthRecord, VaccineSchedule } from './models/health.model';
-import { DashboardStats, MilkProduction } from './models/milk.model';
+import { DashboardStats, MilkProduction, TankStatus, MilkHistory } from './models/milk.model';
+import { ReproductionEvent, ReproductionAlert, ReproEventType } from './models/reproduction.model';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -74,7 +75,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   // Forms
   milkForm = {
     cowId: 'FL-001',
-    session: 'Matin (06h00)',
+    session: 'Matin',
     litres: 11.5,
     temp: 34.2,
     tank: 'Cuve Réfrigérée N°1 (Bio)'
@@ -157,12 +158,27 @@ export class AppComponent implements OnInit, AfterViewInit {
     operator: 'Bouvier Responsable'
   };
 
-  reproForm = {
-    cow: 'FATOU (FL-005)',
-    type: 'Insémination Artificielle (IA)',
-    bull: 'KADER (FL-010) — Semence A+',
-    date: '2026-08-14',
-    obs: ''
+  // Sprint 2: Reproduction Form
+  reproForm: {
+    animalInternalId: string;
+    eventType: ReproEventType;
+    eventDate: string;
+    bullOrSemenUsed: string;
+    operatorName: string;
+    expectedDryOffDate: string;
+    expectedCalvingDate: string;
+    observations: string;
+    isConfirmed: boolean;
+  } = {
+    animalInternalId: 'FL-005',
+    eventType: 'ARTIFICIAL_INSEMINATION',
+    eventDate: new Date().toISOString().split('T')[0],
+    bullOrSemenUsed: 'KADER (FL-010) — Semence A+',
+    operatorName: 'Dr. Fall (Vétérinaire Ferme)',
+    expectedDryOffDate: '',
+    expectedCalvingDate: '',
+    observations: '',
+    isConfirmed: true
   };
 
   // Data Collections
@@ -170,6 +186,15 @@ export class AppComponent implements OnInit, AfterViewInit {
   healthRecords = signal<HealthRecord[]>([]);
   vaccineSchedules = signal<VaccineSchedule[]>([]);
   dashboardStats = signal<DashboardStats | null>(null);
+
+  // Sprint 2: Data Collections
+  reproductionEvents = signal<ReproductionEvent[]>([]);
+  reproductionAlerts = signal<ReproductionAlert[]>([]);
+  tankStatus = signal<TankStatus | null>(null);
+  milkHistory = signal<MilkHistory[]>([]);
+  reproFilter = signal<string>('all');
+  reproCurrentPage = signal<number>(1);
+  reproPageSize = signal<number>(5);
 
   // Charts
   private milkChartInstance: Chart | null = null;
@@ -179,6 +204,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   private perfChartInstance: Chart | null = null;
 
   ngOnInit(): void {
+    this.updateReproCalculations();
     this.loadInitialData();
   }
 
@@ -222,6 +248,176 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.dashboardStats.set(stats);
       }
     });
+
+    // 5. Sprint 2: Reproduction Data & Alerts
+    this.loadReproductionData();
+
+    // 6. Sprint 2: Tank Status & Milk History
+    this.loadMilkData();
+  }
+
+  loadReproductionData(): void {
+    this.apiService.getAllReproEvents().subscribe(events => {
+      if (events && events.length > 0) {
+        this.reproductionEvents.set(events);
+      } else {
+        this.loadFallbackRepro();
+      }
+    });
+
+    this.apiService.getReproAlerts().subscribe(alerts => {
+      if (alerts && alerts.length > 0) {
+        this.reproductionAlerts.set(alerts);
+      } else {
+        this.loadFallbackReproAlerts();
+      }
+    });
+  }
+
+  loadMilkData(): void {
+    this.apiService.getTankStatus().subscribe(status => {
+      if (status) {
+        this.tankStatus.set(status);
+      } else {
+        this.tankStatus.set({
+          tankName: 'Cuve Réfrigérée N°1 (Bio)',
+          currentVolume: 124.0,
+          maxCapacity: 500.0,
+          fillPercentage: 24.8,
+          temperature: 3.9,
+          phLevel: 6.68,
+          qualityStatus: 'CONFORME BIO & PASTEURISATION',
+          targetBatch: 'LOT-TR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-01',
+          morningVolume: 68.0,
+          eveningVolume: 56.0,
+          collectionDate: new Date().toISOString().slice(0, 10)
+        });
+      }
+    });
+
+    this.apiService.getMilkHistory(7).subscribe(hist => {
+      if (hist && hist.length > 0) {
+        this.milkHistory.set(hist);
+      }
+    });
+  }
+
+  loadFallbackRepro(): void {
+    const today = new Date();
+    const dStr = (offsetDays: number) => {
+      const d = new Date(today.getTime() + offsetDays * 86400000);
+      return d.toISOString().slice(0, 10);
+    };
+
+    const fallback: ReproductionEvent[] = [
+      {
+        id: 1,
+        animalInternalId: 'FL-005',
+        animalName: 'FATOU',
+        eventType: 'HEAT_DETECTION',
+        eventTypeLabel: 'Détection de Chaleurs',
+        eventDate: dStr(-3),
+        operatorName: 'Bouvier Responsable',
+        observations: 'Chaleurs franches, glaires transparentes.',
+        isConfirmed: true
+      },
+      {
+        id: 2,
+        animalInternalId: 'FL-005',
+        animalName: 'FATOU',
+        eventType: 'ARTIFICIAL_INSEMINATION',
+        eventTypeLabel: 'Insémination Artificielle (IA)',
+        eventDate: dStr(-1),
+        bullOrSemenUsed: 'KADER (FL-010) — Semence A+',
+        operatorName: 'Dr. Fall (Vétérinaire Ferme)',
+        expectedDryOffDate: dStr(221),
+        expectedCalvingDate: dStr(281),
+        observations: 'IA réalisée 14h après détection. Dépôt corps utérin.',
+        isConfirmed: true
+      },
+      {
+        id: 3,
+        animalInternalId: 'FL-004',
+        animalName: 'COUMBA',
+        eventType: 'PREGNANCY_DIAGNOSIS',
+        eventTypeLabel: 'Diagnostic Gestation (Échographie)',
+        eventDate: dStr(-30),
+        bullOrSemenUsed: 'BRAHMA (IND-7712)',
+        operatorName: 'Dr. Fall',
+        expectedDryOffDate: dStr(55),
+        expectedCalvingDate: dStr(115),
+        observations: 'Gestation 4 mois confirmée. Fœtus bien développé.',
+        isConfirmed: true
+      },
+      {
+        id: 4,
+        animalInternalId: 'FL-007',
+        animalName: 'ROKHAYA',
+        eventType: 'PREGNANCY_DIAGNOSIS',
+        eventTypeLabel: 'Diagnostic Gestation (Échographie)',
+        eventDate: dStr(-240),
+        bullOrSemenUsed: 'SULTAN (USA-42891)',
+        operatorName: 'Dr. Fall',
+        expectedDryOffDate: dStr(-48),
+        expectedCalvingDate: dStr(12),
+        observations: 'Vêlage imminent (J-12). Box de vêlage préparé.',
+        isConfirmed: true
+      },
+      {
+        id: 5,
+        animalInternalId: 'FL-002',
+        animalName: 'MARIAMA',
+        eventType: 'DRY_OFF',
+        eventTypeLabel: 'Mise au Tarissement',
+        eventDate: dStr(7),
+        bullOrSemenUsed: 'VALENTIN (FR-88910)',
+        operatorName: 'Dr. Fall',
+        expectedDryOffDate: dStr(7),
+        expectedCalvingDate: dStr(67),
+        observations: 'Tarissement prévu dans 7 jours. Injection intramammaire.',
+        isConfirmed: true
+      }
+    ];
+    this.reproductionEvents.set(fallback);
+  }
+
+  loadFallbackReproAlerts(): void {
+    const today = new Date();
+    const dStr = (offsetDays: number) => {
+      const d = new Date(today.getTime() + offsetDays * 86400000);
+      return d.toISOString().slice(0, 10);
+    };
+
+    const alerts: ReproductionAlert[] = [
+      {
+        alertType: 'CALVING_IMMINENT',
+        animalInternalId: 'FL-007',
+        animalName: 'ROKHAYA',
+        targetDate: dStr(12),
+        daysRemaining: 12,
+        message: 'Vêlage prévu pour ROKHAYA (FL-007) dans 12 jours (' + dStr(12) + ')',
+        severity: 'WARNING'
+      },
+      {
+        alertType: 'DRY_OFF_DUE',
+        animalInternalId: 'FL-002',
+        animalName: 'MARIAMA',
+        targetDate: dStr(7),
+        daysRemaining: 7,
+        message: 'Tarissement à programmer pour MARIAMA (FL-002) - J-7 avant repos',
+        severity: 'WARNING'
+      },
+      {
+        alertType: 'HEAT_ACTIVE',
+        animalInternalId: 'FL-005',
+        animalName: 'FATOU',
+        targetDate: dStr(0),
+        daysRemaining: 0,
+        message: 'Chaleurs actives pour FATOU (FL-005) — IA recommandée aujourd\'hui',
+        severity: 'DANGER'
+      }
+    ];
+    this.reproductionAlerts.set(alerts);
   }
 
   loadFallbackAnimals(): void {
@@ -820,9 +1016,243 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.isRationModalOpen.set(false);
   }
 
+  // Sprint 2: Reproduction Helpers & Handlers
+  get femaleCows(): Animal[] {
+    return this.animals().filter(a => a.category === 'MILKING_COW' || a.category === 'HEIFER_YOUNG');
+  }
+
+  get bullsList(): Animal[] {
+    return this.animals().filter(a => a.category === 'MALE_BULL');
+  }
+
+  get pregnantCows(): Animal[] {
+    return this.animals().filter(a => a.status === 'PREGNANT' || (a.reproStatus && a.reproStatus.includes('Gestan')));
+  }
+
+  get filteredReproEvents(): ReproductionEvent[] {
+    const filter = this.reproFilter();
+    if (filter === 'all') return this.reproductionEvents();
+    return this.reproductionEvents().filter(e => {
+      if (filter === 'ia') return e.eventType === 'ARTIFICIAL_INSEMINATION' || e.eventType === 'NATURAL_MATING';
+      if (filter === 'gestation') return e.eventType === 'PREGNANCY_DIAGNOSIS';
+      if (filter === 'velage') return e.eventType === 'CALVING';
+      if (filter === 'tarissement') return e.eventType === 'DRY_OFF';
+      if (filter === 'chaleur') return e.eventType === 'HEAT_DETECTION';
+      return true;
+    });
+  }
+
+  get paginatedReproEvents(): ReproductionEvent[] {
+    const start = (this.reproCurrentPage() - 1) * this.reproPageSize();
+    return this.filteredReproEvents.slice(start, start + this.reproPageSize());
+  }
+
+  get totalReproPages(): number {
+    return Math.ceil(this.filteredReproEvents.length / this.reproPageSize()) || 1;
+  }
+
+  get reproPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalReproPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  setReproPage(page: number): void {
+    if (page >= 1 && page <= this.totalReproPages) {
+      this.reproCurrentPage.set(page);
+    }
+  }
+
+  nextReproPage(): void {
+    if (this.reproCurrentPage() < this.totalReproPages) {
+      this.reproCurrentPage.update(p => p + 1);
+    }
+  }
+
+  prevReproPage(): void {
+    if (this.reproCurrentPage() > 1) {
+      this.reproCurrentPage.update(p => p - 1);
+    }
+  }
+
+  filterRepro(filterType: string): void {
+    this.reproFilter.set(filterType);
+    this.reproCurrentPage.set(1);
+  }
+
+  openReproModal(animalId?: string): void {
+    if (animalId) {
+      this.reproForm.animalInternalId = animalId;
+    }
+    this.updateReproCalculations();
+    this.isReproModalOpen.set(true);
+  }
+
+  handleAlertAction(alert: ReproductionAlert): void {
+    this.reproForm.animalInternalId = alert.animalInternalId;
+    if (alert.alertType === 'CALVING_IMMINENT') {
+      this.reproForm.eventType = 'CALVING';
+      this.reproForm.observations = 'Vêlage & mise bas contrôlée';
+    } else if (alert.alertType === 'DRY_OFF_DUE') {
+      this.reproForm.eventType = 'DRY_OFF';
+      this.reproForm.observations = 'Mise au repos pré-vêlage';
+    } else if (alert.alertType === 'HEAT_ACTIVE') {
+      this.reproForm.eventType = 'ARTIFICIAL_INSEMINATION';
+      this.reproForm.observations = 'Insémination sur chaleurs observées';
+    }
+    this.reproForm.eventDate = new Date().toISOString().slice(0, 10);
+    this.updateReproCalculations();
+    this.isReproModalOpen.set(true);
+  }
+
+  updateReproCalculations(): void {
+    if (!this.reproForm.eventDate) {
+      this.reproForm.eventDate = new Date().toISOString().slice(0, 10);
+    }
+    const evtDate = new Date(this.reproForm.eventDate);
+
+    if (this.reproForm.eventType === 'ARTIFICIAL_INSEMINATION' || this.reproForm.eventType === 'NATURAL_MATING') {
+      // Vêlage prévisionnel = +282 jours (Standard CowMaster)
+      const calvingDate = new Date(evtDate.getTime() + 282 * 86400000);
+      this.reproForm.expectedCalvingDate = calvingDate.toISOString().slice(0, 10);
+
+      // Tarissement prévisionnel = J-60 avant vêlage (+222j)
+      const dryOffDate = new Date(evtDate.getTime() + 222 * 86400000);
+      this.reproForm.expectedDryOffDate = dryOffDate.toISOString().slice(0, 10);
+    } else if (this.reproForm.eventType === 'DRY_OFF') {
+      this.reproForm.expectedDryOffDate = this.reproForm.eventDate;
+      const calvingDate = new Date(evtDate.getTime() + 60 * 86400000);
+      this.reproForm.expectedCalvingDate = calvingDate.toISOString().slice(0, 10);
+    } else if (this.reproForm.eventType === 'PREGNANCY_DIAGNOSIS') {
+      if (!this.reproForm.expectedCalvingDate) {
+        const calvingDate = new Date(evtDate.getTime() + 150 * 86400000);
+        this.reproForm.expectedCalvingDate = calvingDate.toISOString().slice(0, 10);
+      }
+    } else if (this.reproForm.eventType === 'CALVING') {
+      this.reproForm.expectedCalvingDate = '';
+      this.reproForm.expectedDryOffDate = '';
+    }
+  }
+
   submitReproEntry(): void {
-    this.showToast(`Événement de reproduction enregistré pour ${this.reproForm.cow} !`);
-    this.isReproModalOpen.set(false);
+    const targetCow = this.animals().find(a => a.internalId === this.reproForm.animalInternalId);
+    const cowName = targetCow ? targetCow.name : this.reproForm.animalInternalId;
+
+    const event: ReproductionEvent = {
+      animalInternalId: this.reproForm.animalInternalId,
+      animalName: cowName,
+      eventType: this.reproForm.eventType,
+      eventDate: this.reproForm.eventDate,
+      bullOrSemenUsed: this.reproForm.bullOrSemenUsed,
+      operatorName: this.reproForm.operatorName,
+      expectedDryOffDate: this.reproForm.expectedDryOffDate,
+      expectedCalvingDate: this.reproForm.expectedCalvingDate,
+      observations: this.reproForm.observations,
+      isConfirmed: this.reproForm.isConfirmed
+    };
+
+    this.apiService.recordReproEvent(event).subscribe({
+      next: (created) => {
+        this.reproductionEvents.update(list => [created, ...list]);
+        this.dismissAlertForCow(event);
+        this.showToast(`Événement de reproduction enregistré pour ${cowName} (${event.animalInternalId}) !`);
+        this.isReproModalOpen.set(false);
+        this.loadInitialData();
+      },
+      error: () => {
+        this.reproductionEvents.update(list => [{ ...event, id: Date.now() }, ...list]);
+        this.dismissAlertForCow(event);
+        this.showToast(`Événement enregistré en local pour ${cowName} !`);
+        this.isReproModalOpen.set(false);
+      }
+    });
+  }
+
+  dismissAlertForCow(event: ReproductionEvent): void {
+    this.reproductionAlerts.update(alerts => {
+      return alerts.filter(a => {
+        if (a.animalInternalId === event.animalInternalId) {
+          if (event.eventType === 'CALVING' && a.alertType === 'CALVING_IMMINENT') return false;
+          if (event.eventType === 'DRY_OFF' && a.alertType === 'DRY_OFF_DUE') return false;
+          if ((event.eventType === 'ARTIFICIAL_INSEMINATION' || event.eventType === 'NATURAL_MATING') && a.alertType === 'HEAT_ACTIVE') return false;
+        }
+        return true;
+      });
+    });
+
+    // Also update animal status in local list
+    this.animals.update(list => list.map(a => {
+      if (a.internalId === event.animalInternalId) {
+        if (event.eventType === 'CALVING') {
+          return {
+            ...a,
+            status: 'EXCELLENT',
+            category: 'MILKING_COW',
+            lactationNumber: (a.lactationNumber || 0) + 1,
+            daysInMilk: 0,
+            reproStatus: `Vêlage réussi le ${event.eventDate} — Nouvelle lactation (${(a.lactationNumber || 0) + 1}e)`
+          };
+        } else if (event.eventType === 'DRY_OFF') {
+          return {
+            ...a,
+            reproStatus: 'Tarie — Repos pré-vêlage'
+          };
+        } else if (event.eventType === 'ARTIFICIAL_INSEMINATION' || event.eventType === 'NATURAL_MATING') {
+          return {
+            ...a,
+            reproStatus: `Inséminée le ${event.eventDate}`
+          };
+        }
+      }
+      return a;
+    }));
+  }
+
+  deleteReproEntry(id?: number): void {
+    if (!id) return;
+    this.apiService.deleteReproEvent(id).subscribe({
+      next: () => {
+        this.reproductionEvents.update(list => list.filter(e => e.id !== id));
+        this.showToast('Acte de reproduction supprimé.');
+      },
+      error: () => {
+        this.reproductionEvents.update(list => list.filter(e => e.id !== id));
+        this.showToast('Acte supprimé en local.');
+      }
+    });
+  }
+
+  quickMilking(cow: Animal, session: 'MORNING' | 'EVENING'): void {
+    if (cow.status === 'FEVER_TREATMENT') {
+      this.showToast(`⚠️ ATTENTION : Lait de ${cow.name} exclu de la cuve (traitement en cours).`);
+      return;
+    }
+
+    const volume = session === 'MORNING' 
+      ? Math.round(((cow.dailyMilkYield || 18) * 0.58) * 10) / 10 
+      : Math.round(((cow.dailyMilkYield || 18) * 0.42) * 10) / 10;
+
+    const prod: MilkProduction = {
+      animalInternalId: cow.internalId,
+      session: session,
+      volumeLiters: volume,
+      milkTemperature: 34.2,
+      destinationTank: 'Cuve Réfrigérée N°1 (Bio)',
+      productionDate: new Date().toISOString().slice(0, 10),
+      isOrganicCompliant: true
+    };
+
+    this.apiService.recordMilk(prod).subscribe({
+      next: () => {
+        this.showToast(`Traite ${session === 'MORNING' ? 'Matin' : 'Soir'} : +${volume}L pour ${cow.name} ajoutés à la Cuve Bio !`);
+        this.loadMilkData();
+      },
+      error: () => {
+        this.showToast(`Traite : +${volume}L enregistrée pour ${cow.name} !`);
+      }
+    });
   }
 
   submitFinanceExport(): void {

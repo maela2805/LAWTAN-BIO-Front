@@ -1365,10 +1365,13 @@ background: linear-gradient(135deg, var(--brand-forest-deep) 0%, #062b13 100%);
 }
 
 /* Pagination Styles */
-.pagination-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.pagination-bar, .herd-pagination-bar {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
   padding: 12px 20px;
   background: linear-gradient(135deg, #ffffff 0%, #f6fbf7 100%);
   border: 1px solid #dbe7dc;
@@ -1802,32 +1805,40 @@ background: linear-gradient(135deg, var(--brand-forest-deep) 0%, #062b13 100%);
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(4, 26, 12, 0.6);
+  background: rgba(4, 26, 12, 0.7);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  z-index: 95;
+  z-index: 998;
   opacity: 0;
   transition: opacity 0.25s ease;
 }
 
+.sidebar-backdrop.visible,
+.sidebar-backdrop.open {
+  display: block !important;
+  opacity: 1 !important;
+}
+
 .sidebar-close-btn {
   display: none;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: white;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   cursor: pointer;
   place-items: center;
-  font-size: 0.9rem;
+  font-size: 1rem;
+  font-weight: 700;
   flex-shrink: 0;
   margin-left: auto;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
 }
 
 .sidebar-close-btn:hover {
   background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
 }
 
 /* ==========================================================================
@@ -1845,34 +1856,62 @@ background: linear-gradient(135deg, var(--brand-forest-deep) 0%, #062b13 100%);
   .infra-tags-group {
     display: none;
   }
-}
 
-@media (max-width: 768px) {
-  /* Sidebar Drawer on Mobile */
+  /* Sidebar Drawer on Mobile & Tablet */
   .sidebar {
-    position: fixed;
-    transform: translateX(-100%);
-    width: 280px;
-    z-index: 100;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    width: 290px !important;
+    max-width: 85vw !important;
+    z-index: 999 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease !important;
   }
 
+  .sidebar.mobile-open,
   .sidebar.open {
-    transform: translateX(0);
-    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.4);
-  }
-
-  .sidebar.open + .sidebar-backdrop {
-    display: block;
-    opacity: 1;
+    transform: translateX(0) !important;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.5) !important;
   }
 
   .sidebar-close-btn {
-    display: grid;
+    display: grid !important;
   }
 
   .menu-toggle-btn {
-    display: block;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    border: 1.5px solid #d4dfd2 !important;
+    color: #0d381e !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+    transition: all 0.2s ease !important;
   }
+
+  .menu-toggle-btn:hover {
+    background: #eef6f0 !important;
+    border-color: #166534 !important;
+  }
+
+  .menu-toggle-btn svg {
+    stroke-width: 2.2 !important;
+  }
+
+  .main-wrapper {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
 
   /* Topbar Mobile */
   .topbar {
@@ -2142,4 +2181,509 @@ gap: 6px;
     padding: 10px 14px;
   }
 }
+
+/* ==========================================================================
+   SPRINT 2: REPRODUCTION & SUPERVISION TRAITE / TANK STYLES
+   ========================================================================== */
+
+/* 1. CowMaster Visual Workflow Bar */
+.repro-workflow-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  box-shadow: var(--shadow-sm);
+}
+
+.repro-stage-card, .stage-card-active, .stage-stage-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8faf6;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 10px 16px;
+  flex: 1;
+  min-width: 170px;
+  transition: all 0.2s ease;
+}
+
+.stage-card-active {
+  background: #f0fdf4;
+  border-color: #22c55e;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+}
+
+.stage-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #0e3d20;
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.stage-icon {
+  font-size: 1.4rem;
+}
+
+.stage-content h4 {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.stage-content p {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.stage-connector {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #16a34a;
+  opacity: 0.6;
+  user-select: none;
+}
+
+/* 2. Reproduction Smart Alerts */
+.repro-alerts-box {
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.08);
+}
+
+.repro-alerts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.repro-alerts-header h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.alerts-grid-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alert-action-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 12px 18px;
+  border: 1px solid #fed7aa;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.alert-card-danger {
+  border-left: 4px solid #dc2626;
+  background: #fef2f2;
+}
+
+.alert-card-warning {
+  border-left: 4px solid #f59e0b;
+  background: #fffdf5;
+}
+
+.alert-card-info {
+  border-left: 4px solid #0284c7;
+  background: #f0f9ff;
+}
+
+.alert-icon-wrap {
+  font-size: 1.6rem;
+}
+
+.alert-details h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.alert-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.countdown-badge {
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+}
+
+.countdown-red {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.countdown-gold {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.alert-btn-act {
+  margin-left: auto;
+  font-size: 0.78rem;
+  padding: 6px 14px;
+  white-space: nowrap;
+}
+
+/* 3. Filter Pill Tabs */
+.filter-pill-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pill-tab-btn {
+  padding: 6px 12px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  border: 1px solid var(--border-subtle);
+  background: #f8faf6;
+  color: var(--text-muted);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pill-tab-btn:hover {
+  background: #e2e8dd;
+  color: var(--text-main);
+}
+
+.pill-tab-btn.active {
+  background: #0e3d20;
+  color: #ffffff;
+  border-color: #0e3d20;
+  box-shadow: 0 2px 8px rgba(14, 61, 32, 0.2);
+}
+
+/* 4. Tank Supervision Card & Liquid Gauge */
+.tank-supervision-card {
+  background: linear-gradient(135deg, #092e16 0%, #0e3d20 50%, #14532d 100%);
+  color: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tank-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.tank-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tank-icon-shield {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  backdrop-filter: blur(8px);
+}
+
+.tank-title-wrap h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.tank-title-wrap p {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tank-body-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 28px;
+  align-items: center;
+}
+
+.tank-gauge-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.tank-cylinder {
+  width: 140px;
+  height: 180px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-radius: 28px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.tank-liquid {
+  width: 100%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, #e2fbe8 40%, #86efac 100%);
+  position: relative;
+  transition: height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 -4px 12px rgba(255, 255, 255, 0.5);
+}
+
+.liquid-wave {
+  position: absolute;
+  top: -6px;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+}
+
+.tank-gauge-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 2;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.tank-gauge-label strong {
+  display: block;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.tank-gauge-label span {
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+.tank-fill-info {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.tank-stat-quad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.tank-kpi-box {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 14px;
+  backdrop-filter: blur(10px);
+}
+
+.tank-kpi-box .lbl {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.7);
+  display: block;
+}
+
+.tank-kpi-box .val {
+  font-size: 1.2rem;
+  font-weight: 800;
+  display: block;
+  margin-top: 4px;
+}
+
+.tank-kpi-box .sub-lbl {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.6);
+  display: block;
+  margin-top: 3px;
+}
+
+.tank-footer-alert {
+  margin-top: 14px;
+  background: rgba(220, 38, 38, 0.18);
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  color: #fecaca;
+}
+
+/* 5. Quick Milking Grid (Bouvier Smartphone Mode) */
+.quick-milking-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.quick-cow-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.15s ease;
+}
+
+.quick-cow-card:hover {
+  border-color: #22c55e;
+  transform: translateY(-2px);
+}
+
+.quick-cow-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cow-mini-avatar {
+  font-size: 1.6rem;
+  width: 40px;
+  height: 40px;
+  background: #f0fdf4;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.cow-mini-meta {
+  flex: 1;
+}
+
+.cow-mini-meta strong {
+  font-size: 0.95rem;
+  color: var(--text-main);
+  display: block;
+}
+
+.cow-mini-meta span {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.quick-cow-yield {
+  font-size: 0.8rem;
+  color: #14532d;
+  background: #f0fdf4;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.quick-cow-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-quick-milk {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-quick-milk.btn-morn {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.btn-quick-milk.btn-morn:hover {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.btn-quick-milk.btn-eve {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.btn-quick-milk.btn-eve:hover {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.quick-cow-blocked {
+  background: #fee2e2;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* 6. Projections Preview Box */
+.projections-calc-box {
+  background: #f0fdf4;
+  border: 1.5px dashed #86efac;
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+.calc-box-title {
+  font-size: 0.82rem;
+  color: #166534;
+  margin-bottom: 8px;
+}
+
+.calc-grid-preview {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.calc-item {
+  font-size: 0.8rem;
+}
+
+.calc-item .lbl {
+  color: #526658;
+  margin-right: 6px;
+}
+
 

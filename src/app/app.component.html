@@ -3,7 +3,7 @@
   <!-- ==========================================
        SIDEBAR NAVIGATION
        ========================================== -->
-  <aside class="sidebar" id="sidebar" [class.mobile-open]="isSidebarOpen()">
+  <aside class="sidebar" id="sidebar" [class.mobile-open]="isSidebarOpen()" [class.open]="isSidebarOpen()">
     <!-- Brand Logo Header -->
     <div class="sidebar-brand-wrapper">
       <a href="javascript:void(0)" class="logo-badge-container" (click)="showPage('dashboard')" title="LAWTAN Agro Industries">
@@ -128,7 +128,7 @@
   </aside>
 
   <!-- Mobile Sidebar Backdrop Overlay -->
-  <div class="sidebar-backdrop" [class.visible]="isSidebarOpen()" (click)="toggleSidebar()"></div>
+  <div class="sidebar-backdrop" [class.visible]="isSidebarOpen()" [class.open]="isSidebarOpen()" (click)="toggleSidebar()"></div>
 
   <!-- ==========================================
        MAIN WRAPPER & TOPBAR
@@ -622,153 +622,418 @@
       </div>
 
       <!-- ==========================================
-           PAGE 4: REPRODUCTION & IA
+           PAGE 4: REPRODUCTION & IA (SPRINT 2 HUB)
            ========================================== -->
       <div class="page" *ngIf="activePage() === 'reproduction'">
         <div class="page-header-row">
           <div class="page-header-text">
-            <h2>Reproduction, Insémination & Génétique</h2>
-            <p>Planning des chaleurs, gestations en cours, qualité de la semence et amélioration du troupeau.</p>
+            <h2>Reproduction, IA & Génétique — Troupeau LAWTAN</h2>
+            <p>Cycle biologique complet CowMaster : Chaleurs, Inséminations, Gestations, Tarissements & Vêlages automatisés.</p>
           </div>
-          <button class="btn-primary" (click)="isReproModalOpen.set(true)">
-            <span>+ Enregistrer Événement Reproduction</span>
+          <button class="btn-primary" (click)="openReproModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+            <span>+ Nouvel Acte de Reproduction</span>
           </button>
         </div>
 
-        <div class="two-columns-grid">
+        <!-- 1. CowMaster Visual Lifecycle Workflow Bar -->
+        <div class="repro-workflow-container">
+          <div class="repro-stage-card stage-heat">
+            <div class="stage-num">1</div>
+            <div class="stage-icon">🔥</div>
+            <div class="stage-content">
+              <h4>Détection Chaleurs</h4>
+              <p>Cycle 21j • IA dans 12-18h</p>
+            </div>
+          </div>
+          <div class="stage-connector">➔</div>
+          <div class="stage-card-active stage-ia">
+            <div class="stage-num">2</div>
+            <div class="stage-icon">🧬</div>
+            <div class="stage-content">
+              <h4>Insémination (IA / Saillie)</h4>
+              <p>Semence A+ KADER & SAMBA</p>
+            </div>
+          </div>
+          <div class="stage-connector">➔</div>
+          <div class="stage-stage-card stage-gest">
+            <div class="stage-num">3</div>
+            <div class="stage-icon">🤰</div>
+            <div class="stage-content">
+              <h4>Gestation ~282j</h4>
+              <p>Écho confirmatoire à 35-60j</p>
+            </div>
+          </div>
+          <div class="stage-connector">➔</div>
+          <div class="stage-stage-card stage-dry">
+            <div class="stage-num">4</div>
+            <div class="stage-icon">🛑</div>
+            <div class="stage-content">
+              <h4>Tarissement (Dry-off)</h4>
+              <p>J-60 avant vêlage • Repos</p>
+            </div>
+          </div>
+          <div class="stage-connector">➔</div>
+          <div class="stage-stage-card stage-calf">
+            <div class="stage-num">5</div>
+            <div class="stage-icon">🐮</div>
+            <div class="stage-content">
+              <h4>Vêlage & Nouvelle Lactation</h4>
+              <p>Enregistrement veau & traite</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Reproduction Smart Alerts -->
+        <div class="repro-alerts-box" *ngIf="reproductionAlerts().length > 0">
+          <div class="repro-alerts-header">
+            <h3>⚡ Alertes & Échéances Biologiques Immédiates</h3>
+            <span class="badge-pill badge-red">{{ reproductionAlerts().length }} Alertes actives</span>
+          </div>
+          <div class="alerts-grid-cards">
+            <div *ngFor="let alert of reproductionAlerts()" class="alert-action-card" [class.alert-card-danger]="alert.severity === 'DANGER'" [class.alert-card-warning]="alert.severity === 'WARNING'" [class.alert-card-info]="alert.severity === 'INFO'">
+              <div class="alert-icon-wrap">
+                <span *ngIf="alert.alertType === 'CALVING_IMMINENT'">🐮</span>
+                <span *ngIf="alert.alertType === 'DRY_OFF_DUE'">🛑</span>
+                <span *ngIf="alert.alertType === 'HEAT_ACTIVE'">🔥</span>
+              </div>
+              <div class="alert-details">
+                <h4>{{ alert.message }}</h4>
+                <div class="alert-meta-line">
+                  <span>📅 Échéance : <strong>{{ alert.targetDate }}</strong></span>
+                  <span class="countdown-badge" [class.countdown-red]="alert.daysRemaining <= 7" [class.countdown-gold]="alert.daysRemaining > 7">
+                    {{ alert.daysRemaining === 0 ? "Aujourd'hui !" : "Dans " + alert.daysRemaining + " jours (J-" + alert.daysRemaining + ")" }}
+                  </span>
+                </div>
+              </div>
+              <button class="btn-secondary alert-btn-act" (click)="handleAlertAction(alert)">
+                Planifier / Traiter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. KPI Statistics Reproduction -->
+        <div class="kpi-grid">
+          <div class="kpi-card card-sky">
+            <div class="kpi-header"><span class="kpi-title">Femelles Gestantes</span><span class="kpi-icon-wrap">🤰</span></div>
+            <div class="kpi-value">{{ pregnantCows.length }} <span class="unit">/ {{ femaleCows.length }}</span></div>
+            <div class="kpi-footer trend-up"><span>COUMBA & ROKHAYA (Écho +)</span></div>
+          </div>
+
+          <div class="kpi-card card-gold">
+            <div class="kpi-header"><span class="kpi-title">Prochain Vêlage</span><span class="kpi-icon-wrap">🐮</span></div>
+            <div class="kpi-value">12 <span class="unit">Jours</span></div>
+            <div class="kpi-footer trend-neutral"><span>ROKHAYA (FL-007) • Lignée Sultan</span></div>
+          </div>
+
+          <div class="kpi-card card-green">
+            <div class="kpi-header"><span class="kpi-title">Doses Semence Stockées</span><span class="kpi-icon-wrap">🧪</span></div>
+            <div class="kpi-value">20 <span class="unit">Doses A+</span></div>
+            <div class="kpi-footer trend-up"><span>12 KADER • 8 SAMBA en azote</span></div>
+          </div>
+
+          <div class="kpi-card card-purple">
+            <div class="kpi-header"><span class="kpi-title">Taux de Réussite IA</span><span class="kpi-icon-wrap">🎯</span></div>
+            <div class="kpi-value">85.7 <span class="unit">%</span></div>
+            <div class="kpi-footer trend-up"><span>+12% vs moyenne nationale</span></div>
+          </div>
+        </div>
+
+        <!-- 4. Reproduction Events Table & Filter -->
+        <div class="content-card" style="margin-top:20px">
+          <div class="content-card-header" style="flex-wrap:wrap;gap:12px">
+            <div>
+              <h3>📋 Registre des Actes de Reproduction ({{ filteredReproEvents.length }})</h3>
+              <p style="font-size:0.75rem;color:#526658">Historique des inséminations, échographies, vêlages et tarissements</p>
+            </div>
+            <!-- Filter Pills -->
+            <div class="filter-pill-tabs">
+              <button class="pill-tab-btn" [class.active]="reproFilter() === 'all'" (click)="filterRepro('all')">Tous</button>
+              <button class="pill-tab-btn" [class.active]="reproFilter() === 'ia'" (click)="filterRepro('ia')">🧬 Inséminations / Saillies</button>
+              <button class="pill-tab-btn" [class.active]="reproFilter() === 'gestation'" (click)="filterRepro('gestation')">🤰 Gestations</button>
+              <button class="pill-tab-btn" [class.active]="reproFilter() === 'velage'" (click)="filterRepro('velage')">🐮 Vêlages</button>
+              <button class="pill-tab-btn" [class.active]="reproFilter() === 'tarissement'" (click)="filterRepro('tarissement')">🛑 Tarissements</button>
+              <button class="pill-tab-btn" [class.active]="reproFilter() === 'chaleur'" (click)="filterRepro('chaleur')">🔥 Chaleurs</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Animal</th>
+                  <th>Type d'Acte</th>
+                  <th>Taureau / Semence</th>
+                  <th>Praticien / Technicien</th>
+                  <th>Tarissement prévu</th>
+                  <th>Vêlage prévu</th>
+                  <th>Observations</th>
+                  <th>Statut</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let evt of paginatedReproEvents">
+                  <td><strong>{{ evt.eventDate }}</strong></td>
+                  <td>
+                    <strong>{{ evt.animalName || evt.animalInternalId }}</strong>
+                    <span style="font-size:0.72rem;color:#526658;display:block">{{ evt.animalInternalId }}</span>
+                  </td>
+                  <td>
+                    <span class="badge-pill" 
+                          [class.badge-gold]="evt.eventType === 'HEAT_DETECTION'"
+                          [class.badge-blue]="evt.eventType === 'ARTIFICIAL_INSEMINATION' || evt.eventType === 'NATURAL_MATING'"
+                          [class.badge-green]="evt.eventType === 'PREGNANCY_DIAGNOSIS'"
+                          [class.badge-purple]="evt.eventType === 'CALVING'"
+                          [class.badge-red]="evt.eventType === 'DRY_OFF'">
+                      {{ evt.eventTypeLabel || evt.eventType }}
+                    </span>
+                  </td>
+                  <td>{{ evt.bullOrSemenUsed || '—' }}</td>
+                  <td>{{ evt.operatorName || 'Dr. Fall' }}</td>
+                  <td>
+                    <span *ngIf="evt.expectedDryOffDate" style="color:#b45309;font-weight:700">🛑 {{ evt.expectedDryOffDate }}</span>
+                    <span *ngIf="!evt.expectedDryOffDate">—</span>
+                  </td>
+                  <td>
+                    <span *ngIf="evt.expectedCalvingDate" style="color:#15803d;font-weight:700">🐮 {{ evt.expectedCalvingDate }}</span>
+                    <span *ngIf="!evt.expectedCalvingDate">—</span>
+                  </td>
+                  <td style="max-width:240px;font-size:0.75rem;color:#475569">{{ evt.observations || 'Acte validé sans anomalie' }}</td>
+                  <td>
+                    <span class="badge-pill badge-green" *ngIf="evt.isConfirmed">Confirmé</span>
+                    <span class="badge-pill badge-gold" *ngIf="!evt.isConfirmed">En attente</span>
+                  </td>
+                  <td>
+                    <button class="table-icon-btn" title="Supprimer cet acte" (click)="deleteReproEntry(evt.id)" style="color:#dc2626">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="filteredReproEvents.length === 0">
+                  <td colspan="10" style="text-align:center;padding:24px;color:#64748b">
+                    Aucun événement de reproduction correspondant au filtre sélectionné.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Reproduction -->
+          <div class="pagination-bar" *ngIf="totalReproPages > 1" style="margin-top:16px">
+            <button class="pagination-btn" (click)="prevReproPage()" [disabled]="reproCurrentPage() === 1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+              <span>Précédent</span>
+            </button>
+            
+            <div class="pagination-pages-wrapper">
+              <button *ngFor="let p of reproPageNumbers" class="page-number-btn" [class.active]="p === reproCurrentPage()" (click)="setReproPage(p)">
+                {{ p }}
+              </button>
+            </div>
+
+            <div class="pagination-info-pill">
+              <span>🧬</span>
+              <span>Page <strong>{{ reproCurrentPage() }}</strong> / {{ totalReproPages }}</span>
+              <span style="opacity:0.4">•</span>
+              <span><strong>{{ filteredReproEvents.length }}</strong> actes</span>
+            </div>
+
+            <button class="pagination-btn" (click)="nextReproPage()" [disabled]="reproCurrentPage() === totalReproPages">
+              <span>Suivant</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 5. Taureaux Reproducteurs & Spermogrammes -->
+        <div class="two-columns-grid" style="margin-top:20px">
           <div class="content-card">
             <div class="content-card-header">
-              <h3>🗓️ Calendrier des Événements Reproducteurs</h3>
-              <span class="badge-pill badge-gold">Suivi Proactif</span>
+              <h3>🐂 Taureau Principal KADER (FL-010)</h3>
+              <span class="badge-pill badge-green">Semence Élite A+</span>
             </div>
-            <ul style="list-style:none;display:flex;flex-direction:column;gap:12px">
-              <li style="display:flex;gap:12px;align-items:center;padding:12px;background:#fef3c7;border-radius:8px;border-left:3px solid #f59e0b">
-                <div style="font-size:1.5rem">🔥</div>
+            <div class="semen-analysis-card">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:52px;height:52px;background:#f0fdf4;border:2px solid #86efac;border-radius:50%;display:grid;place-items:center;font-size:1.6rem">🐂</div>
                 <div>
-                  <strong>FATOU (FL-005) — Chaleurs Imminentes</strong>
-                  <p style="font-size:0.75rem;color:#526658">Chaleurs prévues : 16 Août 2026 • IA recommandée avec semence KADER</p>
+                  <h4 style="font-size:1.05rem;font-weight:800;color:#0d381e">KADER (SN-DK-1432) — Holstein USA Pur</h4>
+                  <p style="font-size:0.75rem;color:#526658">780 kg • Père : TITAN (USA) • Mère : QUEEN (30 L/j)</p>
                 </div>
-                <span class="badge-pill badge-gold" style="margin-left:auto">Dans 3 jours</span>
-              </li>
-              <li style="display:flex;gap:12px;align-items:center;padding:12px;background:#f0f9ff;border-radius:8px;border-left:3px solid #0284c7">
-                <div style="font-size:1.5rem">🤰</div>
-                <div>
-                  <strong>COUMBA (FL-004) — Gestation Confirmée (4 mois)</strong>
-                  <p style="font-size:0.75rem;color:#526658">Père : BRAHMA (Gir) • Vêlage prévu : Décembre 2026</p>
-                </div>
-                <span class="badge-pill badge-blue" style="margin-left:auto">Gestante</span>
-              </li>
-              <li style="display:flex;gap:12px;align-items:center;padding:12px;background:#f8faf6;border-radius:8px;border-left:3px solid #94a3b8">
-                <div style="font-size:1.5rem">🔍</div>
-                <div>
-                  <strong>NDIRA (FL-001) — Diagnostic de Gestation</strong>
-                  <p style="font-size:0.75rem;color:#526658">Dernière IA : Mai 2026 • Échographie de contrôle prévue Septembre</p>
-                </div>
-                <span class="badge-pill" style="margin-left:auto;background:#e2e8f0;color:#475569">À confirmer</span>
-              </li>
-            </ul>
+              </div>
+              <div class="semen-metric-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0">
+                <div class="semen-stat-box"><p class="lbl">Mobilité</p><strong class="val" style="color:#16a34a">85%</strong></div>
+                <div class="semen-stat-box"><p class="lbl">Concentration</p><strong class="val">1.2e9 /mL</strong></div>
+                <div class="semen-stat-box"><p class="lbl">Morphologie</p><strong class="val" style="color:#16a34a">90% OK</strong></div>
+                <div class="semen-stat-box"><p class="lbl">Stock Doses</p><strong class="val" style="color:#0284c7">12 Doses</strong></div>
+              </div>
+              <p style="font-size:0.75rem;color:#526658">Taureau agréé pour l'insémination artificielle du troupeau LAWTAN. Transmission de fort potentiel laitier.</p>
+            </div>
           </div>
 
           <div class="content-card">
             <div class="content-card-header">
-              <h3>🐂 Taureau KADER (FL-010) — Bilan de Semence</h3>
-              <span class="badge-pill badge-green">Qualité Semence A+</span>
+              <h3>🐂 Taureau SAMBA (FL-011) — Amélioration Fromagère</h3>
+              <span class="badge-pill badge-blue">Montbéliard Pure Race</span>
             </div>
             <div class="semen-analysis-card">
               <div style="display:flex;align-items:center;gap:12px">
-                <div style="width:48px;height:48px;background:#f0fdf4;border:2px solid #86efac;border-radius:50%;display:grid;place-items:center;font-size:1.4rem">🐂</div>
+                <div style="width:52px;height:52px;background:#eff6ff;border:2px solid #93c5fd;border-radius:50%;display:grid;place-items:center;font-size:1.6rem">🐂</div>
                 <div>
-                  <h4 style="font-size:1.05rem;font-weight:800">KADER (FL-010) — Holstein Pure Race</h4>
-                  <p style="font-size:0.75rem;color:#526658">Poids : 780 kg • Lignée USA Championne Laitière</p>
+                  <h4 style="font-size:1.05rem;font-weight:800;color:#0d381e">SAMBA (SN-DK-1433) — Montbéliard France</h4>
+                  <p style="font-size:0.75rem;color:#526658">720 kg • Index Caséine Kappa BB élevé (Idéal fromages)</p>
                 </div>
               </div>
               <div class="semen-metric-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0">
-                <div class="semen-stat-box" style="background:#f8faf6;padding:8px;border-radius:6px;text-align:center"><p class="lbl" style="font-size:0.7rem;color:#526658">Mobilité</p><strong class="val" style="color:#16a34a">85%</strong></div>
-                <div class="semen-stat-box" style="background:#f8faf6;padding:8px;border-radius:6px;text-align:center"><p class="lbl" style="font-size:0.7rem;color:#526658">Concentration</p><strong class="val">1.2e9 /mL</strong></div>
-                <div class="semen-stat-box" style="background:#f8faf6;padding:8px;border-radius:6px;text-align:center"><p class="lbl" style="font-size:0.7rem;color:#526658">Morphologie</p><strong class="val" style="color:#16a34a">90% OK</strong></div>
-                <div class="semen-stat-box" style="background:#f8faf6;padding:8px;border-radius:6px;text-align:center"><p class="lbl" style="font-size:0.7rem;color:#526658">Doses Dispo</p><strong class="val">12 Doses</strong></div>
+                <div class="semen-stat-box"><p class="lbl">Mobilité</p><strong class="val" style="color:#16a34a">80%</strong></div>
+                <div class="semen-stat-box"><p class="lbl">Concentration</p><strong class="val">1.1e9 /mL</strong></div>
+                <div class="semen-stat-box"><p class="lbl">Morphologie</p><strong class="val" style="color:#16a34a">88% OK</strong></div>
+                <div class="semen-stat-box"><p class="lbl">Stock Doses</p><strong class="val" style="color:#0284c7">8 Doses</strong></div>
               </div>
-              <p style="font-size:0.75rem;color:#526658">Dernière analyse spermatique réalisée par Dr. Fall. Taureau certifié pour l'amélioration génétique de la ferme.</p>
+              <p style="font-size:0.75rem;color:#526658">Taureau sélectionné pour la richesse en matière protéique et l'aptitude au caillage pour l'atelier fromagerie.</p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- ==========================================
-           PAGE 5: PRODUCTION LAITIERE
+           PAGE 5: PRODUCTION LAITIERE & TANK GLOBAL (SPRINT 2)
            ========================================== -->
       <div class="page" *ngIf="activePage() === 'lait'">
         <div class="page-header-row">
           <div class="page-header-text">
-            <h2>Production Laitière Bio</h2>
-            <p>Rendement par vache, suivi des traites matin/soir et contrôle qualité du lait frais.</p>
+            <h2>Production Laitière Bio & Supervision Tank</h2>
+            <p>Double niveau de suivi : Saisie individuelle rapide (Matin/Soir) & Cuve réfrigérée de collecte globale.</p>
           </div>
-          <button class="btn-primary" (click)="isMilkModalOpen.set(true)">
-            <span>+ Saisir Collecte de Traite</span>
-          </button>
-        </div>
-
-        <div class="kpi-grid">
-          <div class="kpi-card card-green">
-            <div class="kpi-header"><span class="kpi-title">Collecte du Jour</span></div>
-            <div class="kpi-value">124.0 <span class="unit">L</span></div>
-            <div class="kpi-footer"><span>68.0 L Matin • 56.0 L Soir</span></div>
-          </div>
-          <div class="kpi-card card-sky">
-            <div class="kpi-header"><span class="kpi-title">Cumul Semaine</span></div>
-            <div class="kpi-value">854 <span class="unit">L</span></div>
-            <div class="kpi-footer trend-up"><span>+8.2% vs semaine passée</span></div>
-          </div>
-          <div class="kpi-card card-purple">
-            <div class="kpi-header"><span class="kpi-title">Cumul Mensuel (Août)</span></div>
-            <div class="kpi-value">3 420 <span class="unit">L</span></div>
-            <div class="kpi-footer"><span>Objectif 3 800 L (90% atteint)</span></div>
+          <div class="header-action-group">
+            <button class="btn-primary" (click)="isMilkModalOpen.set(true)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+              <span>+ Saisie Manuelle Traite</span>
+            </button>
           </div>
         </div>
 
+        <!-- 1. Cuve Réfrigérée Tank Global Supervision Card -->
+        <div class="tank-supervision-card">
+          <div class="tank-header-row">
+            <div class="tank-title-wrap">
+              <div class="tank-icon-shield">🥛</div>
+              <div>
+                <h3>{{ tankStatus()?.tankName || 'Cuve Réfrigérée N°1 (Bio)' }}</h3>
+                <p>Stockage isotherme connecté • Traçabilité Sprint 3 prête</p>
+              </div>
+            </div>
+            <div class="tank-badge-status">
+              <span class="badge-pill badge-green">✅ {{ tankStatus()?.qualityStatus || 'CONFORME BIO' }}</span>
+              <span class="badge-pedigree-tag">Lot : {{ tankStatus()?.targetBatch || 'LOT-TR-20260818-01' }}</span>
+            </div>
+          </div>
+
+          <div class="tank-body-grid">
+            <!-- Left: Animated Liquid Gauge -->
+            <div class="tank-gauge-col">
+              <div class="tank-cylinder">
+                <div class="tank-liquid" [style.height]="(tankStatus()?.fillPercentage || 24.8) + '%'">
+                  <div class="liquid-wave"></div>
+                </div>
+                <div class="tank-gauge-label">
+                  <strong>{{ tankStatus()?.currentVolume || 124.0 }} L</strong>
+                  <span>/ {{ tankStatus()?.maxCapacity || 500.0 }} L</span>
+                </div>
+              </div>
+              <div class="tank-fill-info">
+                <span>Niveau Cuve : <strong>{{ tankStatus()?.fillPercentage || 24.8 }}%</strong></span>
+              </div>
+            </div>
+
+            <!-- Right: Quality Indicators & Sessions -->
+            <div class="tank-metrics-col">
+              <div class="tank-stat-quad">
+                <div class="tank-kpi-box">
+                  <span class="lbl">Traite Matin</span>
+                  <strong class="val" style="color:#16a34a">{{ tankStatus()?.morningVolume || 68.0 }} L</strong>
+                </div>
+                <div class="tank-kpi-box">
+                  <span class="lbl">Traite Soir</span>
+                  <strong class="val" style="color:#0284c7">{{ tankStatus()?.eveningVolume || 56.0 }} L</strong>
+                </div>
+                <div class="tank-kpi-box">
+                  <span class="lbl">Température Cuve</span>
+                  <strong class="val" style="color:#16a34a">{{ tankStatus()?.temperature || 3.9 }} °C</strong>
+                  <span class="sub-lbl">Consigne : 3.8 - 4.2 °C</span>
+                </div>
+                <div class="tank-kpi-box">
+                  <span class="lbl">Acidité / pH</span>
+                  <strong class="val" style="color:#15803d">{{ tankStatus()?.phLevel || 6.68 }} pH</strong>
+                  <span class="sub-lbl">Optimal (6.60 - 6.80)</span>
+                </div>
+              </div>
+
+              <div class="tank-footer-alert">
+                <span>🛡️ <strong>Sécurité sanitaire :</strong> DIOUMA (FL-003) sous antibiotique : lait 100% exclu de la cuve pour préserver le label Bio.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Mode Bouvier / Saisie Rapide 1-Clic par Vache -->
+        <div class="content-card" style="margin-top:20px">
+          <div class="content-card-header">
+            <div>
+              <h3>⚡ Saisie Rapide Smartphone (Bouvier / Traite 1-Clic)</h3>
+              <p style="font-size:0.75rem;color:#526658">Cliquez pour valider instantanément la traite du matin ou du soir</p>
+            </div>
+            <span class="badge-pill badge-green">{{ milkingCows.length }} Vaches en lactation</span>
+          </div>
+
+          <div class="quick-milking-grid">
+            <div *ngFor="let cow of milkingCows" class="quick-cow-card" [class.card-alert-glow]="cow.status === 'FEVER_TREATMENT'">
+              <div class="quick-cow-top">
+                <div class="cow-mini-avatar">{{ cow.avatarEmoji || '🐄' }}</div>
+                <div class="cow-mini-meta">
+                  <strong>{{ cow.name }}</strong>
+                  <span>{{ cow.internalId }} • {{ cow.breed }}</span>
+                </div>
+                <span class="badge-pill badge-purple" style="font-size:0.68rem">DIM: {{ cow.daysInMilk || 120 }}j</span>
+              </div>
+
+              <div class="quick-cow-yield">
+                <span>Rendement moyen : <strong>{{ cow.dailyMilkYield || 18 }} L/j</strong></span>
+              </div>
+
+              <!-- Action buttons -->
+              <div *ngIf="cow.status !== 'FEVER_TREATMENT'" class="quick-cow-actions">
+                <button class="btn-quick-milk btn-morn" (click)="quickMilking(cow, 'MORNING')">
+                  ☀️ Matin ({{ ((cow.dailyMilkYield || 18) * 0.58) | number:'1.1-1' }}L)
+                </button>
+                <button class="btn-quick-milk btn-eve" (click)="quickMilking(cow, 'EVENING')">
+                  🌙 Soir ({{ ((cow.dailyMilkYield || 18) * 0.42) | number:'1.1-1' }}L)
+                </button>
+              </div>
+
+              <div *ngIf="cow.status === 'FEVER_TREATMENT'" class="quick-cow-blocked">
+                <span style="color:#dc2626;font-size:0.75rem;font-weight:700">🚫 Traitement actif (Lait exclu)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Production Graph & History -->
         <div class="chart-box" style="margin-top:20px">
           <div class="chart-box-header">
             <div>
-              <h3>Évolution de la Production Quotidienne (Août 2026)</h3>
-              <p>Volume total journalier en litres</p>
+              <h3>📈 Évolution de la Collecte Journalière & Moyenne par Vache</h3>
+              <p>Suivi comparatif des traites Matin vs Soir</p>
             </div>
           </div>
           <div class="chart-canvas-wrap">
             <canvas id="monthlyMilkChart"></canvas>
-          </div>
-        </div>
-
-        <!-- Milk Details Table -->
-        <div class="content-card" style="margin-top:20px">
-          <div class="content-card-header">
-            <h3>🥛 Collecte Détaillée par Vache — Aujourd'hui</h3>
-            <span class="badge-pill badge-green">7 vaches traites</span>
-          </div>
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Vache</th>
-                  <th>Race</th>
-                  <th>Matin (L)</th>
-                  <th>Soir (L)</th>
-                  <th>Total Jour (L)</th>
-                  <th>Qualité / Taux MG</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let cow of milkingCows" [class.row-alert]="cow.status === 'FEVER_TREATMENT'">
-                  <td><strong>{{ cow.name }} ({{ cow.internalId }})</strong></td>
-                  <td>{{ cow.breed }}</td>
-                  <td>{{ ((cow.dailyMilkYield || 18) * 0.58) | number:'1.1-1' }}</td>
-                  <td>{{ ((cow.dailyMilkYield || 18) * 0.42) | number:'1.1-1' }}</td>
-                  <td><strong>{{ cow.dailyMilkYield }} L</strong></td>
-                  <td>Excellente (4.0% MG)</td>
-                  <td><button class="btn-secondary" style="padding:4px 8px;font-size:0.75rem" (click)="openAnimalModal(cow.internalId)">Fiche</button></td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
       </div>
@@ -1298,8 +1563,8 @@
           <div>
             <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Session de Traite</label>
             <select [(ngModel)]="milkForm.session" name="session" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px">
-              <option value="Matin (06h00)">Matin (06h00)</option>
-              <option value="Soir (17h00)">Soir (17h00)</option>
+              <option value="Matin">Matin</option>
+              <option value="Soir">Soir</option>
             </select>
           </div>
           <div>
@@ -1749,6 +2014,119 @@
         🖨️ Imprimer l'Étiquette du Lot
       </button>
     </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: ACTE DE REPRODUCTION (SPRINT 2)
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isReproModalOpen()" (click)="isReproModalOpen.set(false)">
+  <div class="modal-card modal-card-lg" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title-icon-box" style="background:linear-gradient(135deg, #0d4a22, #15803d);color:#f59e0b">
+          🧬
+        </div>
+        <div>
+          <h3>Enregistrer un Acte de Reproduction</h3>
+          <p>Cycle biologique CowMaster : IA, Gestation, Tarissement & Vêlage</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="isReproModalOpen.set(false)">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitReproEntry()" style="padding:24px 28px;overflow-y:auto;max-height:calc(90vh - 80px)">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        
+        <!-- Row 1: Vache & Type d'Acte -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Vache Concernée (Femelle) *</label>
+            <select [(ngModel)]="reproForm.animalInternalId" name="reproCow" required (change)="updateReproCalculations()">
+              <option *ngFor="let cow of femaleCows" [value]="cow.internalId">
+                {{ cow.name }} ({{ cow.internalId }}) • {{ cow.category === 'HEIFER_YOUNG' ? 'Génisse' : 'Vache Laitière' }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group-item">
+            <label>Type d'Acte Biologique *</label>
+            <select [(ngModel)]="reproForm.eventType" name="reproType" (change)="updateReproCalculations()">
+              <option value="HEAT_DETECTION">🔥 Détection de Chaleurs</option>
+              <option value="ARTIFICIAL_INSEMINATION">🧬 Insémination Artificielle (IA)</option>
+              <option value="NATURAL_MATING">🐂 Saillie Naturelle (Taureau)</option>
+              <option value="PREGNANCY_DIAGNOSIS">🤰 Diagnostic Gestation (Échographie)</option>
+              <option value="DRY_OFF">🛑 Mise au Tarissement (Dry-off)</option>
+              <option value="CALVING">🐮 Vêlage & Enregistrement Veau</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Row 2: Date & Taureau / Semence -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Date de l'Acte *</label>
+            <input type="date" [(ngModel)]="reproForm.eventDate" name="reproDate" required (change)="updateReproCalculations()" />
+          </div>
+
+          <div class="form-group-item" *ngIf="reproForm.eventType === 'ARTIFICIAL_INSEMINATION' || reproForm.eventType === 'NATURAL_MATING' || reproForm.eventType === 'PREGNANCY_DIAGNOSIS'">
+            <label>Taureau / Semence Utilisée</label>
+            <select [(ngModel)]="reproForm.bullOrSemenUsed" name="reproBull">
+              <option value="KADER (FL-010) — Semence A+ (Holstein Pure)">KADER (FL-010) — Holstein USA Pure (Semence A+)</option>
+              <option value="SAMBA (FL-011) — Montbéliard Pure Race">SAMBA (FL-011) — Montbéliard France (Index Fromager)</option>
+              <option value="SULTAN (USA-42891) — Semence Importée">SULTAN (USA-42891) — Champion USA Laitier</option>
+              <option value="BRAHMA (IND-7712) — Gir Laitier Pur">BRAHMA (IND-7712) — Gir Pur Tropical</option>
+            </select>
+          </div>
+
+          <div class="form-group-item" *ngIf="reproForm.eventType !== 'ARTIFICIAL_INSEMINATION' && reproForm.eventType !== 'NATURAL_MATING' && reproForm.eventType !== 'PREGNANCY_DIAGNOSIS'">
+            <label>Opérateur / Technicien</label>
+            <input type="text" [(ngModel)]="reproForm.operatorName" name="reproOperator" placeholder="Dr. Fall / Technicien" />
+          </div>
+        </div>
+
+        <!-- Row 3: Auto-Calculated Projections Box (CowMaster Engine) -->
+        <div class="projections-calc-box" *ngIf="reproForm.expectedCalvingDate || reproForm.expectedDryOffDate">
+          <div class="calc-box-title">
+            <span>⚙️ <strong>Calculs Automatiques du Cycle (Moteur CowMaster)</strong></span>
+          </div>
+          <div class="calc-grid-preview">
+            <div class="calc-item" *ngIf="reproForm.expectedDryOffDate">
+              <span class="lbl">Date de Tarissement Prévue (J-60) :</span>
+              <strong class="val" style="color:#b45309">🛑 {{ reproForm.expectedDryOffDate }}</strong>
+            </div>
+            <div class="calc-item" *ngIf="reproForm.expectedCalvingDate">
+              <span class="lbl">Date de Vêlage Prévue (~282j) :</span>
+              <strong class="val" style="color:#15803d">🐮 {{ reproForm.expectedCalvingDate }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 4: Observations -->
+        <div class="form-group-item">
+          <label>Observations & Diagnostic</label>
+          <textarea rows="2" [(ngModel)]="reproForm.observations" name="reproObs" placeholder="Détails du constat (ex: glaires franches, col bien ouvert, battement cardiaque fœtal...)"></textarea>
+        </div>
+
+        <!-- Row 5: Confirmation Checkbox -->
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="checkbox" id="confirmRepro" [(ngModel)]="reproForm.isConfirmed" name="reproConfirm" style="width:18px;height:18px;accent-color:#16a34a" />
+          <label for="confirmRepro" style="font-size:0.85rem;font-weight:600;color:#0d381e;cursor:pointer">
+            Acte confirmé et validé par le responsable d'élevage
+          </label>
+        </div>
+
+        <!-- Buttons -->
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="isReproModalOpen.set(false)">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Valider & Enregistrer l'Acte
+          </button>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
 

@@ -3,7 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, of } from 'rxjs';
 import { Animal } from '../models/animal.model';
 import { HealthRecord, VaccineSchedule } from '../models/health.model';
-import { MilkProduction, DashboardStats } from '../models/milk.model';
+import { MilkProduction, DashboardStats, TankStatus, MilkHistory } from '../models/milk.model';
+import { ReproductionEvent, ReproductionAlert } from '../models/reproduction.model';
 
 @Injectable({
   providedIn: 'root'
@@ -79,8 +80,61 @@ export class ApiService {
     return this.http.post<VaccineSchedule>(`${this.baseUrl}/health/vaccines`, schedule);
   }
 
-  // --- Milk ---
+  // --- Reproduction ---
+  getAllReproEvents(): Observable<ReproductionEvent[]> {
+    return this.http.get<ReproductionEvent[]>(`${this.baseUrl}/reproduction`).pipe(
+      catchError(err => {
+        console.warn('Backend reproduction non disponible', err);
+        return of([]);
+      })
+    );
+  }
+
+  getReproByAnimal(animalId: number): Observable<ReproductionEvent[]> {
+    return this.http.get<ReproductionEvent[]>(`${this.baseUrl}/reproduction/by-animal/${animalId}`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
+  recordReproEvent(event: ReproductionEvent): Observable<ReproductionEvent> {
+    return this.http.post<ReproductionEvent>(`${this.baseUrl}/reproduction/record`, event);
+  }
+
+  updateReproEvent(id: number, event: ReproductionEvent): Observable<ReproductionEvent> {
+    return this.http.put<ReproductionEvent>(`${this.baseUrl}/reproduction/${id}`, event);
+  }
+
+  deleteReproEvent(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/reproduction/${id}`);
+  }
+
+  getReproAlerts(): Observable<ReproductionAlert[]> {
+    return this.http.get<ReproductionAlert[]>(`${this.baseUrl}/reproduction/alerts`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
+  // --- Milk Production & Tank ---
+  getProductionsByDate(date?: string): Observable<MilkProduction[]> {
+    const url = date ? `${this.baseUrl}/milk/by-date?date=${date}` : `${this.baseUrl}/milk/by-date`;
+    return this.http.get<MilkProduction[]>(url).pipe(
+      catchError(() => of([]))
+    );
+  }
+
   recordMilk(production: MilkProduction): Observable<MilkProduction> {
     return this.http.post<MilkProduction>(`${this.baseUrl}/milk/record`, production);
+  }
+
+  getTankStatus(): Observable<TankStatus | null> {
+    return this.http.get<TankStatus>(`${this.baseUrl}/milk/tank-status`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  getMilkHistory(days: number = 7): Observable<MilkHistory[]> {
+    return this.http.get<MilkHistory[]>(`${this.baseUrl}/milk/history?days=${days}`).pipe(
+      catchError(() => of([]))
+    );
   }
 }
