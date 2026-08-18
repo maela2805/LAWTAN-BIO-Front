@@ -1,0 +1,1759 @@
+<div class="app-layout">
+
+  <!-- ==========================================
+       SIDEBAR NAVIGATION
+       ========================================== -->
+  <aside class="sidebar" id="sidebar" [class.mobile-open]="isSidebarOpen()">
+    <!-- Brand Logo Header -->
+    <div class="sidebar-brand-wrapper">
+      <a href="javascript:void(0)" class="logo-badge-container" (click)="showPage('dashboard')" title="LAWTAN Agro Industries">
+        <div class="logo-svg-wrap">
+          <svg viewBox="0 0 160 140" width="100%" height="100%">
+            <!-- Green Shield Outer Glow & Gold Border -->
+            <path d="M 80 8 C 125 8, 155 35, 155 75 C 155 110, 120 132, 80 132 C 38 132, 5 110, 5 75 C 5 35, 35 8, 80 8 Z" fill="#0d4a22" stroke="#f59e0b" stroke-width="4"/>
+            <!-- Green Double Leaf at Top -->
+            <path d="M 80 28 C 65 10, 48 18, 52 35 C 56 46, 75 42, 80 44 C 85 42, 104 46, 108 35 C 112 18, 95 10, 80 28 Z" fill="#22c55e" stroke="#15803d" stroke-width="1.5"/>
+            <path d="M 80 28 Q 78 38 68 40" stroke="#86efac" stroke-width="1.5" fill="none"/>
+            <path d="M 80 28 Q 82 38 92 40" stroke="#86efac" stroke-width="1.5" fill="none"/>
+            <!-- Red Swoop Ribbon Banner -->
+            <path d="M 20 88 C 55 78, 105 78, 140 92 C 145 94, 135 102, 110 102 C 60 102, 35 98, 20 88 Z" fill="#dc2626"/>
+            <!-- Silhouette of Senegalese Woman with Milk Calabash -->
+            <path d="M 115 54 C 110 50, 118 42, 124 45 C 128 48, 125 56, 120 58 Z" fill="#1e293b"/>
+            <ellipse cx="120" cy="42" rx="14" ry="5" fill="#fef08a" stroke="#d97706" stroke-width="1"/>
+            <path d="M 112 58 L 126 58 L 132 80 L 106 80 Z" fill="#eab308"/>
+            <path d="M 114 68 L 128 68 L 130 82 L 110 82 Z" fill="#38bdf8"/>
+            <!-- Lawtan Bold Script Typography -->
+            <text x="72" y="74" text-anchor="middle" font-family="'Outfit', cursive, sans-serif" font-weight="900" font-size="34" fill="#ffffff" stroke="#14532d" stroke-width="1.5" letter-spacing="1">Lawtan</text>
+            <!-- Agro Industries Banner Subtext -->
+            <text x="80" y="98" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="10.5" fill="#ffffff" letter-spacing="0.5">Agro Industries</text>
+            <!-- Golden Bottom Accent Curve -->
+            <path d="M 28 114 Q 80 128 132 114" stroke="#f59e0b" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="brand-text-block">
+          <div class="brand-title">LAWTAN <span class="tag-bio">BIO</span></div>
+          <div class="brand-subtitle">Agro Industries • Sénégal</div>
+        </div>
+      </a>
+      <button class="sidebar-close-btn" (click)="toggleSidebar()" aria-label="Fermer le menu">✕</button>
+    </div>
+
+    <!-- Nav Links -->
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-title">Pilotage Global</div>
+        <ul>
+          <li>
+            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'dashboard'" (click)="showPage('dashboard')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+              <span>Tableau de bord</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Troupeau & Élevage</div>
+        <ul>
+          <li>
+            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'animaux'" (click)="showPage('animaux')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              <span>Fiches Troupeau ({{ animals().length }})</span>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'sante'" (click)="showPage('sante')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              <span>Santé & Vétérinaire</span>
+              <span class="nav-badge-count badge-alert" *ngIf="dashboardStats()?.healthAlertsCount">1 Alerte</span>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'reproduction'" (click)="showPage('reproduction')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              <span>Reproduction & IA</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Production & Terroir</div>
+        <ul>
+          <li>
+            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'lait'" (click)="showPage('lait')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 6H7L8 2z"/><path d="M7 8c0 10 2 12 5 12s5-2 5-12"/></svg>
+              <span>Production Laitière</span>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'alimentation'" (click)="showPage('alimentation')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              <span>Alimentation & Fourrage</span>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'tracabilite'" (click)="showPage('tracabilite')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+              <span>Traçabilité & Lots Bio</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">Commercial & Finance</div>
+        <ul>
+          <li>
+            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'ventes'" (click)="showPage('ventes')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+              <span>Ventes & Commandes</span>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'finance'" (click)="showPage('finance')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              <span>Finances & Coûts</span>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'settings'" (click)="showPage('settings')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              <span>Paramètres & Solaire</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div class="sidebar-backdrop" [class.visible]="isSidebarOpen()" (click)="toggleSidebar()"></div>
+
+  <!-- ==========================================
+       MAIN WRAPPER & TOPBAR
+       ========================================== -->
+  <div class="main-wrapper">
+    
+    <!-- Topbar Header -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle-btn" (click)="toggleSidebar()" aria-label="Ouvrir le menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="topbar-heading-group">
+          <h1 class="page-title">
+            <ng-container [ngSwitch]="activePage()">
+              <span *ngSwitchCase="'dashboard'">Tableau de bord Général</span>
+              <span *ngSwitchCase="'animaux'">Registre du Troupeau & Pedigree</span>
+              <span *ngSwitchCase="'sante'">Santé Animale & Vétérinaire</span>
+              <span *ngSwitchCase="'reproduction'">Reproduction, IA & Génétique</span>
+              <span *ngSwitchCase="'lait'">Production Laitière Bio</span>
+              <span *ngSwitchCase="'alimentation'">Alimentation & Fourrages</span>
+              <span *ngSwitchCase="'tracabilite'">Traçabilité & Lots Bio</span>
+              <span *ngSwitchCase="'ventes'">Ventes & Distribution</span>
+              <span *ngSwitchCase="'finance'">Finances, Coûts & Rentabilité</span>
+              <span *ngSwitchCase="'settings'">Paramètres & Solaire</span>
+            </ng-container>
+          </h1>
+          <p class="sub-context"><span class="sub-context-dot"></span> Ferme LAWTAN • Région de Dakar, Sénégal</p>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Infrastructure Status -->
+        <div class="infra-tags-group">
+          <span class="infra-tag tag-solar" title="Installation Solaire Autonome active">☀️ Solaire 12 kWc (94%)</span>
+          <span class="infra-tag tag-network" (click)="toggleOffline()" style="cursor:pointer" title="Cliquez pour simuler le mode hors-ligne">
+            <span *ngIf="!isOffline()">🌐 4G Connectée</span>
+            <span *ngIf="isOffline()" style="color:#dc2626">📴 Mode Hors-ligne</span>
+          </span>
+        </div>
+
+        <!-- User Role Switcher -->
+        <select class="quick-role-select" [value]="currentRole()" (change)="switchRole($any($event.target).value)">
+          <option value="manager">👤 Manager Général</option>
+          <option value="tech">🐄 Technicien Élevage</option>
+          <option value="veto">🩺 Dr. Fall (Vétérinaire)</option>
+          <option value="compta">💰 Comptable / Ventes</option>
+          <option value="bouvier">🌾 Bouvier Responsable</option>
+        </select>
+
+        <!-- Notification Bell Button -->
+        <button class="icon-action-btn" (click)="toggleNotif()" aria-label="Notifications">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span class="badge-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Dropdown Notifications Panel -->
+    <div class="notif-dropdown-box" *ngIf="isNotifOpen()">
+      <div class="notif-dropdown-header">
+        <h4>Alertes & Notifications Ferme</h4>
+        <span class="badge-pill badge-red">3 Actives</span>
+      </div>
+      <ul class="notif-items-list">
+        <li class="notif-item-row">
+          <span class="notif-dot-type" style="background:#dc2626"></span>
+          <div class="notif-item-content">
+            <h5>Alerte Fièvre — Vache DIOUMA (FL-003)</h5>
+            <p>Température 39.8°C relevée. Protocole antipyrétique initié par Dr. Fall.</p>
+            <time>Il y a 2 heures</time>
+          </div>
+        </li>
+        <li class="notif-item-row">
+          <span class="notif-dot-type" style="background:#f59e0b"></span>
+          <div class="notif-item-content">
+            <h5>Stock Concentré Protéique Faible</h5>
+            <p>85 kg restants (Seuil: 100 kg). Commande fournisseur recommandée sous 48h.</p>
+            <time>Il y a 4 heures</time>
+          </div>
+        </li>
+        <li class="notif-item-row">
+          <span class="notif-dot-type" style="background:#38bdf8"></span>
+          <div class="notif-item-content">
+            <h5>Rappel Reproduction — FATOU (FL-005)</h5>
+            <p>Période d'ovulation & chaleurs dans 3 jours. Insémination programmée avec KADER.</p>
+            <time>Aujourd'hui</time>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- ==========================================
+         PAGES CONTENT CONTAINER
+         ========================================== -->
+    <main class="page-container">
+
+      <!-- ==========================================
+           PAGE 1: DASHBOARD
+           ========================================== -->
+      <div class="page" *ngIf="activePage() === 'dashboard'">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h2>Tableau de bord Général</h2>
+            <p>Supervision globale de la production laitière bio, de la santé animale et de la rentabilité.</p>
+          </div>
+          <div class="header-action-group">
+            <button class="btn-primary" (click)="isMilkModalOpen.set(true)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              <span>Saisie Rapide Traite</span>
+            </button>
+            <button class="btn-secondary" (click)="isHealthModalOpen.set(true)">
+              <span>+ Soin Vétérinaire</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Cards Grid -->
+        <section class="kpi-grid">
+          <div class="kpi-card card-green">
+            <div class="kpi-header">
+              <span class="kpi-title">Collecte Lait / Jour</span>
+              <span class="kpi-icon-wrap">🥛</span>
+            </div>
+            <div class="kpi-value">124.0 <span class="unit">L</span></div>
+            <div class="kpi-footer trend-up">
+              <span>▲ +8.2% vs semaine passée</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-sky">
+            <div class="kpi-header">
+              <span class="kpi-title">Vaches en Lactation</span>
+              <span class="kpi-icon-wrap">🐄</span>
+            </div>
+            <div class="kpi-value">7 <span class="unit">/ 9 femelles</span></div>
+            <div class="kpi-footer trend-neutral">
+              <span>2 génisses en croissance • 4 mâles</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-gold">
+            <div class="kpi-header">
+              <span class="kpi-title">Moyenne Lait / Vache</span>
+              <span class="kpi-icon-wrap">📈</span>
+            </div>
+            <div class="kpi-value">17.7 <span class="unit">L/j</span></div>
+            <div class="kpi-footer trend-up">
+              <span>Objectif cible : 20.0 L/j</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-red">
+            <div class="kpi-header">
+              <span class="kpi-title">Santé & Alertes</span>
+              <span class="kpi-icon-wrap">🚨</span>
+            </div>
+            <div class="kpi-value" style="color:#dc2626">1 <span class="unit">cas suivi</span></div>
+            <div class="kpi-footer trend-down">
+              <span>DIOUMA (39.8°C) sous antibio</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-purple">
+            <div class="kpi-header">
+              <span class="kpi-title">CA Mensuel (Août)</span>
+              <span class="kpi-icon-wrap">💰</span>
+            </div>
+            <div class="kpi-value">1.24 <span class="unit">M FCFA</span></div>
+            <div class="kpi-footer trend-up">
+              <span>Marge brute estimée : 45%</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-teal">
+            <div class="kpi-header">
+              <span class="kpi-title">Conversion Alimentaire</span>
+              <span class="kpi-icon-wrap">🌾</span>
+            </div>
+            <div class="kpi-value">1.42 <span class="unit">kg/L</span></div>
+            <div class="kpi-footer trend-neutral">
+              <span>Efficacité ration optimisée</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Charts Row -->
+        <section class="charts-grid-main">
+          <div class="chart-box">
+            <div class="chart-box-header">
+              <div>
+                <h3>Production Laitière des 7 Derniers Jours</h3>
+                <p>Comparaison de la collecte traite du matin (06h00) vs traite du soir (17h00)</p>
+              </div>
+              <span class="badge-pill badge-green">Moyenne : 124 L/jour</span>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="dashMilkChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-box">
+            <div class="chart-box-header">
+              <div>
+                <h3>Répartition du Chiffre d'Affaires</h3>
+                <p>Ventes par gamme de produits bio</p>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap" style="height:220px">
+              <canvas id="dashRevDonut"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tables & Schedule Row -->
+        <section class="two-columns-grid">
+          <div class="content-card">
+            <div class="content-card-header">
+              <h3>🐄 Statut des Vaches Laitières Aujourd'hui</h3>
+              <button class="btn-secondary" (click)="showPage('animaux')">Voir tout ({{ animals().length }})</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th>Race</th>
+                    <th>Lait Jour</th>
+                    <th>Temp.</th>
+                    <th>État Santé</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let cow of milkingCows.slice(0, 5)" (click)="openAnimalModal(cow.internalId)" style="cursor:pointer" [class.row-alert]="cow.status === 'FEVER_TREATMENT'">
+                    <td><code>{{ cow.internalId }}</code></td>
+                    <td><strong>{{ cow.name }}</strong></td>
+                    <td>{{ cow.breed }}</td>
+                    <td>{{ cow.dailyMilkYield }} L</td>
+                    <td [style.color]="cow.temperature && cow.temperature > 39.0 ? '#dc2626' : 'inherit'" [style.font-weight]="cow.temperature && cow.temperature > 39.0 ? '700' : 'normal'">
+                      {{ cow.temperature }} °C
+                    </td>
+                    <td>
+                      <span class="badge-pill badge-green" *ngIf="cow.status === 'EXCELLENT' || cow.status === 'HEALTHY'">Excellente</span>
+                      <span class="badge-pill badge-red" *ngIf="cow.status === 'FEVER_TREATMENT'">Fièvre / Soin</span>
+                      <span class="badge-pill badge-blue" *ngIf="cow.status === 'PREGNANT'">Gestante</span>
+                      <span class="badge-pill badge-gold" *ngIf="cow.status === 'IN_HEAT'">Chaleurs</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="content-card">
+            <div class="content-card-header">
+              <h3>🕒 Planning d'Exploitation du Jour</h3>
+              <span class="badge-pill badge-green">Équipe : 7 employés + 1 Manager</span>
+            </div>
+            <ul style="list-style:none;display:flex;flex-direction:column;gap:12px">
+              <li style="display:flex;gap:12px;align-items:center;padding:10px 12px;background:#f0fdf4;border-radius:8px;border-left:3px solid #16a34a">
+                <span style="font-weight:800;font-size:0.8rem;color:#166534">06:00</span>
+                <div>
+                  <strong style="font-size:0.85rem">Traite du Matin</strong>
+                  <p style="font-size:0.75rem;color:#526658">68 L collectés sur les 7 vaches • Température cuve 4°C</p>
+                </div>
+                <span class="badge-pill badge-green" style="margin-left:auto">Terminé</span>
+              </li>
+              <li style="display:flex;gap:12px;align-items:center;padding:10px 12px;background:#f0fdf4;border-radius:8px;border-left:3px solid #16a34a">
+                <span style="font-weight:800;font-size:0.8rem;color:#166534">07:30</span>
+                <div>
+                  <strong style="font-size:0.85rem">Distribution Ration Fourragère</strong>
+                  <p style="font-size:0.75rem;color:#526658">Fourrage vert frais + maïs ensilé + concentré protéique</p>
+                </div>
+                <span class="badge-pill badge-green" style="margin-left:auto">Terminé</span>
+              </li>
+              <li style="display:flex;gap:12px;align-items:center;padding:10px 12px;background:#fef3c7;border-radius:8px;border-left:3px solid #f59e0b">
+                <span style="font-weight:800;font-size:0.8rem;color:#b45309">10:00</span>
+                <div>
+                  <strong style="font-size:0.85rem">Visite Vétérinaire Dr. Fall</strong>
+                  <p style="font-size:0.75rem;color:#526658">Contrôle fièvre Diouma & contrôle échographique Coumba</p>
+                </div>
+                <span class="badge-pill badge-gold" style="margin-left:auto">En cours</span>
+              </li>
+              <li style="display:flex;gap:12px;align-items:center;padding:10px 12px;background:#f8faf6;border-radius:8px;border-left:3px solid #94a3b8">
+                <span style="font-weight:800;font-size:0.8rem;color:#526658">17:00</span>
+                <div>
+                  <strong style="font-size:0.85rem">Traite du Soir</strong>
+                  <p style="font-size:0.75rem;color:#526658">Objectif collecte : 56 L • Nettoyage circuit de traite</p>
+                </div>
+                <span class="badge-pill" style="margin-left:auto;background:#e2e8f0;color:#475569">Prévu</span>
+              </li>
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <!-- ==========================================
+           PAGE 2: ANIMAUX & PEDIGREE
+           ========================================== -->
+      <div class="page" *ngIf="activePage() === 'animaux'">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h2>Registre du Troupeau & Pedigree ({{ animals().length }} Animaux)</h2>
+            <p>Fiches d'identification individuelles, généalogie complète, statut de lactation et génétique.</p>
+          </div>
+          <div class="header-action-group">
+            <button class="btn-primary" (click)="isNewAnimalModalOpen.set(true)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              <span>+ Enregistrer Nouvel Animal</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Animal Filter Bar -->
+        <div class="animal-filter-bar">
+          <div class="filter-pills-group">
+            <button class="filter-btn" [class.active]="herdFilter() === 'all'" (click)="filterHerd('all')">Tous ({{ animals().length }})</button>
+            <button class="filter-btn" [class.active]="herdFilter() === 'prod'" (click)="filterHerd('prod')">🥛 En Production (7)</button>
+            <button class="filter-btn" [class.active]="herdFilter() === 'jeune'" (click)="filterHerd('jeune')">🌱 Génisses / Jeunes (2)</button>
+            <button class="filter-btn" [class.active]="herdFilter() === 'male'" (click)="filterHerd('male')">🐂 Mâles & Reproducteurs (4)</button>
+          </div>
+          <div class="search-input-wrap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Rechercher par nom, boucle, RFID ou race..." [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)" />
+          </div>
+        </div>
+
+        <!-- Herd Grid Cards -->
+        <div class="herd-cards-grid">
+          <div *ngFor="let animal of paginatedAnimals" class="animal-item-card" [class.card-alert-glow]="animal.status === 'FEVER_TREATMENT'" (click)="openAnimalModal(animal.internalId)">
+            <div class="card-top-row">
+              <div class="animal-avatar-box" [class.avatar-heifer]="animal.category === 'HEIFER_YOUNG'" [class.avatar-male]="animal.category === 'MALE_BULL'">
+                <img *ngIf="animal.imageUrl" [src]="animal.imageUrl" alt="Photo" style="width:100%;height:100%;object-fit:cover;border-radius:12px" />
+                <span *ngIf="!animal.imageUrl">{{ animal.avatarEmoji || '🐄' }}</span>
+              </div>
+              <div class="animal-header-meta">
+                <span class="animal-code-tag">{{ animal.internalId }} • {{ animal.earTagNumber }}</span>
+                <h4 class="animal-cow-name">{{ animal.name }}</h4>
+                <span class="badge-pill badge-green" *ngIf="animal.category === 'MILKING_COW' && animal.status !== 'FEVER_TREATMENT'">En production</span>
+                <span class="badge-pill badge-red" *ngIf="animal.status === 'FEVER_TREATMENT'">Fièvre / Soin</span>
+                <span class="badge-pill badge-blue" *ngIf="animal.category === 'HEIFER_YOUNG'">Génisse</span>
+                <span class="badge-pill badge-purple" *ngIf="animal.category === 'MALE_BULL'">Reproducteur</span>
+              </div>
+              <span class="status-indicator-dot" [class.dot-healthy]="animal.status === 'EXCELLENT' || animal.status === 'HEALTHY'" [class.dot-fever]="animal.status === 'FEVER_TREATMENT'" [class.dot-watch]="animal.status === 'IN_HEAT'"></span>
+            </div>
+            <div class="animal-metrics-grid">
+              <div class="metric-unit-item"><span class="lbl">Race</span><strong class="val">{{ animal.breed }}</strong></div>
+              <div class="metric-unit-item" *ngIf="animal.dailyMilkYield && animal.dailyMilkYield > 0"><span class="lbl">Lait / Jour</span><strong class="val">{{ animal.dailyMilkYield }} L/j</strong></div>
+              <div class="metric-unit-item" *ngIf="!animal.dailyMilkYield || animal.dailyMilkYield === 0"><span class="lbl">Statut</span><strong class="val">{{ animal.category === 'MALE_BULL' ? 'Semence A+' : 'Élevage' }}</strong></div>
+              <div class="metric-unit-item"><span class="lbl">Poids</span><strong class="val">{{ animal.weight }} kg</strong></div>
+              <div class="metric-unit-item"><span class="lbl">Température</span><strong class="val" [style.color]="animal.temperature && animal.temperature > 39.0 ? '#dc2626' : 'inherit'">{{ animal.temperature || 38.5 }} °C</strong></div>
+            </div>
+            <div class="animal-card-bottom">
+              <span class="badge-pedigree-tag">🌿 {{ animal.pedigree?.subjectNote || 'Pedigree Lawtan' }}</span>
+              <span>{{ animal.reproStatus || 'Suivi régulier' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-bar" *ngIf="filteredAnimals.length > 0">
+          <button class="pagination-btn" (click)="prevHerdPage()" [disabled]="herdCurrentPage() === 1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            <span>Précédent</span>
+          </button>
+          
+          <div class="pagination-pages-wrapper">
+            <button *ngFor="let p of herdPageNumbers" class="page-number-btn" [class.active]="p === herdCurrentPage()" (click)="setHerdPage(p)">
+              {{ p }}
+            </button>
+          </div>
+
+          <div class="pagination-info-pill">
+            <span>🌾</span>
+            <span>Page <strong>{{ herdCurrentPage() }}</strong> / {{ totalHerdPages }}</span>
+            <span style="opacity:0.4">•</span>
+            <span><strong>{{ filteredAnimals.length }}</strong> bêtes</span>
+          </div>
+
+          <button class="pagination-btn" (click)="nextHerdPage()" [disabled]="herdCurrentPage() === totalHerdPages">
+            <span>Suivant</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m9 18 6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           PAGE 3: SANTE ANIMALE & VETERINAIRE
+           ========================================== -->
+      <div class="page" *ngIf="activePage() === 'sante'">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h2>Santé Animale & Suivi Vétérinaire</h2>
+            <p>Détection précoce des pathologies, carnet vaccinal, interventions et coûts médicaux.</p>
+          </div>
+          <button class="btn-primary" (click)="isHealthModalOpen.set(true)">
+            <span>+ Nouvelle Intervention Vétérinaire</span>
+          </button>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card card-green">
+            <div class="kpi-header"><span class="kpi-title">Animaux Sains</span><span>✅</span></div>
+            <div class="kpi-value">10 <span class="unit">/ 13</span></div>
+            <div class="kpi-footer trend-up"><span>77% du troupeau indemne</span></div>
+          </div>
+          <div class="kpi-card card-gold">
+            <div class="kpi-header"><span class="kpi-title">Sous Surveillance</span><span>⚠️</span></div>
+            <div class="kpi-value">2 <span class="unit">vaches</span></div>
+            <div class="kpi-footer"><span>Fatou (œstrus) & Coumba (gestante)</span></div>
+          </div>
+          <div class="kpi-card card-red">
+            <div class="kpi-header"><span class="kpi-title">Cas Critique Actif</span><span>🚨</span></div>
+            <div class="kpi-value" style="color:#dc2626">1 <span class="unit">vache</span></div>
+            <div class="kpi-footer trend-down"><span>DIOUMA : Fièvre 39.8°C</span></div>
+          </div>
+          <div class="kpi-card card-sky">
+            <div class="kpi-header"><span class="kpi-title">Prochain Vaccin</span><span>💉</span></div>
+            <div class="kpi-value">15 <span class="unit">Août</span></div>
+            <div class="kpi-footer"><span>Rappel Fièvre Aphteuse (13 têtes)</span></div>
+          </div>
+        </div>
+
+        <div class="two-columns-grid">
+          <div class="content-card">
+            <div class="content-card-header">
+              <h3>🩺 Historique des Interventions Récentes</h3>
+              <span class="badge-pill badge-green">Suivi Dr. Fall</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Animal</th>
+                    <th>Diagnostic / Soin</th>
+                    <th>Praticien</th>
+                    <th>Coût</th>
+                    <th>Statut</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let rec of healthRecords()" [class.row-alert]="rec.status === 'En cours'">
+                    <td><strong>{{ rec.recordDate }}</strong></td>
+                    <td><strong>{{ rec.animalName }} ({{ rec.animalInternalId }})</strong></td>
+                    <td>{{ rec.diagnosis }}</td>
+                    <td>{{ rec.practitionerName }}</td>
+                    <td><code>{{ rec.costFcfa }} FCFA</code></td>
+                    <td>
+                      <span class="badge-pill" [class.badge-red]="rec.status === 'En cours'" [class.badge-green]="rec.status === 'Terminé' || rec.status === 'Apte IA'" [class.badge-purple]="rec.status === 'Qualité A+'">
+                        {{ rec.status }}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="table-icon-btn" title="Modifier l'intervention médicale" (click)="openEditHealthModal(rec)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="content-card">
+            <div class="content-card-header">
+              <h3>💉 Calendrier Vaccinal & Traitements Préventifs</h3>
+              <button class="btn-secondary" (click)="isVaccineModalOpen.set(true)">+ Planifier Vaccin</button>
+            </div>
+            <ul style="list-style:none;display:flex;flex-direction:column;gap:12px">
+              <li *ngFor="let v of vaccineSchedules()" style="display:flex;gap:12px;align-items:center;padding:12px;background:#fef3c7;border-radius:8px;border-left:3px solid #f59e0b">
+                <div style="font-weight:800;font-size:0.95rem;color:#b45309">{{ v.scheduledDate }}</div>
+                <div>
+                  <strong>{{ v.vaccineType }}</strong>
+                  <p style="font-size:0.75rem;color:#526658">{{ v.targetHerd }}</p>
+                </div>
+                <span class="badge-pill badge-gold" style="margin-left:auto">{{ v.status }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           PAGE 4: REPRODUCTION & IA
+           ========================================== -->
+      <div class="page" *ngIf="activePage() === 'reproduction'">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h2>Reproduction, Insémination & Génétique</h2>
+            <p>Planning des chaleurs, gestations en cours, qualité de la semence et amélioration du troupeau.</p>
+          </div>
+          <button class="btn-primary" (click)="isReproModalOpen.set(true)">
+            <span>+ Enregistrer Événement Reproduction</span>
+          </button>
+        </div>
+
+        <div class="two-columns-grid">
+          <div class="content-card">
+            <div class="content-card-header">
+              <h3>🗓️ Calendrier des Événements Reproducteurs</h3>
+              <span class="badge-pill badge-gold">Suivi Proactif</span>
+            </div>
+            <ul style="list-style:none;display:flex;flex-direction:column;gap:12px">
+              <li style="display:flex;gap:12px;align-items:center;padding:12px;background:#fef3c7;border-radius:8px;border-left:3px solid #f59e0b">
+                <div style="font-size:1.5rem">🔥</div>
+                <div>
+                  <strong>FATOU (FL-005) — Chaleurs Imminentes</strong>
+                  <p style="font-size:0.75rem;color:#526658">Chaleurs prévues : 16 Août 2026 • IA recommandée avec semence KADER</p>
+                </div>
+                <span class="badge-pill badge-gold" style="margin-left:auto">Dans 3 jours</span>
+              </li>
+              <li style="display:flex;gap:12px;align-items:center;padding:12px;background:#f0f9ff;border-radius:8px;border-left:3px solid #0284c7">
+                <div style="font-size:1.5rem">🤰</div>
+                <div>
+                  <strong>COUMBA (FL-004) — Gestation Confirmée (4 mois)</strong>
+                  <p style="font-size:0.75rem;color:#526658">Père : BRAHMA (Gir) • Vêlage prévu : Décembre 2026</p>
+                </div>
+                <span class="badge-pill badge-blue" style="margin-left:auto">Gestante</span>
+              </li>
+              <li style="display:flex;gap:12px;align-items:center;padding:12px;background:#f8faf6;border-radius:8px;border-left:3px solid #94a3b8">
+                <div style="font-size:1.5rem">🔍</div>
+                <div>
+                  <strong>NDIRA (FL-001) — Diagnostic de Gestation</strong>
+                  <p style="font-size:0.75rem;color:#526658">Dernière IA : Mai 2026 • Échographie de contrôle prévue Septembre</p>
+                </div>
+                <span class="badge-pill" style="margin-left:auto;background:#e2e8f0;color:#475569">À confirmer</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="content-card">
+            <div class="content-card-header">
+              <h3>🐂 Taureau KADER (FL-010) — Bilan de Semence</h3>
+              <span class="badge-pill badge-green">Qualité Semence A+</span>
+            </div>
+            <div class="semen-analysis-card">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:48px;height:48px;background:#f0fdf4;border:2px solid #86efac;border-radius:50%;display:grid;place-items:center;font-size:1.4rem">🐂</div>
+                <div>
+                  <h4 style="font-size:1.05rem;font-weight:800">KADER (FL-010) — Holstein Pure Race</h4>
+                  <p style="font-size:0.75rem;color:#526658">Poids : 780 kg • Lignée USA Championne Laitière</p>
+                </div>
+              </div>
+              <div class="semen-metric-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0">
+                <div class="semen-stat-box" style="background:#f8faf6;padding:8px;border-radius:6px;text-align:center"><p class="lbl" style="font-size:0.7rem;color:#526658">Mobilité</p><strong class="val" style="color:#16a34a">85%</strong></div>
+                <div class="semen-stat-box" style="background:#f8faf6;padding:8px;border-radius:6px;text-align:center"><p class="lbl" style="font-size:0.7rem;color:#526658">Concentration</p><strong class="val">1.2e9 /mL</strong></div>
+                <div class="semen-stat-box" style="background:#f8faf6;padding:8px;border-radius:6px;text-align:center"><p class="lbl" style="font-size:0.7rem;color:#526658">Morphologie</p><strong class="val" style="color:#16a34a">90% OK</strong></div>
+                <div class="semen-stat-box" style="background:#f8faf6;padding:8px;border-radius:6px;text-align:center"><p class="lbl" style="font-size:0.7rem;color:#526658">Doses Dispo</p><strong class="val">12 Doses</strong></div>
+              </div>
+              <p style="font-size:0.75rem;color:#526658">Dernière analyse spermatique réalisée par Dr. Fall. Taureau certifié pour l'amélioration génétique de la ferme.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           PAGE 5: PRODUCTION LAITIERE
+           ========================================== -->
+      <div class="page" *ngIf="activePage() === 'lait'">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h2>Production Laitière Bio</h2>
+            <p>Rendement par vache, suivi des traites matin/soir et contrôle qualité du lait frais.</p>
+          </div>
+          <button class="btn-primary" (click)="isMilkModalOpen.set(true)">
+            <span>+ Saisir Collecte de Traite</span>
+          </button>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card card-green">
+            <div class="kpi-header"><span class="kpi-title">Collecte du Jour</span></div>
+            <div class="kpi-value">124.0 <span class="unit">L</span></div>
+            <div class="kpi-footer"><span>68.0 L Matin • 56.0 L Soir</span></div>
+          </div>
+          <div class="kpi-card card-sky">
+            <div class="kpi-header"><span class="kpi-title">Cumul Semaine</span></div>
+            <div class="kpi-value">854 <span class="unit">L</span></div>
+            <div class="kpi-footer trend-up"><span>+8.2% vs semaine passée</span></div>
+          </div>
+          <div class="kpi-card card-purple">
+            <div class="kpi-header"><span class="kpi-title">Cumul Mensuel (Août)</span></div>
+            <div class="kpi-value">3 420 <span class="unit">L</span></div>
+            <div class="kpi-footer"><span>Objectif 3 800 L (90% atteint)</span></div>
+          </div>
+        </div>
+
+        <div class="chart-box" style="margin-top:20px">
+          <div class="chart-box-header">
+            <div>
+              <h3>Évolution de la Production Quotidienne (Août 2026)</h3>
+              <p>Volume total journalier en litres</p>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="monthlyMilkChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Milk Details Table -->
+        <div class="content-card" style="margin-top:20px">
+          <div class="content-card-header">
+            <h3>🥛 Collecte Détaillée par Vache — Aujourd'hui</h3>
+            <span class="badge-pill badge-green">7 vaches traites</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Vache</th>
+                  <th>Race</th>
+                  <th>Matin (L)</th>
+                  <th>Soir (L)</th>
+                  <th>Total Jour (L)</th>
+                  <th>Qualité / Taux MG</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let cow of milkingCows" [class.row-alert]="cow.status === 'FEVER_TREATMENT'">
+                  <td><strong>{{ cow.name }} ({{ cow.internalId }})</strong></td>
+                  <td>{{ cow.breed }}</td>
+                  <td>{{ ((cow.dailyMilkYield || 18) * 0.58) | number:'1.1-1' }}</td>
+                  <td>{{ ((cow.dailyMilkYield || 18) * 0.42) | number:'1.1-1' }}</td>
+                  <td><strong>{{ cow.dailyMilkYield }} L</strong></td>
+                  <td>Excellente (4.0% MG)</td>
+                  <td><button class="btn-secondary" style="padding:4px 8px;font-size:0.75rem" (click)="openAnimalModal(cow.internalId)">Fiche</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           PAGE 6: ALIMENTATION & FOURRAGE
+           ========================================== -->
+      <div class="page" *ngIf="activePage() === 'alimentation'">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h2>Gestion de l'Alimentation & Cultures Fourragères</h2>
+            <p>Rations équilibrées, stocks de sécurité d'aliments et gestion des parcelles de fourrage de la ferme.</p>
+          </div>
+          <button class="btn-primary" (click)="isRationModalOpen.set(true)">
+            <span>+ Enregistrer Distribution Ration</span>
+          </button>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card card-green">
+            <div class="kpi-header"><span class="kpi-title">Fourrage Vert & Foin</span><span>🌾</span></div>
+            <div class="kpi-value">680 <span class="unit">kg</span></div>
+            <p style="font-size:0.75rem;color:#526658;margin-top:6px">Stock : 68% (Consommation ~85 kg/j)</p>
+          </div>
+          <div class="kpi-card card-gold">
+            <div class="kpi-header"><span class="kpi-title">Maïs Ensilé & Grain</span><span>🌽</span></div>
+            <div class="kpi-value">450 <span class="unit">kg</span></div>
+            <p style="font-size:0.75rem;color:#526658;margin-top:6px">Stock : 45% (Consommation ~60 kg/j)</p>
+          </div>
+          <div class="kpi-card card-red">
+            <div class="kpi-header"><span class="kpi-title">Concentré Protéique</span><span>⚠️</span></div>
+            <div class="kpi-value" style="color:#dc2626">85 <span class="unit">kg (Bas)</span></div>
+            <p style="font-size:0.75rem;color:#dc2626;font-weight:700;margin-top:6px">Autonomie : 3.8 jours seulement !</p>
+          </div>
+          <div class="kpi-card card-sky">
+            <div class="kpi-header"><span class="kpi-title">Minéraux & CMV</span><span>💊</span></div>
+            <div class="kpi-value">30 <span class="unit">kg</span></div>
+            <p style="font-size:0.75rem;color:#526658;margin-top:6px">Stock : 75% (Autonomie 20j)</p>
+          </div>
+        </div>
+
+        <div class="two-columns-grid" style="margin-top:20px">
+          <div class="content-card">
+            <div class="content-card-header">
+              <h3>🥣 Rations Journalières par Tête</h3>
+              <span class="badge-pill badge-green">Taux Conv: 1.42 kg/L</span>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Vache</th>
+                    <th>Fourrage</th>
+                    <th>Maïs</th>
+                    <th>Concentré</th>
+                    <th>CMV</th>
+                    <th>Coût/j</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let c of milkingCows">
+                    <td><strong>{{ c.name }}</strong></td>
+                    <td>11 kg</td>
+                    <td>8 kg</td>
+                    <td>3.0 kg</td>
+                    <td>200 g</td>
+                    <td>1 990 FCFA</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="content-card">
+            <div class="content-card-header">
+              <h3>🌱 Cultures Fourragères de la Ferme</h3>
+              <span class="badge-pill badge-green">Arrosage Solaire Actif</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
+                <strong style="font-size:0.9rem">Parcelle A — Luzerne Bio (1.2 ha)</strong>
+                <p style="font-size:0.75rem;color:#526658">Fauche prévue : dans 8 jours • Irrigation par pompage solaire</p>
+              </div>
+              <div style="padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
+                <strong style="font-size:0.9rem">Parcelle B — Sorgho Fourrager (0.8 ha)</strong>
+                <p style="font-size:0.75rem;color:#526658">Stade montaison • Arrosage goutte-à-goutte</p>
+              </div>
+              <div style="padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
+                <strong style="font-size:0.9rem">Parcelle C — Herbe à Éléphant (0.5 ha)</strong>
+                <p style="font-size:0.75rem;color:#526658">Coupe quotidienne pour affouragement vert immédiat</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           PAGE 7: TRACABILITE & LOTS
+           ========================================== -->
+      <div class="page" *ngIf="activePage() === 'tracabilite'">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h2>Traçabilité Complète & Chaîne du Froid</h2>
+            <p>Du lot de traite à la cuve réfrigérée, la pasteurisation, la transformation et la livraison client.</p>
+          </div>
+          <button class="btn-primary" (click)="openTraceabilityCertificate('LOT-082', 'Lait Frais Bio Pasteurisé', '13/08/2026', '68 Litres')">
+            <span>📄 Voir Passeport Lot en cours</span>
+          </button>
+        </div>
+
+        <div class="content-card">
+          <div class="content-card-header">
+            <h3>📦 Lots de Production Récents</h3>
+            <span class="badge-pill badge-green">Certification Bio en vigueur</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>N° Lot</th>
+                  <th>Date Traite</th>
+                  <th>Produit</th>
+                  <th>Volume</th>
+                  <th>pH</th>
+                  <th>Temp Cuve</th>
+                  <th>Statut Qualité</th>
+                  <th>Certificat</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>LOT-082</code></td>
+                  <td>13/08 (06h00)</td>
+                  <td><strong>Lait Frais Bio Pasteurisé</strong></td>
+                  <td>68 L</td>
+                  <td>6.7</td>
+                  <td>4.0 °C</td>
+                  <td><span class="badge-pill badge-green">Conforme Bio</span></td>
+                  <td><button class="btn-secondary" style="padding:4px 8px;font-size:0.75rem" (click)="openTraceabilityCertificate('LOT-082', 'Lait Frais Bio Pasteurisé', '13/08/2026', '68 Litres')">🔍 QR Code</button></td>
+                </tr>
+                <tr>
+                  <td><code>LOT-081</code></td>
+                  <td>12/08</td>
+                  <td><strong>Lait Caillé Bio Artisanal (Sow)</strong></td>
+                  <td>45 L</td>
+                  <td>4.2</td>
+                  <td>6.0 °C</td>
+                  <td><span class="badge-pill badge-green">Conforme Bio</span></td>
+                  <td><button class="btn-secondary" style="padding:4px 8px;font-size:0.75rem" (click)="openTraceabilityCertificate('LOT-081', 'Lait Caillé Bio (Sow)', '12/08/2026', '45 Litres')">🔍 QR Code</button></td>
+                </tr>
+                <tr>
+                  <td><code>LOT-080</code></td>
+                  <td>11/08</td>
+                  <td><strong>Fromage Fermier Frais</strong></td>
+                  <td>15 kg</td>
+                  <td>5.1</td>
+                  <td>5.0 °C</td>
+                  <td><span class="badge-pill badge-green">Affiné & Livré</span></td>
+                  <td><button class="btn-secondary" style="padding:4px 8px;font-size:0.75rem" (click)="openTraceabilityCertificate('LOT-080', 'Fromage Fermier Frais', '11/08/2026', '15 kg')">🔍 QR Code</button></td>
+                </tr>
+                <tr>
+                  <td><code>LOT-079</code></td>
+                  <td>10/08</td>
+                  <td><strong>Yaourt Bio Brassé Nature</strong></td>
+                  <td>30 pots</td>
+                  <td>4.4</td>
+                  <td>4.5 °C</td>
+                  <td><span class="badge-pill badge-green">Livré</span></td>
+                  <td><button class="btn-secondary" style="padding:4px 8px;font-size:0.75rem" (click)="openTraceabilityCertificate('LOT-079', 'Yaourt Bio Brassé Nature', '10/08/2026', '30 pots')">🔍 QR Code</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           PAGE 8: VENTES & COMMANDES
+           ========================================== -->
+      <div class="page" *ngIf="activePage() === 'ventes'">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h2>Ventes, Commandes & Distribution</h2>
+            <p>Clients locaux, restaurants, hôtels, boutiques bio et prospection grandes surfaces.</p>
+          </div>
+          <button class="btn-primary" (click)="isOrderModalOpen.set(true)">
+            <span>+ Nouvelle Commande Client</span>
+          </button>
+        </div>
+
+        <div class="content-card">
+          <div class="content-card-header">
+            <h3>📑 Commandes & Livraisons Récentes</h3>
+            <span class="badge-pill badge-green">Facturation en FCFA</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>N° Commande</th>
+                  <th>Client</th>
+                  <th>Produit</th>
+                  <th>Quantité</th>
+                  <th>Montant Total</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>CMD-047</code></td>
+                  <td><strong>Restaurant Le Baobab</strong></td>
+                  <td>Lait Frais Bio</td>
+                  <td>20 L</td>
+                  <td><strong>16 000 FCFA</strong></td>
+                  <td><span class="badge-pill badge-gold">En livraison</span></td>
+                </tr>
+                <tr>
+                  <td><code>CMD-046</code></td>
+                  <td><strong>Mme. Diallo (Client Direct)</strong></td>
+                  <td>Lait Caillé Bio (Sow)</td>
+                  <td>15 L</td>
+                  <td><strong>9 000 FCFA</strong></td>
+                  <td><span class="badge-pill badge-green">Livré & Payé</span></td>
+                </tr>
+                <tr>
+                  <td><code>CMD-045</code></td>
+                  <td><strong>Hôtel Terrou-Bi (Dakar)</strong></td>
+                  <td>Lait Frais Bio + Fromage</td>
+                  <td>50 L + 5 kg</td>
+                  <td><strong>55 000 FCFA</strong></td>
+                  <td><span class="badge-pill badge-green">Livré & Payé</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           PAGE 9: FINANCES & COUTS
+           ========================================== -->
+      <div class="page" *ngIf="activePage() === 'finance'">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h2>Finances, Coûts & Rentabilité</h2>
+            <p>Suivi en temps réel des recettes, dépenses opérationnelles et calcul du coût de revient au litre.</p>
+          </div>
+          <button class="btn-primary" (click)="isExportModalOpen.set(true)">
+            <span>📊 Exporter Bilan Financier</span>
+          </button>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card card-green">
+            <div class="kpi-header"><span class="kpi-title">Recettes Totales (Août)</span></div>
+            <div class="kpi-value">1 240 000 <span class="unit">FCFA</span></div>
+            <div class="kpi-footer trend-up"><span>▲ +12% vs Juillet</span></div>
+          </div>
+          <div class="kpi-card card-red">
+            <div class="kpi-header"><span class="kpi-title">Charges d'Exploitation</span></div>
+            <div class="kpi-value">890 000 <span class="unit">FCFA</span></div>
+            <div class="kpi-footer"><span>Alimentation + RH + Soins + Énergie</span></div>
+          </div>
+          <div class="kpi-card card-purple">
+            <div class="kpi-header"><span class="kpi-title">Bénéfice Net</span></div>
+            <div class="kpi-value">350 000 <span class="unit">FCFA</span></div>
+            <div class="kpi-footer trend-up"><span>Marge nette : 28.2%</span></div>
+          </div>
+        </div>
+
+        <div class="two-columns-grid" style="margin-top:20px">
+          <div class="chart-box">
+            <div class="chart-box-header">
+              <div>
+                <h3>Évolution Recettes vs Dépenses (6 Derniers Mois)</h3>
+                <p>En milliers de FCFA</p>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="financeChart"></canvas>
+            </div>
+          </div>
+
+          <div class="content-card">
+            <div class="content-card-header">
+              <h3>💰 Structure des Coûts d'Exploitation</h3>
+              <span class="badge-pill badge-green">Coût Lait : 412 FCFA/L</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;font-weight:700">
+                  <span>🌾 Alimentation & Fourrage (52%)</span>
+                  <span>462 800 FCFA</span>
+                </div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;font-weight:700">
+                  <span>👥 Salaires Équipe (7 ouvriers + Manager) (30%)</span>
+                  <span>267 000 FCFA</span>
+                </div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:0.82rem;font-weight:700">
+                  <span>🩺 Soins Vétérinaires & Vaccins (10%)</span>
+                  <span>89 000 FCFA</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           PAGE 10: PARAMETRES & INFRASTRUCTURE
+           ========================================== -->
+      <div class="page" *ngIf="activePage() === 'settings'">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h2>Paramètres du Système & Infrastructure</h2>
+            <p>Configuration de l'exploitation et monitoring de l'énergie solaire.</p>
+          </div>
+          <button class="btn-primary" (click)="showToast('Paramètres de la Ferme sauvegardés')">
+            <span>💾 Enregistrer les Modifications</span>
+          </button>
+        </div>
+
+        <div class="two-columns-grid">
+          <div class="content-card">
+            <div class="content-card-header">
+              <h3>🏛️ Informations Générales de la Ferme</h3>
+            </div>
+            <div class="form-grid-layout" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="form-group-item">
+                <label>Raison Sociale</label>
+                <input type="text" value="Ferme LAWTAN — Agro Industries" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" />
+              </div>
+              <div class="form-group-item">
+                <label>Localisation</label>
+                <input type="text" value="Région de Dakar, Sénégal" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" />
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card">
+            <div class="content-card-header">
+              <h3>☀️ Infrastructure Énergétique & Réseau</h3>
+              <span class="badge-pill badge-green">94% Autonome</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="background:#fefce8;border:1px solid #fef08a;border-radius:8px;padding:12px">
+                <strong style="color:#854d0e">Installation Solaire 12 kWc (Source Principale)</strong>
+                <p style="font-size:0.75rem;color:#713f12">Batteries Lithium : 94% de charge • Alimente la cuve de réfrigération et l'irrigation.</p>
+              </div>
+              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px">
+                <strong style="color:#16a34a">Réseau SENELEC (Secours Automatique)</strong>
+                <p style="font-size:0.75rem;color:#14532d">Bascule automatique en cas de défaillance solaire prolongée.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: DOSSIER ANIMAL & PEDIGREE
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isAnimalModalOpen()" (click)="closeAnimalModal()">
+  <div class="modal-card modal-card-lg" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div style="width:48px;height:48px;border-radius:14px;overflow:hidden;background:rgba(255,255,255,0.15);display:grid;place-items:center;flex-shrink:0">
+          <img *ngIf="selectedAnimal()?.imageUrl" [src]="selectedAnimal()?.imageUrl" alt="Photo" style="width:100%;height:100%;object-fit:cover" />
+          <span *ngIf="!selectedAnimal()?.imageUrl" style="font-size:1.8rem">{{ selectedAnimal()?.avatarEmoji || '🐄' }}</span>
+        </div>
+        <div>
+          <h3>{{ selectedAnimal()?.name }} ({{ selectedAnimal()?.internalId }})</h3>
+          <p>{{ selectedAnimal()?.breed }} • Marque : {{ selectedAnimal()?.earTagNumber }}</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn-secondary" style="padding:6px 14px;font-size:0.8rem;border-radius:10px;background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);display:inline-flex;align-items:center;gap:6px" (click)="closeAnimalModal(); openEditAnimalModal(selectedAnimal()!)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          <span>Modifier la Fiche</span>
+        </button>
+        <button class="modal-close-btn" (click)="closeAnimalModal()">✕</button>
+      </div>
+    </div>
+
+    <div class="modal-tabs-header">
+      <button class="modal-tab-button" [class.active]="activeModalTab() === 'infos'" (click)="switchModalTab('infos')">Fiche & Paramètres</button>
+      <button class="modal-tab-button" [class.active]="activeModalTab() === 'pedigree'" (click)="switchModalTab('pedigree')">Arbre Généalogique & Pedigree</button>
+      <button class="modal-tab-button" [class.active]="activeModalTab() === 'sante'" (click)="switchModalTab('sante')">Carnet Santé & Visites</button>
+      <button class="modal-tab-button" [class.active]="activeModalTab() === 'lactation'" (click)="switchModalTab('lactation')">Courbe de Lactation</button>
+    </div>
+
+    <div class="modal-scroll-body" style="padding:26px 30px">
+      <!-- Tab 1: General Infos -->
+      <div class="modal-tab-pane" *ngIf="activeModalTab() === 'infos'">
+        <div class="form-grid-layout" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="metric-unit-item"><span class="lbl">Matricule / ID</span><strong class="val">{{ selectedAnimal()?.internalId }}</strong></div>
+          <div class="metric-unit-item"><span class="lbl">Nom de l'Animal</span><strong class="val">{{ selectedAnimal()?.name }}</strong></div>
+          <div class="metric-unit-item"><span class="lbl">Marque Auriculaire</span><strong class="val">{{ selectedAnimal()?.earTagNumber }}</strong></div>
+          <div class="metric-unit-item"><span class="lbl">Catégorie d'Élevage</span><strong class="val">{{ selectedAnimal()?.categoryLabel || selectedAnimal()?.category }}</strong></div>
+          <div class="metric-unit-item"><span class="lbl">Race & Origine</span><strong class="val">{{ selectedAnimal()?.breed }}</strong></div>
+          <div class="metric-unit-item"><span class="lbl">Date de Naissance</span><strong class="val">{{ selectedAnimal()?.birthDate }}</strong></div>
+          <div class="metric-unit-item"><span class="lbl">Poids Actuel</span><strong class="val">{{ selectedAnimal()?.weight }} kg</strong></div>
+          <div class="metric-unit-item"><span class="lbl">Température</span><strong class="val">{{ selectedAnimal()?.temperature || 38.5 }} °C</strong></div>
+          <div class="metric-unit-item"><span class="lbl">Lactation en cours</span><strong class="val">{{ selectedAnimal()?.lactationNumber || 1 }}ère ({{ selectedAnimal()?.daysInMilk || 0 }} jours)</strong></div>
+          <div class="metric-unit-item"><span class="lbl">Cumul Lactation</span><strong class="val">{{ selectedAnimal()?.totalLactationMilk || 0 }} Litres</strong></div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Pedigree Visual Tree -->
+      <div class="modal-tab-pane" *ngIf="activeModalTab() === 'pedigree'">
+        <div class="pedigree-visual-tree" style="display:flex;flex-direction:column;gap:16px">
+          <!-- Tier 1: Target Animal -->
+          <div class="pedigree-tier" style="display:flex;justify-content:center">
+            <div class="pedigree-card-node node-target" style="border:2px solid #16a34a;padding:12px;border-radius:8px;text-align:center;background:#f0fdf4">
+              <p class="role-tag" style="font-size:0.7rem;color:#166534;font-weight:700">Sujet Sélectionné</p>
+              <strong class="name" style="font-size:1.1rem">{{ selectedAnimal()?.name }} ({{ selectedAnimal()?.internalId }})</strong>
+              <div class="details" style="font-size:0.78rem;color:#526658">{{ selectedAnimal()?.breed }} — Ferme LAWTAN</div>
+            </div>
+          </div>
+
+          <!-- Tier 2: Parents -->
+          <div class="pedigree-tier" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="pedigree-card-node node-father" style="border:1px solid #bae6fd;padding:10px;border-radius:8px;background:#f0f9ff">
+              <p class="role-tag" style="color:#0284c7;font-weight:700;font-size:0.75rem">Père (Taureau)</p>
+              <strong class="name">{{ selectedAnimal()?.pedigree?.fatherName || 'Taureau Inconnu' }}</strong>
+              <div class="details" style="font-size:0.75rem;color:#526658">{{ selectedAnimal()?.pedigree?.fatherBreed }}</div>
+              <div class="details" style="color:#16a34a;font-weight:700;font-size:0.75rem">{{ selectedAnimal()?.pedigree?.fatherNote }}</div>
+            </div>
+            <div class="pedigree-card-node node-mother" style="border:1px solid #fecaca;padding:10px;border-radius:8px;background:#fef2f2">
+              <p class="role-tag" style="color:#dc2626;font-weight:700;font-size:0.75rem">Mère (Vache)</p>
+              <strong class="name">{{ selectedAnimal()?.pedigree?.motherName || 'Mère Inconnue' }}</strong>
+              <div class="details" style="font-size:0.75rem;color:#526658">{{ selectedAnimal()?.pedigree?.motherBreed }}</div>
+              <div class="details" style="font-size:0.75rem">{{ selectedAnimal()?.pedigree?.motherNote }}</div>
+            </div>
+          </div>
+
+          <!-- Tier 3: Grand Parents -->
+          <div class="pedigree-tier" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+            <div class="pedigree-card-node" style="border:1px solid #e2e8dd;padding:8px;border-radius:6px;background:#f8faf6;text-align:center">
+              <p style="font-size:0.68rem;color:#7a8f81">Grand-Père Pat.</p>
+              <strong style="font-size:0.8rem">{{ selectedAnimal()?.pedigree?.grandFatherPaternal || 'KING (CAN)' }}</strong>
+            </div>
+            <div class="pedigree-card-node" style="border:1px solid #e2e8dd;padding:8px;border-radius:6px;background:#f8faf6;text-align:center">
+              <p style="font-size:0.68rem;color:#7a8f81">Grand-Mère Pat.</p>
+              <strong style="font-size:0.8rem">{{ selectedAnimal()?.pedigree?.grandMotherPaternal || 'BELLA (USA)' }}</strong>
+            </div>
+            <div class="pedigree-card-node" style="border:1px solid #e2e8dd;padding:8px;border-radius:6px;background:#f8faf6;text-align:center">
+              <p style="font-size:0.68rem;color:#7a8f81">Grand-Père Mat.</p>
+              <strong style="font-size:0.8rem">{{ selectedAnimal()?.pedigree?.grandFatherMaternal || 'MOUSSA (SN)' }}</strong>
+            </div>
+            <div class="pedigree-card-node" style="border:1px solid #e2e8dd;padding:8px;border-radius:6px;background:#f8faf6;text-align:center">
+              <p style="font-size:0.68rem;color:#7a8f81">Grand-Mère Mat.</p>
+              <strong style="font-size:0.8rem">{{ selectedAnimal()?.pedigree?.grandMotherMaternal || 'DIOUMA (SN)' }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Health Records -->
+      <div class="modal-tab-pane" *ngIf="activeModalTab() === 'sante'">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Acte Vétérinaire</th>
+              <th>Praticien</th>
+              <th>Coût FCFA</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>13/08/2026</td>
+              <td>Contrôle de routine & pesée</td>
+              <td>Dr. Fall</td>
+              <td>0 FCFA</td>
+              <td><span class="badge-pill badge-green">Conforme</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tab 4: Lactation Performance -->
+      <div class="modal-tab-pane" *ngIf="activeModalTab() === 'lactation'">
+        <div style="height:240px;position:relative">
+          <canvas id="perfModalChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: SAISIE RAPIDE DE TRAITE
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isMilkModalOpen()" (click)="isMilkModalOpen.set(false)">
+  <div class="modal-card" style="max-width:520px" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div style="font-size:1.6rem">🥛</div>
+        <div>
+          <h3>Saisie de Collecte de Traite</h3>
+          <p style="font-size:0.75rem;color:rgba(255,255,255,0.75)">Enregistrement immédiat dans la base locale</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="isMilkModalOpen.set(false)">✕</button>
+    </div>
+    <form (ngSubmit)="submitMilkEntry()" style="padding:22px">
+      <div class="form-grid-layout" style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Vache Laitière</label>
+          <select [(ngModel)]="milkForm.cowId" name="cowId" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" required>
+            <option *ngFor="let c of milkingCows" [value]="c.internalId">{{ c.name }} ({{ c.internalId }}) — {{ c.breed }}</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Session de Traite</label>
+            <select [(ngModel)]="milkForm.session" name="session" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px">
+              <option value="Matin (06h00)">Matin (06h00)</option>
+              <option value="Soir (17h00)">Soir (17h00)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Volume (Litres)</label>
+            <input type="number" step="0.5" [(ngModel)]="milkForm.litres" name="litres" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" required />
+          </div>
+        </div>
+        <div>
+          <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Destination Cuve</label>
+          <select [(ngModel)]="milkForm.tank" name="tank" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px">
+            <option value="Cuve Réfrigérée N°1 (Bio)">Cuve Réfrigérée N°1 (Bio)</option>
+            <option value="Cuve Caillage N°2 (Sow)">Cuve Caillage N°2 (Sow)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top:10px;justify-content:center">Valider & Enregistrer la Collecte</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: SOIN VETERINAIRE (EXACTEMENT COMME LA CAPTURE)
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isHealthModalOpen()" (click)="isHealthModalOpen.set(false)">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title-icon-box">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4.5 3v5a4.5 4.5 0 0 0 9 0V3M18 10h.01M18 10a3 3 0 1 1-3-3v5a6 6 0 0 1-12 0"/>
+            <path d="M9 14.5A7.5 7.5 0 0 0 16.5 22h1a2.5 2.5 0 0 0 2.5-2.5V17a2 2 0 0 0-2-2h-1"/>
+          </svg>
+        </div>
+        <div>
+          <h3>Nouvelle Intervention Santé</h3>
+          <p>Carnet vétérinaire & ordonnances</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="isHealthModalOpen.set(false)">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitHealthEntry()" style="padding:24px 28px">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        
+        <!-- Animal concerné -->
+        <div class="form-group-item">
+          <label>Animal concerné</label>
+          <select [(ngModel)]="healthForm.cowId" name="healthCow" required>
+            <option *ngFor="let a of animals()" [value]="a.internalId">{{ a.name }} ({{ a.internalId }})</option>
+          </select>
+        </div>
+
+        <!-- Type d'acte + Coût Médical -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Type d'Acte</label>
+            <select [(ngModel)]="healthForm.actType" name="actType">
+              <option value="Traitement Pathologie">Traitement Pathologie</option>
+              <option value="Vaccination">Vaccination</option>
+              <option value="Échographie Gestation">Échographie Gestation</option>
+              <option value="Visite de Routine">Visite de Routine</option>
+              <option value="Bilan Reproductif">Bilan Reproductif</option>
+            </select>
+          </div>
+          <div class="form-group-item">
+            <label>Coût Médical (FCFA)</label>
+            <input type="number" [(ngModel)]="healthForm.cost" name="cost" placeholder="12500" />
+          </div>
+        </div>
+
+        <!-- Observations & Prescription -->
+        <div class="form-group-item">
+          <label>Observations & Prescription</label>
+          <textarea rows="3" [(ngModel)]="healthForm.prescription" name="prescription" placeholder="Diagnostic, médicaments injectés, recommandations..."></textarea>
+        </div>
+
+        <!-- Bouton Valider -->
+        <button type="submit" class="modal-submit-btn">
+          Enregistrer au Dossier Médical
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: NOUVEL ANIMAL (AVEC PHOTO & MARQUES AURICULAIRES)
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isNewAnimalModalOpen()" (click)="isNewAnimalModalOpen.set(false)">
+  <div class="modal-card modal-card-lg" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title-icon-box">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 5c-1.5 0-2.8 1.2-3 2.5-.2 1.3.5 2.5 1.5 3 .5.3.5.8.5 1.5 0 2-1 3-3 3s-3-1-3-3c0-.7 0-1.2.5-1.5 1-.5 1.7-1.7 1.5-3C13.8 6.2 12.5 5 11 5 8 5 6 7 6 10v7c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-7c0-3-2-5-5-5z"/>
+            <path d="M9 19v2M15 19v2M8 11h.01M16 11h.01"/>
+          </svg>
+        </div>
+        <div>
+          <h3>Enregistrer un Nouvel Animal</h3>
+          <p>Création de la fiche d'identification, photo & filiation</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="isNewAnimalModalOpen.set(false)">✕</button>
+    </div>
+    
+    <form (ngSubmit)="submitNewAnimal()" style="padding:24px 28px;overflow-y:auto;max-height:calc(90vh - 80px)">
+      <div class="form-grid-layout">
+        <!-- Photo Upload Box -->
+        <div class="form-group-item full-width">
+          <label>Photo du Bétail (Optionnel / Cloudinary)</label>
+          <div class="photo-upload-box" (click)="photoInput.click()">
+            <input #photoInput type="file" accept="image/*" style="display:none" (change)="handlePhotoUpload($event, 'new')" />
+            <img *ngIf="newAnimalForm.imageUrl" [src]="newAnimalForm.imageUrl" class="photo-preview-img" alt="Preview" />
+            <div *ngIf="!newAnimalForm.imageUrl" style="width:58px;height:58px;border-radius:12px;background:#e2e8f0;display:grid;place-items:center;font-size:1.6rem">
+              📷
+            </div>
+            <div style="text-align:left;flex:1">
+              <strong style="font-size:0.88rem;color:#0d381e;display:block">
+                {{ newAnimalForm.imageUrl ? 'Photo sélectionnée (cliquer pour changer)' : 'Cliquer pour importer une photo' }}
+              </strong>
+              <span style="font-size:0.75rem;color:#64748b">Format JPG, PNG, WEBP — Téléchargement instantané</span>
+            </div>
+            <button *ngIf="newAnimalForm.imageUrl" type="button" class="btn-secondary" style="padding:4px 8px;font-size:0.72rem" (click)="$event.stopPropagation(); removePhoto('new')">
+              Supprimer
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 1 -->
+        <div class="form-group-item">
+          <label>Matricule / ID *</label>
+          <input type="text" [(ngModel)]="newAnimalForm.internalId" name="newId" placeholder="FL-014" required />
+        </div>
+        <div class="form-group-item">
+          <label>Nom de l'Animal *</label>
+          <input type="text" [(ngModel)]="newAnimalForm.name" name="newName" placeholder="ex: BINTOU, YACINE..." required />
+        </div>
+
+        <!-- Row 2 -->
+        <div class="form-group-item">
+          <label>Marque Auriculaire du Bétail *</label>
+          <input type="text" [(ngModel)]="newAnimalForm.earTagNumber" name="newTag" placeholder="ex: SN-DK-1436" required />
+        </div>
+        <div class="form-group-item">
+          <label>Race</label>
+          <select [(ngModel)]="newAnimalForm.breed" name="newBreed">
+            <option value="Holstein Pure">Holstein Pure</option>
+            <option value="Montbéliarde">Montbéliarde</option>
+            <option value="Gir Laitier">Gir Laitier</option>
+            <option value="Métisse Holstein x N'Dama">Métisse Holstein x N'Dama</option>
+            <option value="Gobra Locale Sélectionnée">Gobra Locale Sélectionnée</option>
+          </select>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="form-group-item">
+          <label>Catégorie</label>
+          <select [(ngModel)]="newAnimalForm.category" name="newCat">
+            <option value="MILKING_COW">Vache Laitière en Production</option>
+            <option value="HEIFER_YOUNG">Jeune Génisse en Croissance</option>
+            <option value="MALE_BULL">Mâle / Taureau Reproducteur</option>
+          </select>
+        </div>
+        <div class="form-group-item">
+          <label>Poids Actuel (kg)</label>
+          <input type="number" [(ngModel)]="newAnimalForm.weight" name="newWeight" placeholder="460" required />
+        </div>
+
+        <!-- Row 4 -->
+        <div class="form-group-item">
+          <label>Date de Naissance</label>
+          <input type="date" [(ngModel)]="newAnimalForm.birthDate" name="newBirth" required />
+        </div>
+        <div class="form-group-item">
+          <label>Marque Auriculaire de la Mère</label>
+          <input type="text" [(ngModel)]="newAnimalMotherEarTag" name="motherTag" placeholder="ex: SN-DK-1001 (NDIRA)" />
+        </div>
+
+        <!-- Row 5 -->
+        <div class="form-group-item full-width">
+          <label>Marque Auriculaire du Père (Taureau)</label>
+          <input type="text" [(ngModel)]="newAnimalFatherEarTag" name="fatherTag" placeholder="ex: SN-DK-1010 (KADER) ou SULTAN" />
+        </div>
+
+        <!-- Submit Button Row -->
+        <div class="form-group-item full-width" style="margin-top:6px">
+          <button type="submit" class="modal-submit-btn">
+            Créer & Ajouter la Fiche Animal
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: MODIFIER UN ANIMAL
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isEditAnimalModalOpen()" (click)="isEditAnimalModalOpen.set(false)">
+  <div class="modal-card modal-card-lg" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title-icon-box">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2">
+            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+        </div>
+        <div>
+          <h3>Modifier la Fiche de {{ editAnimalForm.name }}</h3>
+          <p>Mise à jour des paramètres, marque auriculaire & photo</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="isEditAnimalModalOpen.set(false)">✕</button>
+    </div>
+    
+    <form (ngSubmit)="submitEditAnimal()" style="padding:24px 28px;overflow-y:auto;max-height:calc(90vh - 80px)">
+      <div class="form-grid-layout">
+        <!-- Photo Upload Box -->
+        <div class="form-group-item full-width">
+          <label>Photo du Bétail (Cloudinary / Fichier)</label>
+          <div class="photo-upload-box" (click)="editPhotoInput.click()">
+            <input #editPhotoInput type="file" accept="image/*" style="display:none" (change)="handlePhotoUpload($event, 'edit')" />
+            <img *ngIf="editAnimalForm.imageUrl" [src]="editAnimalForm.imageUrl" class="photo-preview-img" alt="Preview" />
+            <div *ngIf="!editAnimalForm.imageUrl" style="width:58px;height:58px;border-radius:12px;background:#e2e8f0;display:grid;place-items:center;font-size:1.6rem">
+              📷
+            </div>
+            <div style="text-align:left;flex:1">
+              <strong style="font-size:0.88rem;color:#0d381e;display:block">
+                {{ editAnimalForm.imageUrl ? 'Photo présente (cliquer pour remplacer)' : 'Cliquer pour importer une photo' }}
+              </strong>
+              <span style="font-size:0.75rem;color:#64748b">Format JPG, PNG, WEBP</span>
+            </div>
+            <button *ngIf="editAnimalForm.imageUrl" type="button" class="btn-secondary" style="padding:4px 8px;font-size:0.72rem" (click)="$event.stopPropagation(); removePhoto('edit')">
+              Supprimer
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 1 -->
+        <div class="form-group-item">
+          <label>Matricule / ID</label>
+          <input type="text" [(ngModel)]="editAnimalForm.internalId" name="editId" readonly style="background:#f1f5f9;cursor:not-allowed" />
+        </div>
+        <div class="form-group-item">
+          <label>Nom de l'Animal *</label>
+          <input type="text" [(ngModel)]="editAnimalForm.name" name="editName" required />
+        </div>
+
+        <!-- Row 2 -->
+        <div class="form-group-item">
+          <label>Marque Auriculaire du Bétail *</label>
+          <input type="text" [(ngModel)]="editAnimalForm.earTagNumber" name="editTag" required />
+        </div>
+        <div class="form-group-item">
+          <label>Race</label>
+          <select [(ngModel)]="editAnimalForm.breed" name="editBreed">
+            <option value="Holstein Pure">Holstein Pure</option>
+            <option value="Montbéliarde">Montbéliarde</option>
+            <option value="Gir Laitier">Gir Laitier</option>
+            <option value="Métisse Holstein x N'Dama">Métisse Holstein x N'Dama</option>
+            <option value="Gobra Locale Sélectionnée">Gobra Locale Sélectionnée</option>
+          </select>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="form-group-item">
+          <label>Catégorie</label>
+          <select [(ngModel)]="editAnimalForm.category" name="editCat">
+            <option value="MILKING_COW">Vache Laitière en Production</option>
+            <option value="HEIFER_YOUNG">Jeune Génisse en Croissance</option>
+            <option value="MALE_BULL">Mâle / Taureau Reproducteur</option>
+          </select>
+        </div>
+        <div class="form-group-item">
+          <label>Statut</label>
+          <select [(ngModel)]="editAnimalForm.status" name="editStatus">
+            <option value="EXCELLENT">Excellente Santé</option>
+            <option value="HEALTHY">Sain</option>
+            <option value="GROWTH">En Croissance</option>
+            <option value="PREGNANT">Gestante</option>
+            <option value="IN_HEAT">En Chaleur</option>
+            <option value="FEVER_TREATMENT">En Soin / Fièvre</option>
+            <option value="BREEDER_BULL">Reproducteur A+</option>
+          </select>
+        </div>
+
+        <!-- Row 4 -->
+        <div class="form-group-item">
+          <label>Poids Actuel (kg)</label>
+          <input type="number" [(ngModel)]="editAnimalForm.weight" name="editWeight" required />
+        </div>
+        <div class="form-group-item">
+          <label>Température (°C)</label>
+          <input type="number" step="0.1" [(ngModel)]="editAnimalForm.temperature" name="editTemp" />
+        </div>
+
+        <!-- Row 5 -->
+        <div class="form-group-item">
+          <label>Marque Auriculaire de la Mère</label>
+          <input type="text" [(ngModel)]="editAnimalMotherEarTag" name="editMotherTag" />
+        </div>
+        <div class="form-group-item">
+          <label>Marque Auriculaire du Père (Taureau)</label>
+          <input type="text" [(ngModel)]="editAnimalFatherEarTag" name="editFatherTag" />
+        </div>
+
+        <!-- Submit Button Row -->
+        <div class="form-group-item full-width" style="margin-top:6px;display:flex;gap:12px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="isEditAnimalModalOpen.set(false)">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Enregistrer les Modifications
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: MODIFIER INTERVENTION SANTE
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isEditHealthModalOpen()" (click)="isEditHealthModalOpen.set(false)">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title-icon-box">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2">
+            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          </svg>
+        </div>
+        <div>
+          <h3>Modifier l'Intervention Médicale</h3>
+          <p>Mise à jour du diagnostic, coût ou ordonnance</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="isEditHealthModalOpen.set(false)">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitEditHealthEntry()" style="padding:24px 28px">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        
+        <!-- Animal concerné & Date -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Animal concerné</label>
+            <select [(ngModel)]="editingHealthRecord.animalInternalId" name="editHealthCow" required>
+              <option *ngFor="let a of animals()" [value]="a.internalId">{{ a.name }} ({{ a.internalId }})</option>
+            </select>
+          </div>
+          <div class="form-group-item">
+            <label>Statut de l'Acte</label>
+            <select [(ngModel)]="editingHealthRecord.status" name="editStatus">
+              <option value="En cours">En cours</option>
+              <option value="Terminé">Terminé</option>
+              <option value="Apte IA">Apte IA</option>
+              <option value="Qualité A+">Qualité A+</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Type d'acte + Coût Médical -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Type d'Acte</label>
+            <select [(ngModel)]="editingHealthRecord.actType" name="editActType">
+              <option value="Traitement Pathologie">Traitement Pathologie</option>
+              <option value="Vaccination">Vaccination</option>
+              <option value="Échographie Gestation">Échographie Gestation</option>
+              <option value="Visite de Routine">Visite de Routine</option>
+              <option value="Bilan Reproductif">Bilan Reproductif</option>
+            </select>
+          </div>
+          <div class="form-group-item">
+            <label>Coût Médical (FCFA)</label>
+            <input type="number" [(ngModel)]="editingHealthRecord.costFcfa" name="editCost" />
+          </div>
+        </div>
+
+        <!-- Observations & Prescription -->
+        <div class="form-group-item">
+          <label>Diagnostic / Observations & Prescription</label>
+          <textarea rows="3" [(ngModel)]="editingHealthRecord.diagnosis" name="editDiagnosis" placeholder="Diagnostic, médicaments injectés..."></textarea>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div style="display:flex;gap:12px;margin-top:6px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="isEditHealthModalOpen.set(false)">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Enregistrer les Modifications
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: PASSEPORT LOT & QR CODE
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isQrModalOpen()" (click)="isQrModalOpen.set(false)">
+  <div class="modal-card" style="max-width:480px" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div style="font-size:1.6rem">🔍</div>
+        <div>
+          <h3>Passeport Traçabilité & QR Code</h3>
+          <p style="font-size:0.75rem;color:rgba(255,255,255,0.75)">Garantie d'authenticité Ferme LAWTAN</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="isQrModalOpen.set(false)">✕</button>
+    </div>
+    <div style="padding:24px;text-align:center">
+      <div style="background:#ffffff;padding:16px;border-radius:12px;border:2px dashed #16a34a;display:inline-block;margin-bottom:16px">
+        <svg width="140" height="140" viewBox="0 0 100 100">
+          <rect width="100" height="100" fill="#ffffff"/>
+          <rect x="10" y="10" width="24" height="24" fill="#0d4a22" rx="4"/>
+          <rect x="14" y="14" width="16" height="16" fill="#ffffff" rx="2"/>
+          <rect x="18" y="18" width="8" height="8" fill="#0d4a22"/>
+          <rect x="66" y="10" width="24" height="24" fill="#0d4a22" rx="4"/>
+          <rect x="70" y="14" width="16" height="16" fill="#ffffff" rx="2"/>
+          <rect x="74" y="18" width="8" height="8" fill="#0d4a22"/>
+          <rect x="10" y="66" width="24" height="24" fill="#0d4a22" rx="4"/>
+          <rect x="14" y="70" width="16" height="16" fill="#ffffff" rx="2"/>
+          <rect x="18" y="74" width="8" height="8" fill="#0d4a22"/>
+          <circle cx="45" cy="20" r="3" fill="#16a34a"/>
+          <circle cx="55" cy="20" r="3" fill="#0d4a22"/>
+          <circle cx="50" cy="35" r="4" fill="#dc2626"/>
+          <circle cx="20" cy="48" r="3" fill="#0d4a22"/>
+          <circle cx="35" cy="50" r="3.5" fill="#f59e0b"/>
+          <circle cx="65" cy="50" r="3" fill="#0d4a22"/>
+          <circle cx="80" cy="48" r="3" fill="#16a34a"/>
+        </svg>
+      </div>
+      <div style="background:#f0fdf4;border-radius:8px;padding:12px;text-align:left;font-size:0.8rem">
+        <p><strong>N° Lot :</strong> {{ qrData().lot }}</p>
+        <p><strong>Produit :</strong> {{ qrData().product }}</p>
+        <p><strong>Date Traite :</strong> {{ qrData().date }}</p>
+        <p><strong>Volume :</strong> {{ qrData().volume }}</p>
+        <p><strong>Chaîne du Froid :</strong> <span style="color:#16a34a;font-weight:700">4.0 °C (Conforme)</span></p>
+      </div>
+      <button class="btn-primary" style="margin-top:16px;width:100%;justify-content:center" (click)="showToast('Étiquette de traçabilité imprimée avec QR code'); isQrModalOpen.set(false)">
+        🖨️ Imprimer l'Étiquette du Lot
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification Popup -->
+<div class="toast-container" *ngIf="toastMessage()" style="position:fixed;bottom:24px;right:24px;background:#0e3d20;color:white;padding:12px 20px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.3);z-index:999;font-weight:600;display:flex;align-items:center;gap:10px;border-left:4px solid #22c55e">
+  <span>🔔</span>
+  <span>{{ toastMessage() }}</span>
+</div>
