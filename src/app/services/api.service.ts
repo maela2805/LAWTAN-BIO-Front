@@ -11,7 +11,18 @@ import { ReproductionEvent, ReproductionAlert } from '../models/reproduction.mod
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:8080/api';
+
+  // Détection dynamique : localhost en dev, Render en production sur Vercel
+  get baseUrl(): string {
+    if (typeof window !== 'undefined') {
+      const custom = localStorage.getItem('lawtan_api_url');
+      if (custom) return custom;
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        return 'https://lawtan-bio-back.onrender.com/api';
+      }
+    }
+    return 'http://localhost:8080/api';
+  }
 
   // --- Dashboard ---
   getDashboardStats(): Observable<DashboardStats | null> {
