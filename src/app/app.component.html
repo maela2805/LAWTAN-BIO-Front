@@ -140,11 +140,41 @@
       <div class="nav-group">
         <div class="nav-group-title">Commercial & Finance</div>
         <ul>
-          <li>
-            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'ventes'" (click)="showPage('ventes')">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-              <span>Ventes & Commandes</span>
-            </a>
+          <!-- Accordion Menu: Commercialisation & Facturation (Sprint 4) -->
+          <li class="nav-item-accordion">
+            <div class="nav-link-wrapper" [class.active]="activePage() === 'commercial' || activePage() === 'ventes'">
+              <a href="javascript:void(0)" class="nav-link nav-link-parent" [class.active]="activePage() === 'commercial' || activePage() === 'ventes'" (click)="navigateToCommercialSubTab('invoices')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                <span>Ventes & Facturation</span>
+                <span class="nav-badge-count badge-success" *ngIf="invoices().length">{{ invoices().length }}</span>
+              </a>
+              <button type="button" class="nav-expand-btn nav-expand-btn-right" (click)="toggleCommercialMenu($event)" title="Dérouler / Replier les sous-menus" aria-label="Dérouler">
+                <span *ngIf="!isCommercialMenuOpen()">➕</span>
+                <span *ngIf="isCommercialMenuOpen()">➖</span>
+              </button>
+            </div>
+
+            <!-- Sous-menus déroulants Commercialisation -->
+            <ul class="nav-sub-menu" *ngIf="isCommercialMenuOpen()">
+              <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="(activePage() === 'commercial' || activePage() === 'ventes') && activeCommercialSubTab() === 'invoices'" (click)="navigateToCommercialSubTab('invoices')">
+                  <span class="nav-sub-bullet">🧾</span>
+                  <span>Factures & Ventes ({{ invoices().length }})</span>
+                </a>
+              </li>
+              <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="(activePage() === 'commercial' || activePage() === 'ventes') && activeCommercialSubTab() === 'customers'" (click)="navigateToCommercialSubTab('customers')">
+                  <span class="nav-sub-bullet">👥</span>
+                  <span>Répertoire Clients ({{ customers().length }})</span>
+                </a>
+              </li>
+              <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="(activePage() === 'commercial' || activePage() === 'ventes') && activeCommercialSubTab() === 'payments'" (click)="navigateToCommercialSubTab('payments')">
+                  <span class="nav-sub-bullet">💳</span>
+                  <span>Encaissements & Caisse ({{ payments().length }})</span>
+                </a>
+              </li>
+            </ul>
           </li>
           <li>
             <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'finance'" (click)="showPage('finance')">
@@ -1076,91 +1106,262 @@
       </div>
 
       <!-- ==========================================
-           PAGE 6: ALIMENTATION & FOURRAGE
+           PAGE 6: NUTRITION, FOURRAGES & RATIONS (SPRINT 5)
            ========================================== -->
       <div class="page" *ngIf="activePage() === 'alimentation'">
+        
+        <!-- Header Row -->
         <div class="page-header-row">
           <div class="page-header-text">
-            <h2>Gestion de l'Alimentation & Cultures Fourragères</h2>
-            <p>Rations équilibrées, stocks de sécurité d'aliments et gestion des parcelles de fourrage de la ferme.</p>
+            <h2>🌾 Nutrition, Fourrages & Rations Équilibrées</h2>
+            <p>Pilotage de la matière sèche (MS), stocks de sécurité des fourrages bio et optimisation du coût alimentaire par litre de lait produit.</p>
           </div>
-          <button class="btn-primary" (click)="isRationModalOpen.set(true)">
-            <span>+ Enregistrer Distribution Ration</span>
-          </button>
+          <div class="header-action-group">
+            <button class="btn-primary" (click)="openNewFeedStockModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              <span>+ Nouvel Aliment / Fourrage</span>
+            </button>
+            <button class="btn-secondary" (click)="openNewFeedRationModal()">
+              <span>+ Nouvelle Fiche Ration</span>
+            </button>
+          </div>
         </div>
 
-        <div class="kpi-grid">
+        <!-- KPI Cards Grid -->
+        <section class="kpi-grid">
           <div class="kpi-card card-green">
-            <div class="kpi-header"><span class="kpi-title">Fourrage Vert & Foin</span><span>🌾</span></div>
-            <div class="kpi-value">680 <span class="unit">kg</span></div>
-            <p style="font-size:0.75rem;color:#526658;margin-top:6px">Stock : 68% (Consommation ~85 kg/j)</p>
-          </div>
-          <div class="kpi-card card-gold">
-            <div class="kpi-header"><span class="kpi-title">Maïs Ensilé & Grain</span><span>🌽</span></div>
-            <div class="kpi-value">450 <span class="unit">kg</span></div>
-            <p style="font-size:0.75rem;color:#526658;margin-top:6px">Stock : 45% (Consommation ~60 kg/j)</p>
-          </div>
-          <div class="kpi-card card-red">
-            <div class="kpi-header"><span class="kpi-title">Concentré Protéique</span><span>⚠️</span></div>
-            <div class="kpi-value" style="color:#dc2626">85 <span class="unit">kg (Bas)</span></div>
-            <p style="font-size:0.75rem;color:#dc2626;font-weight:700;margin-top:6px">Autonomie : 3.8 jours seulement !</p>
-          </div>
-          <div class="kpi-card card-sky">
-            <div class="kpi-header"><span class="kpi-title">Minéraux & CMV</span><span>💊</span></div>
-            <div class="kpi-value">30 <span class="unit">kg</span></div>
-            <p style="font-size:0.75rem;color:#526658;margin-top:6px">Stock : 75% (Autonomie 20j)</p>
-          </div>
-        </div>
-
-        <div class="two-columns-grid" style="margin-top:20px">
-          <div class="content-card">
-            <div class="content-card-header">
-              <h3>🥣 Rations Journalières par Tête</h3>
-              <span class="badge-pill badge-green">Taux Conv: 1.42 kg/L</span>
+            <div class="kpi-header">
+              <span class="kpi-title">Stock Global d'Aliments</span>
+              <span class="kpi-icon">🌾</span>
             </div>
+            <div class="kpi-value">{{ totalFeedStockKg.toLocaleString() }} <span class="unit">kg</span></div>
+            <div class="kpi-footer trend-up">
+              <span>🌾 {{ feedStocks().length }} matières premières suivies</span>
+            </div>
+          </div>
+
+          <div class="kpi-card" [ngClass]="lowFeedStockCount > 0 ? 'card-red' : 'card-blue'">
+            <div class="kpi-header">
+              <span class="kpi-title">Alerte Réapprovisionnement</span>
+              <span class="kpi-icon">⚠️</span>
+            </div>
+            <div class="kpi-value" [style.color]="lowFeedStockCount > 0 ? '#dc2626' : '#0284c7'">
+              {{ lowFeedStockCount }} <span class="unit">aliments bas</span>
+            </div>
+            <div class="kpi-footer">
+              <span *ngIf="lowFeedStockCount > 0">🚨 Seuil de sécurité atteint</span>
+              <span *ngIf="lowFeedStockCount === 0">✅ Tous les stocks sont optimaux</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-purple">
+            <div class="kpi-header">
+              <span class="kpi-title">Coût Journalier Moyen Ration</span>
+              <span class="kpi-icon">🥣</span>
+            </div>
+            <div class="kpi-value">{{ averageDailyFeedCostFcfa.toLocaleString() }} <span class="unit">FCFA</span></div>
+            <div class="kpi-footer">
+              <span>Par vache en lactation / jour</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-gold">
+            <div class="kpi-header">
+              <span class="kpi-title">Formules Rations Actives</span>
+              <span class="kpi-icon">📋</span>
+            </div>
+            <div class="kpi-value">{{ feedRations().length }} <span class="unit">règles</span></div>
+            <div class="kpi-footer trend-up">
+              <span>Équilibrées en UFL & PDI</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Main Content Card -->
+        <div class="content-card" style="margin-top:20px;padding:0;overflow:hidden">
+          
+          <!-- Sub-Tab Header Bar -->
+          <div style="display:flex;border-bottom:1px solid #e2e8f0;background:#f8fafc;padding:0 16px;flex-wrap:wrap">
+            <button type="button" class="sub-tab-btn" [class.active]="activeFeedSubTab() === 'stocks'" (click)="switchFeedSubTab('stocks')">
+              <span>🌾 Stocks de Matières Premières & Fourrages ({{ feedStocks().length }})</span>
+            </button>
+            <button type="button" class="sub-tab-btn" [class.active]="activeFeedSubTab() === 'rations'" (click)="switchFeedSubTab('rations')">
+              <span>📋 Fiches Rations Équilibrées ({{ feedRations().length }})</span>
+            </button>
+          </div>
+
+          <!-- ==========================================
+               SUB-TAB 1: STOCKS DE FOURRAGES & CONCENTRÉS
+               ========================================== -->
+          <div *ngIf="activeFeedSubTab() === 'stocks'" style="padding:20px">
+            
+            <!-- Filters & Search Toolbar -->
+            <div class="filter-search-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+              <div class="filter-pills-group">
+                <button class="filter-pill" [class.active]="feedCategoryFilter() === 'ALL'" (click)="filterFeedStocks('ALL')">Tous ({{ feedStocks().length }})</button>
+                <button class="filter-pill" [class.active]="feedCategoryFilter() === 'FORAGE_GREEN'" (click)="filterFeedStocks('FORAGE_GREEN')">🌱 Fourrage Vert</button>
+                <button class="filter-pill" [class.active]="feedCategoryFilter() === 'FORAGE_DRY'" (click)="filterFeedStocks('FORAGE_DRY')">🌾 Fourrage Sec</button>
+                <button class="filter-pill" [class.active]="feedCategoryFilter() === 'CONCENTRATE'" (click)="filterFeedStocks('CONCENTRATE')">🌽 Concentrés</button>
+                <button class="filter-pill" [class.active]="feedCategoryFilter() === 'MINERALS_VITAMINS'" (click)="filterFeedStocks('MINERALS_VITAMINS')">🧂 Minéraux & CMV</button>
+              </div>
+
+              <div class="search-input-box" style="position:relative;min-width:260px">
+                <input type="text" [(ngModel)]="feedStockSearchTerm" placeholder="🔍 Rechercher aliment, lieu, fournisseur..." style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem" />
+              </div>
+            </div>
+
+            <!-- Stocks Data Table -->
             <div class="table-responsive">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Vache</th>
-                    <th>Fourrage</th>
-                    <th>Maïs</th>
-                    <th>Concentré</th>
-                    <th>CMV</th>
-                    <th>Coût/j</th>
+                    <th>Aliment / Matière Première</th>
+                    <th>Catégorie</th>
+                    <th>Stock Actuel</th>
+                    <th>Seuil Alerte</th>
+                    <th>Prix / kg</th>
+                    <th>Lieu de Stockage</th>
+                    <th>Statut Réserve</th>
+                    <th style="text-align:right">Approvisionnement Rapide</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr *ngFor="let c of milkingCows">
-                    <td><strong>{{ c.name }}</strong></td>
-                    <td>11 kg</td>
-                    <td>8 kg</td>
-                    <td>3.0 kg</td>
-                    <td>200 g</td>
-                    <td>1 990 FCFA</td>
+                  <tr *ngFor="let s of paginatedFeedStocks">
+                    <td>
+                      <strong style="color:#0f172a;font-size:0.9rem">{{ s.name }}</strong>
+                      <div style="font-size:0.75rem;color:#64748b" *ngIf="s.supplierName">Fournisseur : {{ s.supplierName }}</div>
+                    </td>
+                    <td>
+                      <span class="badge-pill" [ngClass]="getFeedCategoryBadgeClass(s.category)">
+                        {{ getFeedCategoryLabel(s.category) }}
+                      </span>
+                    </td>
+                    <td>
+                      <strong style="font-size:1rem" [style.color]="s.currentStockKg <= s.alertThresholdKg ? '#dc2626' : '#0d381e'">
+                        {{ s.currentStockKg.toLocaleString() }} kg
+                      </strong>
+                    </td>
+                    <td>
+                      <span style="font-size:0.85rem;color:#64748b">{{ s.alertThresholdKg.toLocaleString() }} kg</span>
+                    </td>
+                    <td>
+                      <span style="font-size:0.85rem;font-weight:600">{{ s.unitPricePerKgFcfa || 0 }} FCFA</span>
+                    </td>
+                    <td>
+                      <span style="font-size:0.85rem;color:#475569">{{ s.storageLocation || 'Magasin' }}</span>
+                    </td>
+                    <td>
+                      <span class="badge-pill badge-red" *ngIf="s.currentStockKg <= s.alertThresholdKg">
+                        ⚠️ Stock Faible
+                      </span>
+                      <span class="badge-pill badge-green" *ngIf="s.currentStockKg > s.alertThresholdKg">
+                        ✅ Optimal
+                      </span>
+                    </td>
+                    <td style="text-align:right">
+                      <div style="display:inline-flex;gap:6px;align-items:center">
+                        <button class="btn-secondary" style="padding:4px 8px;font-size:0.75rem" (click)="quickAddFeedStockKg(s, 100)" title="Ajouter 100 kg">
+                          +100 kg
+                        </button>
+                        <button class="btn-secondary" style="padding:4px 8px;font-size:0.75rem" (click)="quickAddFeedStockKg(s, 500)" title="Ajouter 500 kg">
+                          +500 kg
+                        </button>
+                        <button class="table-icon-btn" style="color:#dc2626" (click)="deleteFeedStock(s.id)" title="Supprimer">
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="filteredFeedStocks.length === 0">
+                    <td colspan="8" style="text-align:center;padding:30px;color:#64748b">
+                      Aucun aliment trouvé pour ce filtre.
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
+
+            <!-- Pagination Bar -->
+            <div class="pagination-bar" *ngIf="totalFeedStocksPages > 1" style="margin-top:16px">
+              <button class="pagination-btn" (click)="prevFeedStocksPage()" [disabled]="feedStocksCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Précédent</span>
+              </button>
+              
+              <div class="pagination-pages-wrapper">
+                <button *ngFor="let p of feedStocksPageNumbers" class="page-number-btn" [class.active]="p === feedStocksCurrentPage()" (click)="setFeedStocksPage(p)">
+                  {{ p }}
+                </button>
+              </div>
+
+              <div class="pagination-info-pill">
+                <span>🌾</span>
+                <span>Page <strong>{{ feedStocksCurrentPage() }}</strong> / {{ totalFeedStocksPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ filteredFeedStocks.length }}</strong> références</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextFeedStocksPage()" [disabled]="feedStocksCurrentPage() === totalFeedStocksPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
           </div>
 
-          <div class="content-card">
-            <div class="content-card-header">
-              <h3>🌱 Cultures Fourragères de la Ferme</h3>
-              <span class="badge-pill badge-green">Arrosage Solaire Actif</span>
+          <!-- ==========================================
+               SUB-TAB 2: FICHES RATIONS ÉQUILIBRÉES
+               ========================================== -->
+          <div *ngIf="activeFeedSubTab() === 'rations'" style="padding:20px">
+            
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+              <div>
+                <h3 style="margin:0;font-size:1.1rem;color:#0d381e">Formules Nutritionnelles & Rations Journalières</h3>
+                <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Équilibrage de la Matière Sèche (MS), Énergie (UFL) et Protéines Digestibles (PDI) par stade de lactation.</p>
+              </div>
+              <button class="btn-primary" (click)="openNewFeedRationModal()">
+                <span>+ Nouvelle Formule</span>
+              </button>
             </div>
-            <div style="display:flex;flex-direction:column;gap:12px">
-              <div style="padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
-                <strong style="font-size:0.9rem">Parcelle A — Luzerne Bio (1.2 ha)</strong>
-                <p style="font-size:0.75rem;color:#526658">Fauche prévue : dans 8 jours • Irrigation par pompage solaire</p>
-              </div>
-              <div style="padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
-                <strong style="font-size:0.9rem">Parcelle B — Sorgho Fourrager (0.8 ha)</strong>
-                <p style="font-size:0.75rem;color:#526658">Stade montaison • Arrosage goutte-à-goutte</p>
-              </div>
-              <div style="padding:12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0">
-                <strong style="font-size:0.9rem">Parcelle C — Herbe à Éléphant (0.5 ha)</strong>
-                <p style="font-size:0.75rem;color:#526658">Coupe quotidienne pour affouragement vert immédiat</p>
+
+            <!-- Rations Cards Grid -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:16px">
+              <div *ngFor="let r of feedRations()" class="ration-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.03);display:flex;flex-direction:column;justify-content:space-between">
+                <div>
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+                    <h4 style="margin:0;font-size:1rem;color:#0d381e">{{ r.rationName }}</h4>
+                    <span class="badge-pill badge-green">{{ r.targetCategory }}</span>
+                  </div>
+
+                  <div style="background:#f0fdf4;border-left:3px solid #16a34a;padding:10px 12px;border-radius:0 8px 8px 0;margin-bottom:12px;font-size:0.85rem;color:#1e293b">
+                    <strong>Composition de la ration :</strong>
+                    <div style="margin-top:4px;color:#334155">{{ r.compositionDescription }}</div>
+                  </div>
+
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;background:#f8fafc;padding:10px;border-radius:8px;text-align:center;margin-bottom:12px">
+                    <div>
+                      <div style="font-size:0.7rem;color:#64748b">Matière Sèche</div>
+                      <div style="font-weight:700;color:#0f172a;font-size:0.9rem">{{ r.dailyDryMatterKg }} kg MS</div>
+                    </div>
+                    <div>
+                      <div style="font-size:0.7rem;color:#64748b">Énergie</div>
+                      <div style="font-weight:700;color:#0284c7;font-size:0.9rem">{{ r.energyUfl || 12 }} UFL</div>
+                    </div>
+                    <div>
+                      <div style="font-size:0.7rem;color:#64748b">Protéines</div>
+                      <div style="font-weight:700;color:#7c3aed;font-size:0.9rem">{{ r.proteinPdiGrams || 1100 }}g PDI</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:6px">
+                  <div>
+                    <span style="font-size:0.75rem;color:#64748b">Coût journalier / tête :</span>
+                    <strong style="color:#0d381e;font-size:1rem;display:block">{{ r.dailyCostFcfa.toLocaleString() }} FCFA</strong>
+                  </div>
+                  <button class="table-icon-btn" style="color:#dc2626" (click)="deleteFeedRation(r.id)" title="Supprimer la formule">
+                    🗑️
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1671,63 +1872,413 @@
       </div>
 
       <!-- ==========================================
-           PAGE 8: VENTES & COMMANDES
+           PAGE 8: COMMERCIALISATION & FACTURATION (SPRINT 4)
            ========================================== -->
-      <div class="page" *ngIf="activePage() === 'ventes'">
+      <div class="page" *ngIf="activePage() === 'commercial' || activePage() === 'ventes'">
+        
+        <!-- Header Row -->
         <div class="page-header-row">
           <div class="page-header-text">
-            <h2>Ventes, Commandes & Distribution</h2>
-            <p>Clients locaux, restaurants, hôtels, boutiques bio et prospection grandes surfaces.</p>
+            <h2>🛒 Commercialisation, Facturation & Encaissements</h2>
+            <p>Gestion des clients B2B / B2C, facturation professionnelle normalisée, déstockage automatique et lettrage Wave / Orange Money / Espèces.</p>
           </div>
-          <button class="btn-primary" (click)="isOrderModalOpen.set(true)">
-            <span>+ Nouvelle Commande Client</span>
-          </button>
+          <div class="header-action-group">
+            <button class="btn-primary" (click)="openNewInvoiceModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              <span>+ Nouvelle Facture / Vente</span>
+            </button>
+            <button class="btn-secondary" (click)="openNewCustomerModal()">
+              <span>+ Nouveau Client</span>
+            </button>
+          </div>
         </div>
 
-        <div class="content-card">
-          <div class="content-card-header">
-            <h3>📑 Commandes & Livraisons Récentes</h3>
-            <span class="badge-pill badge-green">Facturation en FCFA</span>
+        <!-- KPI Cards Grid Financiers -->
+        <section class="kpi-grid">
+          <div class="kpi-card card-green">
+            <div class="kpi-header">
+              <span class="kpi-title">Chiffre d'Affaires Global</span>
+              <span class="kpi-icon">💰</span>
+            </div>
+            <div class="kpi-value">{{ (commercialSummary()?.totalRevenueFcfa || 0).toLocaleString() }} <span class="unit">FCFA</span></div>
+            <div class="kpi-footer trend-up">
+              <span>🧾 {{ commercialSummary()?.totalInvoicesCount || 0 }} factures émises</span>
+            </div>
           </div>
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>N° Commande</th>
-                  <th>Client</th>
-                  <th>Produit</th>
-                  <th>Quantité</th>
-                  <th>Montant Total</th>
-                  <th>Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><code>CMD-047</code></td>
-                  <td><strong>Restaurant Le Baobab</strong></td>
-                  <td>Lait Frais Bio</td>
-                  <td>20 L</td>
-                  <td><strong>16 000 FCFA</strong></td>
-                  <td><span class="badge-pill badge-gold">En livraison</span></td>
-                </tr>
-                <tr>
-                  <td><code>CMD-046</code></td>
-                  <td><strong>Mme. Diallo (Client Direct)</strong></td>
-                  <td>Lait Caillé Bio (Sow)</td>
-                  <td>15 L</td>
-                  <td><strong>9 000 FCFA</strong></td>
-                  <td><span class="badge-pill badge-green">Livré & Payé</span></td>
-                </tr>
-                <tr>
-                  <td><code>CMD-045</code></td>
-                  <td><strong>Hôtel Terrou-Bi (Dakar)</strong></td>
-                  <td>Lait Frais Bio + Fromage</td>
-                  <td>50 L + 5 kg</td>
-                  <td><strong>55 000 FCFA</strong></td>
-                  <td><span class="badge-pill badge-green">Livré & Payé</span></td>
-                </tr>
-              </tbody>
-            </table>
+
+          <div class="kpi-card card-blue">
+            <div class="kpi-header">
+              <span class="kpi-title">Total Encaissé Réel</span>
+              <span class="kpi-icon">🌊</span>
+            </div>
+            <div class="kpi-value">{{ (commercialSummary()?.totalCollectedFcfa || 0).toLocaleString() }} <span class="unit">FCFA</span></div>
+            <div class="kpi-footer trend-up">
+              <span>✅ {{ commercialSummary()?.paidInvoicesCount || 0 }} factures soldées</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-gold">
+            <div class="kpi-header">
+              <span class="kpi-title">Créances à Recouvrer</span>
+              <span class="kpi-icon">⏳</span>
+            </div>
+            <div class="kpi-value" style="color:#d97706">{{ (commercialSummary()?.totalOutstandingFcfa || 0).toLocaleString() }} <span class="unit">FCFA</span></div>
+            <div class="kpi-footer">
+              <span>⚠️ {{ commercialSummary()?.pendingInvoicesCount || 0 }} en attente / acomptes</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-purple">
+            <div class="kpi-header">
+              <span class="kpi-title">Panier Moyen / Vente</span>
+              <span class="kpi-icon">🛒</span>
+            </div>
+            <div class="kpi-value">{{ (commercialSummary()?.averageOrderValueFcfa || 0).toLocaleString() }} <span class="unit">FCFA</span></div>
+            <div class="kpi-footer">
+              <span>👥 {{ commercialSummary()?.totalCustomersCount || 0 }} clients actifs</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Main Commercial Navigation Content Card -->
+        <div class="content-card" style="margin-top:20px;padding:0;overflow:hidden">
+          
+          <!-- Sub-Tab Header Bar -->
+          <div style="display:flex;border-bottom:1px solid #e2e8f0;background:#f8fafc;padding:0 16px;flex-wrap:wrap">
+            <button type="button" class="sub-tab-btn" [class.active]="activeCommercialSubTab() === 'invoices'" (click)="switchCommercialSubTab('invoices')">
+              <span>🧾 Factures & Ventes ({{ invoices().length }})</span>
+            </button>
+            <button type="button" class="sub-tab-btn" [class.active]="activeCommercialSubTab() === 'customers'" (click)="switchCommercialSubTab('customers')">
+              <span>👥 Répertoire Clients ({{ customers().length }})</span>
+            </button>
+            <button type="button" class="sub-tab-btn" [class.active]="activeCommercialSubTab() === 'payments'" (click)="switchCommercialSubTab('payments')">
+              <span>💳 Journal des Encaissements ({{ payments().length }})</span>
+            </button>
+          </div>
+
+          <!-- ==========================================
+               SUB-TAB 1: FACTURES & VENTES
+               ========================================== -->
+          <div *ngIf="activeCommercialSubTab() === 'invoices'" style="padding:20px">
+            
+            <!-- Filters & Search Toolbar -->
+            <div class="filter-search-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+              <div class="filter-pills-group">
+                <button class="filter-pill" [class.active]="invoiceFilterStatus() === 'ALL'" (click)="filterInvoices('ALL')">Toutes ({{ invoices().length }})</button>
+                <button class="filter-pill" [class.active]="invoiceFilterStatus() === 'PAID'" (click)="filterInvoices('PAID')">Soldées / Payées</button>
+                <button class="filter-pill" [class.active]="invoiceFilterStatus() === 'PARTIALLY_PAID'" (click)="filterInvoices('PARTIALLY_PAID')">Acomptes</button>
+                <button class="filter-pill" [class.active]="invoiceFilterStatus() === 'ISSUED'" (click)="filterInvoices('ISSUED')">En Attente</button>
+                <button class="filter-pill" [class.active]="invoiceFilterStatus() === 'OVERDUE'" (click)="filterInvoices('OVERDUE')">En Retard</button>
+              </div>
+
+              <div class="search-input-box" style="position:relative;min-width:260px">
+                <input type="text" [(ngModel)]="invoicesSearchTerm" placeholder="🔍 Rechercher n° facture, client..." style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem" />
+              </div>
+            </div>
+
+            <!-- Invoices Data Table -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>N° Facture</th>
+                    <th>Client & Canal</th>
+                    <th>Date / Échéance</th>
+                    <th>Articles Commandés</th>
+                    <th>Montant Net</th>
+                    <th>Encaissé / Reste</th>
+                    <th>Règlement</th>
+                    <th>Statut</th>
+                    <th style="text-align:right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let inv of paginatedInvoices">
+                    <td>
+                      <code style="font-weight:700;color:#0d381e;background:#e8f5e9;padding:3px 6px;border-radius:4px">{{ inv.invoiceNumber }}</code>
+                    </td>
+                    <td>
+                      <div style="font-weight:600;color:#1e293b">{{ inv.customerName }}</div>
+                      <div style="font-size:0.75rem;color:#64748b" *ngIf="inv.customerPhone">{{ inv.customerPhone }}</div>
+                    </td>
+                    <td>
+                      <div style="font-size:0.85rem;font-weight:500">{{ inv.issueDate }}</div>
+                      <div style="font-size:0.75rem;color:#94a3b8">Éch. {{ inv.dueDate || 'Comptant' }}</div>
+                    </td>
+                    <td>
+                      <div style="font-size:0.8rem;max-width:240px;color:#334155">
+                        <span *ngFor="let it of inv.items; let last = last">
+                          {{ it.quantity }}x {{ it.productName }}<span *ngIf="!last">, </span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <strong style="color:#0d381e;font-size:0.95rem">{{ inv.totalAmountFcfa.toLocaleString() }} FCFA</strong>
+                      <div style="font-size:0.75rem;color:#64748b" *ngIf="inv.discountFcfa && inv.discountFcfa > 0">Remise : -{{ inv.discountFcfa.toLocaleString() }} F</div>
+                    </td>
+                    <td>
+                      <div style="font-size:0.85rem;color:#16a34a;font-weight:600">
+                        {{ inv.paidAmountFcfa.toLocaleString() }} FCFA
+                      </div>
+                      <div style="font-size:0.75rem;color:#dc2626;font-weight:600" *ngIf="inv.remainingAmountFcfa > 0">
+                        Reste : {{ inv.remainingAmountFcfa.toLocaleString() }} FCFA
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge-pill" [ngClass]="getPaymentMethodBadgeClass(inv.paymentMethod)" *ngIf="inv.paymentMethod">
+                        {{ getPaymentMethodLabel(inv.paymentMethod) }}
+                      </span>
+                      <span style="font-size:0.75rem;color:#94a3b8" *ngIf="!inv.paymentMethod">Non renseigné</span>
+                    </td>
+                    <td>
+                      <span class="badge-pill" [ngClass]="getInvoiceStatusBadgeClass(inv.status)">
+                        {{ getInvoiceStatusLabel(inv.status) }}
+                      </span>
+                    </td>
+                    <td style="text-align:right">
+                      <div style="display:inline-flex;gap:6px;align-items:center">
+                        <button *ngIf="inv.remainingAmountFcfa > 0 && inv.status !== 'CANCELLED'" class="btn-primary" style="padding:4px 8px;font-size:0.75rem;background:#15803d" title="Encaisser un règlement" (click)="openPaymentModal(inv)">
+                          💳 Encaisser
+                        </button>
+                        <button class="table-icon-btn" title="Voir / Imprimer la Facture PDF" (click)="openInvoicePrintModal(inv)">
+                          🖨️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="filteredInvoices.length === 0">
+                    <td colspan="9" style="text-align:center;padding:30px;color:#64748b">
+                      Aucune facture trouvée pour ce filtre.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination Bar Invoices -->
+            <div class="pagination-bar" *ngIf="totalInvoicesPages > 1" style="margin-top:16px">
+              <button class="pagination-btn" (click)="prevInvoicesPage()" [disabled]="invoicesCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Précédent</span>
+              </button>
+              
+              <div class="pagination-pages-wrapper">
+                <button *ngFor="let p of invoicesPageNumbers" class="page-number-btn" [class.active]="p === invoicesCurrentPage()" (click)="setInvoicesPage(p)">
+                  {{ p }}
+                </button>
+              </div>
+
+              <div class="pagination-info-pill">
+                <span>🧾</span>
+                <span>Page <strong>{{ invoicesCurrentPage() }}</strong> / {{ totalInvoicesPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ filteredInvoices.length }}</strong> factures</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextInvoicesPage()" [disabled]="invoicesCurrentPage() === totalInvoicesPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- ==========================================
+               SUB-TAB 2: RÉPERTOIRE CLIENTS & PARTENAIRES
+               ========================================== -->
+          <div *ngIf="activeCommercialSubTab() === 'customers'" style="padding:20px">
+            
+            <!-- Filters & Search Toolbar -->
+            <div class="filter-search-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+              <div class="filter-pills-group">
+                <button class="filter-pill" [class.active]="customerTypeFilter() === 'ALL'" (click)="filterCustomers('ALL')">Tous ({{ customers().length }})</button>
+                <button class="filter-pill" [class.active]="customerTypeFilter() === 'SUPERMARKET'" (click)="filterCustomers('SUPERMARKET')">🛒 Supermarchés</button>
+                <button class="filter-pill" [class.active]="customerTypeFilter() === 'HOTEL_RESTAURANT'" (click)="filterCustomers('HOTEL_RESTAURANT')">🏨 Hôtels & Restos</button>
+                <button class="filter-pill" [class.active]="customerTypeFilter() === 'GROCERY_BIO'" (click)="filterCustomers('GROCERY_BIO')">🏪 Épiceries Bio</button>
+                <button class="filter-pill" [class.active]="customerTypeFilter() === 'INDIVIDUAL'" (click)="filterCustomers('INDIVIDUAL')">🏡 Particuliers</button>
+              </div>
+
+              <div class="search-input-box" style="position:relative;min-width:260px">
+                <input type="text" [(ngModel)]="customersSearchTerm" placeholder="🔍 Rechercher client, contact, ville..." style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem" />
+              </div>
+            </div>
+
+            <!-- Customers Cards Grid -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:16px">
+              <div *ngFor="let c of paginatedCustomers" class="customer-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.03);display:flex;flex-direction:column;justify-content:space-between">
+                <div>
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+                    <div>
+                      <h4 style="margin:0;font-size:1rem;color:#0f172a">{{ c.name }}</h4>
+                      <div style="font-size:0.8rem;color:#64748b;margin-top:2px" *ngIf="c.companyName">{{ c.companyName }}</div>
+                    </div>
+                    <span class="badge-pill" [ngClass]="getCustomerTypeBadgeClass(c.customerType)">
+                      {{ getCustomerTypeLabel(c.customerType) }}
+                    </span>
+                  </div>
+
+                  <div style="font-size:0.8rem;color:#475569;margin-bottom:12px;display:flex;flex-direction:column;gap:4px">
+                    <div style="display:flex;align-items:center;gap:6px">
+                      <span>📞</span>
+                      <span>{{ c.phone || 'Non renseigné' }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px" *ngIf="c.email">
+                      <span>✉️</span>
+                      <span>{{ c.email }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px">
+                      <span>📍</span>
+                      <span>{{ c.address || 'Dakar' }}, {{ c.city || 'Sénégal' }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px" *ngIf="c.nineaNumber">
+                      <span>🏢</span>
+                      <span>NINEA: <code>{{ c.nineaNumber }}</code></span>
+                    </div>
+                  </div>
+
+                  <div style="background:#f8fafc;padding:10px 12px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                    <div>
+                      <div style="font-size:0.75rem;color:#64748b">CA Cumulé</div>
+                      <div style="font-weight:700;color:#0d381e;font-size:0.95rem">{{ (c.totalSpentFcfa || 0).toLocaleString() }} FCFA</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="font-size:0.75rem;color:#64748b">Solde Dû</div>
+                      <div style="font-weight:700;font-size:0.95rem" [style.color]="(c.balanceDueFcfa || 0) > 0 ? '#dc2626' : '#16a34a'">
+                        {{ (c.balanceDueFcfa || 0).toLocaleString() }} FCFA
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button class="btn-primary" style="flex:1;justify-content:center;padding:6px 10px;font-size:0.8rem" (click)="openNewInvoiceModal(c.id)">
+                    <span>+ Facturer</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pagination Bar Customers -->
+            <div class="pagination-bar" *ngIf="totalCustomersPages > 1" style="margin-top:16px">
+              <button class="pagination-btn" (click)="prevCustomersPage()" [disabled]="customersCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Précédent</span>
+              </button>
+              
+              <div class="pagination-pages-wrapper">
+                <button *ngFor="let p of customersPageNumbers" class="page-number-btn" [class.active]="p === customersCurrentPage()" (click)="setCustomersPage(p)">
+                  {{ p }}
+                </button>
+              </div>
+
+              <div class="pagination-info-pill">
+                <span>👥</span>
+                <span>Page <strong>{{ customersCurrentPage() }}</strong> / {{ totalCustomersPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ filteredCustomers.length }}</strong> clients</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextCustomersPage()" [disabled]="customersCurrentPage() === totalCustomersPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- ==========================================
+               SUB-TAB 3: JOURNAL DES ENCAISSEMENTS
+               ========================================== -->
+          <div *ngIf="activeCommercialSubTab() === 'payments'" style="padding:20px">
+            
+            <!-- Search Toolbar -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+              <div>
+                <h3 style="margin:0;font-size:1.1rem;color:#0d381e">Journal des Règlements & Caisse</h3>
+                <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Historique de tous les encaissements Wave, Orange Money, Espèces et Virements.</p>
+              </div>
+
+              <div class="search-input-box" style="position:relative;min-width:260px">
+                <input type="text" [(ngModel)]="paymentsSearchTerm" placeholder="🔍 Rechercher reçu, transaction, client..." style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem" />
+              </div>
+            </div>
+
+            <!-- Payments Table -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>N° Reçu</th>
+                    <th>Date & Heure</th>
+                    <th>Facture Liée</th>
+                    <th>Client</th>
+                    <th>Montant Encaissé</th>
+                    <th>Moyen de Règlement</th>
+                    <th>Réf. Transaction</th>
+                    <th>Encaissé Par</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let p of paginatedPayments">
+                    <td>
+                      <code style="font-weight:700;color:#0284c7;background:#e0f2fe;padding:3px 6px;border-radius:4px">{{ p.receiptNumber || 'REC-AUTO' }}</code>
+                    </td>
+                    <td>
+                      <div style="font-size:0.85rem">{{ p.paymentDate }}</div>
+                    </td>
+                    <td>
+                      <strong style="color:#0d381e">{{ p.invoiceNumber }}</strong>
+                    </td>
+                    <td>
+                      <div style="font-weight:600;color:#1e293b">{{ p.customerName }}</div>
+                    </td>
+                    <td>
+                      <strong style="color:#16a34a;font-size:0.95rem">{{ p.amountPaidFcfa.toLocaleString() }} FCFA</strong>
+                    </td>
+                    <td>
+                      <span class="badge-pill" [ngClass]="getPaymentMethodBadgeClass(p.paymentMethod)">
+                        {{ getPaymentMethodLabel(p.paymentMethod) }}
+                      </span>
+                    </td>
+                    <td>
+                      <code style="font-size:0.8rem;color:#475569">{{ p.transactionReference || 'N/A' }}</code>
+                    </td>
+                    <td>
+                      <div style="font-size:0.8rem;color:#64748b">{{ p.receivedBy || 'Caisse Ferme' }}</div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="filteredPayments.length === 0">
+                    <td colspan="8" style="text-align:center;padding:30px;color:#64748b">
+                      Aucun encaissement enregistré.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination Bar Payments -->
+            <div class="pagination-bar" *ngIf="totalPaymentsPages > 1" style="margin-top:16px">
+              <button class="pagination-btn" (click)="prevPaymentsPage()" [disabled]="paymentsCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Précédent</span>
+              </button>
+              
+              <div class="pagination-pages-wrapper">
+                <button *ngFor="let p of paymentsPageNumbers" class="page-number-btn" [class.active]="p === paymentsCurrentPage()" (click)="setPaymentsPage(p)">
+                  {{ p }}
+                </button>
+              </div>
+
+              <div class="pagination-info-pill">
+                <span>💳</span>
+                <span>Page <strong>{{ paymentsCurrentPage() }}</strong> / {{ totalPaymentsPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ filteredPayments.length }}</strong> règlements</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextPaymentsPage()" [disabled]="paymentsCurrentPage() === totalPaymentsPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1807,49 +2358,162 @@
       </div>
 
       <!-- ==========================================
-           PAGE 10: PARAMETRES & INFRASTRUCTURE
+           PAGE 10: ÉNERGIE SOLAIRE, IOT & AUDIT BIO (SPRINT 5)
            ========================================== -->
       <div class="page" *ngIf="activePage() === 'settings'">
+        
+        <!-- Header Row -->
         <div class="page-header-row">
           <div class="page-header-text">
-            <h2>Paramètres du Système & Infrastructure</h2>
-            <p>Configuration de l'exploitation et monitoring de l'énergie solaire.</p>
+            <h2>☀️ Énergie Solaire, Supervision IoT & Audit Bio</h2>
+            <p>Supervision en temps réel de la centrale photovoltaïque 45 kWc, chaîne du froid, pompage solaire et génération des rapports d'audit.</p>
           </div>
-          <button class="btn-primary" (click)="showToast('Paramètres de la Ferme sauvegardés')">
-            <span>💾 Enregistrer les Modifications</span>
-          </button>
+          <div class="header-action-group">
+            <button class="btn-primary" (click)="openAuditReportModal('BIO_CERTIFICATE')">
+              <span>📄 Exporter Rapport d'Audit Bio</span>
+            </button>
+            <button class="btn-secondary" (click)="openAuditReportModal('FINANCE_ANNUAL')">
+              <span>📊 Bilan d'Exploitation</span>
+            </button>
+          </div>
         </div>
 
-        <div class="two-columns-grid">
+        <!-- KPI Grid Solaire & Climat -->
+        <section class="kpi-grid">
+          <div class="kpi-card card-gold">
+            <div class="kpi-header">
+              <span class="kpi-title">Puissance Solaire Instantanée</span>
+              <span class="kpi-icon">⚡</span>
+            </div>
+            <div class="kpi-value">{{ solarTelemetry()?.currentSolarPowerKw || 38.4 }} <span class="unit">kWc</span></div>
+            <div class="kpi-footer trend-up">
+              <span>☀️ 98.5% d'autonomie solaire</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-green">
+            <div class="kpi-header">
+              <span class="kpi-title">État Batteries Lithium (SOC)</span>
+              <span class="kpi-icon">🔋</span>
+            </div>
+            <div class="kpi-value">{{ solarTelemetry()?.batterySocPercent || 94 }} <span class="unit">%</span></div>
+            <div class="kpi-footer trend-up">
+              <span>✅ Alimentation chambres froides sécurisée</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-blue">
+            <div class="kpi-header">
+              <span class="kpi-title">Production Journalière</span>
+              <span class="kpi-icon">📈</span>
+            </div>
+            <div class="kpi-value">{{ solarTelemetry()?.dailySolarYieldKwh || 215 }} <span class="unit">kWh/j</span></div>
+            <div class="kpi-footer">
+              <span>Cumul total : {{ solarTelemetry()?.totalSolarYieldMwh || 68.4 }} MWh</span>
+            </div>
+          </div>
+
+          <div class="kpi-card card-purple">
+            <div class="kpi-header">
+              <span class="kpi-title">Émissions CO₂ Évitées</span>
+              <span class="kpi-icon">🌱</span>
+            </div>
+            <div class="kpi-value">{{ solarTelemetry()?.co2SavedKg || 182.5 }} <span class="unit">kg / jour</span></div>
+            <div class="kpi-footer trend-up">
+              <span>Impact Zéro Émission Bio</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Two Columns Grid: Telemetry & Audit -->
+        <div class="two-columns-grid" style="margin-top:20px">
+          
+          <!-- Column 1: Équipements IoT & Chaîne du Froid -->
           <div class="content-card">
             <div class="content-card-header">
-              <h3>🏛️ Informations Générales de la Ferme</h3>
+              <h3>❄️ Télémétrie IoT — Chaîne du Froid & Pompage</h3>
+              <span class="badge-pill badge-green">Capteurs en Ligne (4/4)</span>
             </div>
-            <div class="form-grid-layout" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div class="form-group-item">
-                <label>Raison Sociale</label>
-                <input type="text" value="Ferme LAWTAN — Agro Industries" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" />
+
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <!-- Chambre Froide 1 -->
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <div style="font-weight:700;color:#0f172a">❄️ Chambre Froide N°1 (Lait Cru & Cuves)</div>
+                  <div style="font-size:0.8rem;color:#64748b">Consigne optimale : 3.5°C à 4.2°C</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:1.2rem;font-weight:800;color:#16a34a">{{ solarTelemetry()?.coldRoomTempCelsius || 3.8 }} °C</div>
+                  <span class="badge-pill badge-green" style="font-size:0.7rem">Optimal</span>
+                </div>
               </div>
-              <div class="form-group-item">
-                <label>Localisation</label>
-                <input type="text" value="Région de Dakar, Sénégal" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" />
+
+              <!-- Chambre Froide 2 -->
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <div style="font-weight:700;color:#0f172a">🧀 Chambre Froide N°2 (Affinage & Fromagerie)</div>
+                  <div style="font-size:0.8rem;color:#64748b">Consigne optimale : 4.0°C à 4.5°C</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:1.2rem;font-weight:800;color:#16a34a">{{ solarTelemetry()?.secondColdRoomTempCelsius || 4.1 }} °C</div>
+                  <span class="badge-pill badge-green" style="font-size:0.7rem">Optimal</span>
+                </div>
+              </div>
+
+              <!-- Pompage Solaire -->
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <div style="font-weight:700;color:#0f172a">💧 Forage & Pompage Solaire Ferme</div>
+                  <div style="font-size:0.8rem;color:#64748b">Abreuvement troupeau & irrigation fourrage</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:1.1rem;font-weight:800;color:#0284c7">{{ solarTelemetry()?.waterPumpFlowM3h || 14.5 }} m³/h</div>
+                  <div style="font-size:0.75rem;color:#64748b">Château d'eau : <strong>{{ solarTelemetry()?.waterTankLevelPercent || 92 }}%</strong></div>
+                </div>
               </div>
             </div>
           </div>
 
+          <!-- Column 2: Audit & Exportations Bio -->
           <div class="content-card">
             <div class="content-card-header">
-              <h3>☀️ Infrastructure Énergétique & Réseau</h3>
-              <span class="badge-pill badge-green">94% Autonome</span>
+              <h3>📋 Centre d'Audit & Exportation des Bilans</h3>
+              <span class="badge-pill badge-green">Conforme Écocert / Sénégal</span>
             </div>
+
             <div style="display:flex;flex-direction:column;gap:12px">
-              <div style="background:#fefce8;border:1px solid #fef08a;border-radius:8px;padding:12px">
-                <strong style="color:#854d0e">Installation Solaire 12 kWc (Source Principale)</strong>
-                <p style="font-size:0.75rem;color:#713f12">Batteries Lithium : 94% de charge • Alimente la cuve de réfrigération et l'irrigation.</p>
+              
+              <!-- Report 1: Certificat Bio -->
+              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <strong style="color:#166534">🌿 Passeport & Traçabilité Bio</strong>
+                  <p style="margin:2px 0 0 0;font-size:0.75rem;color:#4b5563">Rapport exhaustif des intrants 100% bio, zéro résidu antibiotique et traçabilité des lots.</p>
+                </div>
+                <button class="btn-primary" style="padding:6px 12px;font-size:0.8rem;background:#16a34a" (click)="downloadAuditReport('BIO_CERTIFICATE')">
+                  📥 Télécharger
+                </button>
               </div>
-              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px">
-                <strong style="color:#16a34a">Réseau SENELEC (Secours Automatique)</strong>
-                <p style="font-size:0.75rem;color:#14532d">Bascule automatique en cas de défaillance solaire prolongée.</p>
+
+              <!-- Report 2: Bilan Lactation -->
+              <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <strong style="color:#1e40af">🐄 Bilan Laitier Annuel & Généalogie</strong>
+                  <p style="margin:2px 0 0 0;font-size:0.75rem;color:#4b5563">Performances par vache, taux butyrique, courbes de lactation et suivi de reproduction.</p>
+                </div>
+                <button class="btn-primary" style="padding:6px 12px;font-size:0.8rem;background:#2563eb" (click)="downloadAuditReport('DAIRY_ANNUAL')">
+                  📥 Télécharger
+                </button>
+              </div>
+
+              <!-- Report 3: Compte d'Exploitation -->
+              <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <strong style="color:#6b21a8">📊 Bilan d'Exploitation Commercial & Marges</strong>
+                  <p style="margin:2px 0 0 0;font-size:0.75rem;color:#4b5563">Chiffre d'affaires en FCFA, encaissements Wave/OM, coûts d'alimentation et marges nettes.</p>
+                </div>
+                <button class="btn-primary" style="padding:6px 12px;font-size:0.8rem;background:#7c3aed" (click)="downloadAuditReport('FINANCE_ANNUAL')">
+                  📥 Télécharger
+                </button>
               </div>
             </div>
           </div>
@@ -2956,8 +3620,671 @@
   </div>
 </div>
 
+<!-- ==========================================
+     SPRINT 4 MODAL 1: NOUVELLE FACTURE / VENTE
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isNewInvoiceModalOpen()">
+  <div class="modal-card" style="max-width:780px">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0;font-size:1.2rem;color:#0d381e">🧾 Créer une Nouvelle Facture / Vente</h3>
+        <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Émission de facture normalisée et déstockage automatique des produits finis.</p>
+      </div>
+      <button class="modal-close-btn" (click)="closeNewInvoiceModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitNewInvoice()" style="padding:20px;max-height:80vh;overflow-y:auto">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        
+        <!-- Row 1: Client & Dates -->
+        <div class="form-grid-layout" style="grid-template-columns:2fr 1fr 1fr">
+          <div class="form-group-item">
+            <label>Client / Destinataire *</label>
+            <select [(ngModel)]="newInvoiceForm.customerId" name="invCust" required>
+              <option *ngFor="let c of customers()" [value]="c.id">
+                {{ c.name }} ({{ getCustomerTypeLabel(c.customerType) }})
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group-item">
+            <label>Date d'Émission</label>
+            <input type="date" [(ngModel)]="newInvoiceForm.issueDate" name="invDate" required />
+          </div>
+
+          <div class="form-group-item">
+            <label>Date d'Échéance</label>
+            <input type="date" [(ngModel)]="newInvoiceForm.dueDate" name="invDue" />
+          </div>
+        </div>
+
+        <!-- Section Articles Commandés -->
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-weight:700;color:#0d381e;font-size:0.95rem">📦 Lignes d'Articles (Produits Dérivés & Lait)</div>
+            <button type="button" class="btn-secondary" style="padding:4px 10px;font-size:0.8rem" (click)="addInvoiceItemLine()">
+              + Ajouter un article
+            </button>
+          </div>
+
+          <div *ngFor="let item of newInvoiceForm.items; let i = index" style="background:#ffffff;border:1px solid #cbd5e1;border-radius:8px;padding:10px;margin-bottom:10px">
+            <div class="form-grid-layout" style="grid-template-columns:2.5fr 1fr 1.2fr 1.2fr 40px;align-items:end;gap:8px">
+              
+              <!-- Choix Produit dans le Stock -->
+              <div class="form-group-item">
+                <label style="font-size:0.75rem">Sélectionner Produit Stock / Catalogue</label>
+                <select [ngModel]="item.productId" (ngModelChange)="onInvoiceItemProductSelect(i, $event)" [name]="'itemProd_' + i">
+                  <option [value]="undefined">-- Produit personnalisé libre --</option>
+                  <option *ngFor="let s of productStocks()" [value]="s.id">
+                    {{ s.productName }} (Dispo: {{ s.quantityAvailable }} {{ s.unit }} • {{ s.unitPriceFcfa }} F)
+                  </option>
+                </select>
+                <input type="text" [(ngModel)]="item.productName" [name]="'itemName_' + i" placeholder="Désignation du produit" style="margin-top:4px" required />
+              </div>
+
+              <!-- Quantité -->
+              <div class="form-group-item">
+                <label style="font-size:0.75rem">Quantité ({{ item.unit || 'unités' }})</label>
+                <input type="number" min="1" step="0.5" [(ngModel)]="item.quantity" (ngModelChange)="onInvoiceItemQtyPriceChange(i)" [name]="'itemQty_' + i" required />
+              </div>
+
+              <!-- Prix Unitaire -->
+              <div class="form-group-item">
+                <label style="font-size:0.75rem">P.U. (FCFA)</label>
+                <input type="number" min="0" step="50" [(ngModel)]="item.unitPriceFcfa" (ngModelChange)="onInvoiceItemQtyPriceChange(i)" [name]="'itemPu_' + i" required />
+              </div>
+
+              <!-- Total Ligne -->
+              <div class="form-group-item">
+                <label style="font-size:0.75rem">Total Ligne</label>
+                <div style="padding:8px 10px;background:#e8f5e9;border-radius:6px;font-weight:700;color:#0d381e;text-align:right">
+                  {{ (item.quantity * item.unitPriceFcfa).toLocaleString() }} F
+                </div>
+              </div>
+
+              <!-- Supprimer Ligne -->
+              <div>
+                <button type="button" class="table-icon-btn" style="color:#dc2626;height:38px" title="Supprimer la ligne" (click)="removeInvoiceItemLine(i)" [disabled]="newInvoiceForm.items.length === 1">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Remise & Totaux Récapitulatifs -->
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px">
+          <div>
+            <div class="form-group-item">
+              <label>Remise Commerciale Exceptionnelle (FCFA)</label>
+              <input type="number" min="0" step="500" [(ngModel)]="newInvoiceForm.discountFcfa" name="invDisc" placeholder="0" />
+            </div>
+            <div class="form-group-item" style="margin-top:8px">
+              <label>Notes & Conditions Particulières</label>
+              <textarea rows="2" [(ngModel)]="newInvoiceForm.notes" name="invNotes" placeholder="Livraison matinale, DLC garantie > 15 jours..."></textarea>
+            </div>
+          </div>
+
+          <!-- Total Card -->
+          <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:10px;padding:14px;display:flex;flex-direction:column;justify-content:center;gap:6px">
+            <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:#475569">
+              <span>Sous-Total Brut :</span>
+              <strong>{{ newInvoiceSubTotal.toLocaleString() }} FCFA</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:#dc2626" *ngIf="newInvoiceForm.discountFcfa > 0">
+              <span>Remise Accordée :</span>
+              <strong>- {{ newInvoiceForm.discountFcfa.toLocaleString() }} FCFA</strong>
+            </div>
+            <div style="border-top:1px dashed #94a3b8;margin:6px 0"></div>
+            <div style="display:flex;justify-content:space-between;font-size:1.1rem;font-weight:800;color:#0d381e">
+              <span>TOTAL NET TTC :</span>
+              <span>{{ newInvoiceGrandTotal.toLocaleString() }} FCFA</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Option Encaisser Immédiatement -->
+        <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:12px">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:600;color:#065f46;cursor:pointer">
+            <input type="checkbox" [(ngModel)]="newInvoiceForm.immediatePayment" name="invImmPay" />
+            <span>Encaisser le règlement immédiatement à l'émission de la facture</span>
+          </label>
+
+          <div *ngIf="newInvoiceForm.immediatePayment" class="form-grid-layout" style="grid-template-columns:1fr 1.5fr;margin-top:10px">
+            <div class="form-group-item">
+              <label style="font-size:0.8rem">Moyen de Règlement</label>
+              <select [(ngModel)]="newInvoiceForm.paymentMethod" name="invPayMeth" (ngModelChange)="newInvoiceForm.paymentReference = generateSimulatedPaymentRef(newInvoiceForm.paymentMethod)">
+                <option value="WAVE">🌊 Wave Sénégal</option>
+                <option value="ORANGE_MONEY">🟠 Orange Money</option>
+                <option value="CASH">💵 Espèces (Caisse)</option>
+                <option value="BANK_TRANSFER">🏦 Virement Bancaire</option>
+                <option value="CHECK">📜 Chèque</option>
+              </select>
+            </div>
+            <div class="form-group-item">
+              <label style="font-size:0.8rem">Référence Transaction</label>
+              <input type="text" [(ngModel)]="newInvoiceForm.paymentReference" name="invPayRef" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit & Cancel -->
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeNewInvoiceModal()">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Valider & Émettre la Facture ({{ newInvoiceGrandTotal.toLocaleString() }} FCFA)
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     SPRINT 4 MODAL 2: NOUVEAU CLIENT
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isNewCustomerModalOpen()">
+  <div class="modal-card" style="max-width:580px">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0;font-size:1.2rem;color:#0d381e">👥 Enregistrer un Nouveau Client</h3>
+        <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Ajout au carnet d'adresses commercial de la Ferme LAWTAN.</p>
+      </div>
+      <button class="modal-close-btn" (click)="closeNewCustomerModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitNewCustomer()" style="padding:20px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Nom du Client / Enseigne *</label>
+            <input type="text" [(ngModel)]="newCustomerForm.name" name="cName" placeholder="Ex: Supermarché Auchan Almadies" required />
+          </div>
+          <div class="form-group-item">
+            <label>Raison Sociale</label>
+            <input type="text" [(ngModel)]="newCustomerForm.companyName" name="cComp" placeholder="Ex: Auchan Sénégal SA" />
+          </div>
+        </div>
+
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Catégorie de Client</label>
+            <select [(ngModel)]="newCustomerForm.customerType" name="cType">
+              <option value="SUPERMARKET">🛒 Supermarché / Grande Surface</option>
+              <option value="HOTEL_RESTAURANT">🏨 Hôtel & Restaurant Gastronomique</option>
+              <option value="GROCERY_BIO">🏪 Épicerie Fine & Boutique Bio</option>
+              <option value="INDIVIDUAL">🏡 Particulier / Vente Directe</option>
+            </select>
+          </div>
+          <div class="form-group-item">
+            <label>Numéro NINEA (si entreprise)</label>
+            <input type="text" [(ngModel)]="newCustomerForm.nineaNumber" name="cNinea" placeholder="SN-DKR-2024-B-XXXX" />
+          </div>
+        </div>
+
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Téléphone Mobile (Wave / Appel)</label>
+            <input type="tel" [(ngModel)]="newCustomerForm.phone" name="cPhone" placeholder="+221 77 000 00 00" />
+          </div>
+          <div class="form-group-item">
+            <label>Email Commercial</label>
+            <input type="email" [(ngModel)]="newCustomerForm.email" name="cEmail" placeholder="contact@client.sn" />
+          </div>
+        </div>
+
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Adresse de Livraison</label>
+            <input type="text" [(ngModel)]="newCustomerForm.address" name="cAddr" placeholder="Avenue, Quartier..." />
+          </div>
+          <div class="form-group-item">
+            <label>Ville</label>
+            <input type="text" [(ngModel)]="newCustomerForm.city" name="cCity" placeholder="Dakar, Thiès, Mbour..." />
+          </div>
+        </div>
+
+        <div class="form-group-item">
+          <label>Notes & Préférences de Commande</label>
+          <textarea rows="2" [(ngModel)]="newCustomerForm.notes" name="cNotes" placeholder="Fréquence de livraison, contact responsable réassort..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:6px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeNewCustomerModal()">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Enregistrer le Client
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     SPRINT 4 MODAL 3: ENCAISSEMENT / PAIEMENT
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isPaymentModalOpen()">
+  <div class="modal-card" style="max-width:540px">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0;font-size:1.2rem;color:#0d381e">💳 Encaisser un Règlement</h3>
+        <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Facture {{ selectedInvoiceForPayment()?.invoiceNumber }} — {{ selectedInvoiceForPayment()?.customerName }}</p>
+      </div>
+      <button class="modal-close-btn" (click)="closePaymentModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitPayment()" style="padding:20px">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        
+        <!-- Recap Facture -->
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:0.75rem;color:#64748b">Montant Total Facture</div>
+            <div style="font-weight:700;color:#1e293b">{{ selectedInvoiceForPayment()?.totalAmountFcfa?.toLocaleString() }} FCFA</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:0.75rem;color:#dc2626;font-weight:600">Reste Dû</div>
+            <div style="font-weight:800;color:#dc2626;font-size:1.1rem">{{ selectedInvoiceForPayment()?.remainingAmountFcfa?.toLocaleString() }} FCFA</div>
+          </div>
+        </div>
+
+        <!-- Montant versé -->
+        <div class="form-group-item">
+          <label>Montant du Règlement (FCFA) *</label>
+          <input type="number" min="1" [max]="selectedInvoiceForPayment()?.remainingAmountFcfa || 10000000" [(ngModel)]="paymentForm.amountPaidFcfa" name="payAmount" style="font-size:1.1rem;font-weight:700;color:#0d381e" required />
+        </div>
+
+        <!-- Choix Mode de Paiement -->
+        <div class="form-group-item">
+          <label>Mode de Règlement *</label>
+          <select [(ngModel)]="paymentForm.paymentMethod" (ngModelChange)="onPaymentMethodChange()" name="payMethod" required>
+            <option value="WAVE">🌊 Wave Sénégal (Direct & Sans frais)</option>
+            <option value="ORANGE_MONEY">🟠 Orange Money (OM)</option>
+            <option value="CASH">💵 Espèces (Caisse Ferme)</option>
+            <option value="BANK_TRANSFER">🏦 Virement Bancaire</option>
+            <option value="CHECK">📜 Chèque Bancaire</option>
+          </select>
+        </div>
+
+        <!-- Référence Transaction -->
+        <div class="form-group-item">
+          <label>Référence / Numéro de Transaction</label>
+          <input type="text" [(ngModel)]="paymentForm.transactionReference" name="payRef" placeholder="Ex: WAVE-SN-998241" required />
+        </div>
+
+        <!-- Reçu par -->
+        <div class="form-group-item">
+          <label>Encaissé par</label>
+          <input type="text" [(ngModel)]="paymentForm.receivedBy" name="payBy" placeholder="Comptabilité Ferme LAWTAN" />
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:6px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closePaymentModal()">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0;background:#15803d">
+            Valider le Règlement ({{ paymentForm.amountPaidFcfa.toLocaleString() }} FCFA)
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     SPRINT 4 MODAL 4: FACTURE IMPRIMABLE A4 / PDF
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isInvoicePrintModalOpen()">
+  <div class="modal-card" style="max-width:850px;background:#f1f5f9;padding:0">
+    
+    <!-- Modal Toolbar -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:#0d381e;color:white;border-radius:12px 12px 0 0">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span>📄</span>
+        <strong>Visualiseur Facture Normalisée — {{ selectedInvoiceForPrint()?.invoiceNumber }}</strong>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button type="button" class="btn-primary" style="background:#22c55e;color:#0d381e;padding:6px 14px" (click)="triggerPrint()">
+          🖨️ Imprimer / Télécharger PDF
+        </button>
+        <button class="modal-close-btn" style="color:white" (click)="closeInvoicePrintModal()">✕</button>
+      </div>
+    </div>
+
+    <!-- Printable Invoice Page (A4 Paper emulation) -->
+    <div id="printableInvoiceDocument" class="printable-invoice-paper" style="background:#ffffff;margin:20px;padding:36px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.06);font-family:'Outfit',sans-serif;color:#1e293b">
+      
+      <!-- Document Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0d381e;padding-bottom:20px;margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:54px;height:54px;background:#0d381e;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#22c55e;font-size:28px">
+            🥛
+          </div>
+          <div>
+            <div style="font-size:1.5rem;font-weight:800;color:#0d381e;letter-spacing:1px">LAWTAN <span style="background:#22c55e;color:#0d381e;font-size:0.75rem;padding:2px 6px;border-radius:4px;vertical-align:middle">BIO</span></div>
+            <div style="font-size:0.85rem;color:#475569">Ferme Laitière & Agro Industries • Sénégal</div>
+            <div style="font-size:0.75rem;color:#64748b">NINEA: SN-DKR-2023-A-0982 • Thiès / Dakar</div>
+          </div>
+        </div>
+
+        <div style="text-align:right">
+          <div style="font-size:1.4rem;font-weight:800;color:#0d381e">FACTURE</div>
+          <code style="font-size:1rem;font-weight:700;color:#0d381e">{{ selectedInvoiceForPrint()?.invoiceNumber }}</code>
+          <div style="margin-top:6px">
+            <span class="badge-pill" [ngClass]="getInvoiceStatusBadgeClass(selectedInvoiceForPrint()?.status)">
+              {{ getInvoiceStatusLabel(selectedInvoiceForPrint()?.status) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parties Block (Seller & Client) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px">
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px">
+          <div style="font-size:0.75rem;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:6px">Émetteur / Vendeur</div>
+          <div style="font-weight:700;color:#0d381e">FERME LAWTAN AGRO INDUSTRIES</div>
+          <div style="font-size:0.85rem;color:#475569">Zone Agro-Pastorale de Pout / Thiès</div>
+          <div style="font-size:0.85rem;color:#475569">Tél : +221 33 800 00 00 / +221 77 123 45 67</div>
+          <div style="font-size:0.85rem;color:#475569">Email : commercial&#64;lawtan-bio.sn</div>
+        </div>
+
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px">
+          <div style="font-size:0.75rem;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:6px">Facturé à / Client</div>
+          <div style="font-weight:700;color:#0f172a;font-size:1rem">{{ selectedInvoiceForPrint()?.customerName }}</div>
+          <div style="font-size:0.85rem;color:#475569" *ngIf="selectedInvoiceForPrint()?.customerAddress">{{ selectedInvoiceForPrint()?.customerAddress }}</div>
+          <div style="font-size:0.85rem;color:#475569" *ngIf="selectedInvoiceForPrint()?.customerPhone">Tél : {{ selectedInvoiceForPrint()?.customerPhone }}</div>
+          <div style="font-size:0.85rem;color:#475569" *ngIf="selectedInvoiceForPrint()?.customerNinea">NINEA : {{ selectedInvoiceForPrint()?.customerNinea }}</div>
+        </div>
+      </div>
+
+      <!-- Dates bar -->
+      <div style="display:flex;justify-content:space-between;background:#e8f5e9;padding:10px 16px;border-radius:6px;margin-bottom:20px;font-size:0.85rem">
+        <div><strong>Date d'Émission :</strong> {{ selectedInvoiceForPrint()?.issueDate }}</div>
+        <div><strong>Date d'Échéance :</strong> {{ selectedInvoiceForPrint()?.dueDate || 'À réception' }}</div>
+        <div><strong>Règlement :</strong> {{ getPaymentMethodLabel(selectedInvoiceForPrint()?.paymentMethod) }}</div>
+      </div>
+
+      <!-- Invoice Items Table -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+        <thead>
+          <tr style="background:#0d381e;color:white;text-align:left;font-size:0.85rem">
+            <th style="padding:10px 12px;border-radius:6px 0 0 0">Description du Produit Dérivé Bio</th>
+            <th style="padding:10px 12px;text-align:center">Quantité</th>
+            <th style="padding:10px 12px;text-align:right">P.U. (FCFA)</th>
+            <th style="padding:10px 12px;text-align:right;border-radius:0 6px 0 0">Montant Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let it of selectedInvoiceForPrint()?.items" style="border-bottom:1px solid #e2e8f0;font-size:0.85rem">
+            <td style="padding:10px 12px">
+              <strong style="color:#0f172a">{{ it.productName }}</strong>
+              <div style="font-size:0.75rem;color:#64748b">Conditionnement standard certifié bio</div>
+            </td>
+            <td style="padding:10px 12px;text-align:center">{{ it.quantity }} {{ it.unit }}</td>
+            <td style="padding:10px 12px;text-align:right">{{ it.unitPriceFcfa.toLocaleString() }} F</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;color:#0d381e">{{ it.lineTotalFcfa.toLocaleString() }} FCFA</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Totals & Payment Details Footer Grid -->
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px;align-items:start">
+        
+        <!-- Coordonnées Wave / RIB -->
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;font-size:0.8rem;color:#475569">
+          <div style="font-weight:700;color:#0d381e;margin-bottom:6px">Modalités de Règlement :</div>
+          <div>🌊 <strong>Wave Sénégal :</strong> <code>+221 77 123 45 67</code> (Ferme LAWTAN)</div>
+          <div style="margin-top:2px">🟠 <strong>Orange Money :</strong> <code>+221 78 123 45 67</code></div>
+          <div style="margin-top:2px">🏦 <strong>RIB Bancaire BOA :</strong> <code>SN012 01001 00293847291 45</code></div>
+          <div style="margin-top:8px;font-size:0.75rem;color:#64748b;font-style:italic">
+            * Tout retard de paiement entraîne des pénalités légales au taux en vigueur de la BCEAO.
+          </div>
+        </div>
+
+        <!-- Totals Block -->
+        <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:#475569">
+            <span>Sous-Total Brut :</span>
+            <strong>{{ selectedInvoiceForPrint()?.subTotalFcfa?.toLocaleString() }} FCFA</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:#dc2626" *ngIf="selectedInvoiceForPrint()?.discountFcfa && selectedInvoiceForPrint()!.discountFcfa! > 0">
+            <span>Remise Commerciale :</span>
+            <strong>- {{ selectedInvoiceForPrint()?.discountFcfa?.toLocaleString() }} FCFA</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.85rem;color:#16a34a">
+            <span>Acompte / Payé :</span>
+            <strong>{{ selectedInvoiceForPrint()?.paidAmountFcfa?.toLocaleString() }} FCFA</strong>
+          </div>
+          <div style="border-top:2px solid #0d381e;margin:6px 0"></div>
+          <div style="display:flex;justify-content:space-between;font-size:1.15rem;font-weight:800;color:#0d381e">
+            <span>NET À PAYER :</span>
+            <span>{{ selectedInvoiceForPrint()?.totalAmountFcfa?.toLocaleString() }} FCFA</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.9rem;font-weight:700;color:#dc2626" *ngIf="selectedInvoiceForPrint()?.remainingAmountFcfa && selectedInvoiceForPrint()!.remainingAmountFcfa! > 0">
+            <span>RESTE DÛ :</span>
+            <span>{{ selectedInvoiceForPrint()?.remainingAmountFcfa?.toLocaleString() }} FCFA</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legal Stamp Footer -->
+      <div style="margin-top:32px;display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid #e2e8f0;padding-top:16px">
+        <div style="font-size:0.75rem;color:#94a3b8">
+          LAWTAN BIO — Société d'Agro-Industrie & Élevage Durable • RC: SN.DKR.2023.B.1420
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:0.75rem;color:#64748b;margin-bottom:4px">Pour la Direction Commerciale</div>
+          <div style="border:1.5px dashed #0d381e;color:#0d381e;font-size:0.75rem;font-weight:700;padding:6px 14px;border-radius:6px">
+            ✅ Validé & Conforme Bio
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     SPRINT 5 MODAL 1: NOUVEL ALIMENT / STOCK FOURRAGE
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isFeedStockModalOpen()">
+  <div class="modal-card" style="max-width:580px">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0;font-size:1.2rem;color:#0d381e">🌾 Enregistrer un Aliment / Matière Première</h3>
+        <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Gestion des approvisionnements et des seuils d'alerte.</p>
+      </div>
+      <button class="modal-close-btn" (click)="closeFeedStockModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="saveFeedStock()" style="padding:20px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Nom de l'Aliment / Fourrage *</label>
+            <input type="text" [(ngModel)]="feedStockForm.name" name="fsName" placeholder="Ex: Ensilage de Maïs Bio, Foin de Niébé..." required />
+          </div>
+          <div class="form-group-item">
+            <label>Catégorie Nutritionnelle</label>
+            <select [(ngModel)]="feedStockForm.category" name="fsCat">
+              <option value="FORAGE_GREEN">🌱 Fourrage Vert / Ensilage</option>
+              <option value="FORAGE_DRY">🌾 Fourrage Sec & Foin</option>
+              <option value="CONCENTRATE">🌽 Concentré & Tourteau</option>
+              <option value="MINERALS_VITAMINS">🧂 Minéraux, Sel & CMV</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Quantité Initiale en Stock (kg) *</label>
+            <input type="number" min="0" [(ngModel)]="feedStockForm.currentStockKg" name="fsQty" required />
+          </div>
+          <div class="form-group-item">
+            <label>Seuil d'Alerte Réapprovisionnement (kg) *</label>
+            <input type="number" min="0" [(ngModel)]="feedStockForm.alertThresholdKg" name="fsAlert" required />
+          </div>
+        </div>
+
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Prix Unitaire Moyen (FCFA / kg)</label>
+            <input type="number" min="0" [(ngModel)]="feedStockForm.unitPricePerKgFcfa" name="fsPrice" placeholder="80" />
+          </div>
+          <div class="form-group-item">
+            <label>Lieu de Stockage</label>
+            <input type="text" [(ngModel)]="feedStockForm.storageLocation" name="fsLoc" placeholder="Silo Couloir N°1, Hangar..." />
+          </div>
+        </div>
+
+        <div class="form-group-item">
+          <label>Fournisseur / Origine Parcelle</label>
+          <input type="text" [(ngModel)]="feedStockForm.supplierName" name="fsSupp" placeholder="Parcelles Bio Pout, GIE Femmes Niayes..." />
+        </div>
+
+        <div class="form-group-item">
+          <label>Notes & Caractéristiques</label>
+          <textarea rows="2" [(ngModel)]="feedStockForm.notes" name="fsNotes" placeholder="Taux de matière sèche, teneur en protéines..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:6px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeFeedStockModal()">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Enregistrer dans les Stocks
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     SPRINT 5 MODAL 2: NOUVELLE FICHE RATION
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isFeedRationModalOpen()">
+  <div class="modal-card" style="max-width:620px">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0;font-size:1.2rem;color:#0d381e">📋 Créer une Formule de Ration Équilibrée</h3>
+        <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Paramétrage des besoins en MS, Énergie (UFL) et Protéines (PDI).</p>
+      </div>
+      <button class="modal-close-btn" (click)="closeFeedRationModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="saveFeedRation()" style="padding:20px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Nom de la Formule / Ration *</label>
+            <input type="text" [(ngModel)]="feedRationForm.rationName" name="frName" placeholder="Ex: Ration Haute Production (> 20 L/j)" required />
+          </div>
+          <div class="form-group-item">
+            <label>Catégorie Animale Cible</label>
+            <select [(ngModel)]="feedRationForm.targetCategory" name="frCat">
+              <option value="Vaches Haute Lactation">Vaches Haute Lactation (> 20 L/j)</option>
+              <option value="Vaches en Lactation Standard">Vaches Lactation Standard (14-18 L/j)</option>
+              <option value="Vaches Taries & Gestantes">Vaches Taries & Gestantes</option>
+              <option value="Génisses de Renouvellement">Génisses de Renouvellement</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group-item">
+          <label>Composition détaillée de la ration (Ingrédients & Doses)</label>
+          <textarea rows="3" [(ngModel)]="feedRationForm.compositionDescription" name="frComp" placeholder="15 kg Ensilage Maïs + 4 kg Foin Niébé + 3.5 kg Tourteau Arachide + 150g CMV..." required></textarea>
+        </div>
+
+        <div class="form-grid-layout" style="grid-template-columns:1fr 1fr 1fr">
+          <div class="form-group-item">
+            <label>Matière Sèche (kg MS)</label>
+            <input type="number" step="0.5" min="1" [(ngModel)]="feedRationForm.dailyDryMatterKg" name="frMs" required />
+          </div>
+          <div class="form-group-item">
+            <label>Énergie (UFL)</label>
+            <input type="number" step="0.1" min="1" [(ngModel)]="feedRationForm.energyUfl" name="frUfl" />
+          </div>
+          <div class="form-group-item">
+            <label>Protéines (g PDI)</label>
+            <input type="number" step="50" min="0" [(ngModel)]="feedRationForm.proteinPdiGrams" name="frPdi" />
+          </div>
+        </div>
+
+        <div class="form-group-item">
+          <label>Coût Journalier Estimé / Tête (FCFA)</label>
+          <input type="number" step="50" min="0" [(ngModel)]="feedRationForm.dailyCostFcfa" name="frCost" placeholder="2400" required />
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:6px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeFeedRationModal()">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Valider la Formule de Ration
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     SPRINT 5 MODAL 3: EXPORTATION AUDIT BIO & FINANCES
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isAuditReportModalOpen()">
+  <div class="modal-card" style="max-width:560px">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0;font-size:1.2rem;color:#0d381e">📋 Exportation de Rapports d'Audit Officiels</h3>
+        <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Génération de documents certifiés pour les auditeurs bio et la direction.</p>
+      </div>
+      <button class="modal-close-btn" (click)="closeAuditReportModal()">✕</button>
+    </div>
+
+    <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
+      
+      <div class="form-group-item">
+        <label>Sélectionner le Rapport à Exporter</label>
+        <select [(ngModel)]="selectedAuditReportType">
+          <option value="BIO_CERTIFICATE">🌿 Passeport de Conformité & Traçabilité Bio (Écocert)</option>
+          <option value="DAIRY_ANNUAL">🐄 Bilan Annuel de Lactation & Qualité du Lait</option>
+          <option value="FINANCE_ANNUAL">📊 Bilan d'Exploitation Commerciale & Marges (FCFA)</option>
+        </select>
+      </div>
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;font-size:0.85rem;color:#334155">
+        <div style="font-weight:700;color:#0d381e;margin-bottom:6px">Contenu certifié inclus :</div>
+        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
+          <li>Horodatage officiel et numéro NINEA d'exploitation.</li>
+          <li>Registre sanitaire exhaustif (zéro résidu antibiotique dans la cuve).</li>
+          <li>Ratios de valorisation laitière et bilan énergétique solaire 45 kWc.</li>
+          <li>Signature numérique certifiée de la Ferme LAWTAN BIO.</li>
+        </ul>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:6px">
+        <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeAuditReportModal()">
+          Fermer
+        </button>
+        <button type="button" class="btn-primary" style="flex:2;justify-content:center;background:#16a34a" (click)="downloadAuditReport(selectedAuditReportType())">
+          📥 Générer & Télécharger le Rapport
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast Notification Popup -->
 <div class="toast-container" *ngIf="toastMessage()" style="position:fixed;bottom:24px;right:24px;background:#0e3d20;color:white;padding:12px 20px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.3);z-index:999;font-weight:600;display:flex;align-items:center;gap:10px;border-left:4px solid #22c55e">
   <span>🔔</span>
   <span>{{ toastMessage() }}</span>
 </div>
+
+

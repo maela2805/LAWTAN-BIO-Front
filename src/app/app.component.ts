@@ -7,6 +7,8 @@ import { HealthRecord, VaccineSchedule } from './models/health.model';
 import { DashboardStats, MilkProduction, TankStatus, MilkHistory } from './models/milk.model';
 import { ReproductionEvent, ReproductionAlert, ReproEventType } from './models/reproduction.model';
 import { Recipe, TransformationBatch, ProductStock, TransformationSummary, ProductType, BatchStatus } from './models/transformation.model';
+import { Customer, SaleInvoice, InvoiceItem, PaymentTransaction, CommercialSummary, CustomerType, InvoiceStatus, PaymentMethod } from './models/commercial.model';
+import { FeedStock, FeedRation, SolarTelemetry } from './models/feed-solar.model';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -282,6 +284,130 @@ export class AppComponent implements OnInit, AfterViewInit {
   stocksCurrentPage = signal<number>(1);
   stocksPageSize = signal<number>(5);
 
+  // Sprint 4: Data Collections, Pagination & Modals (Commercial, Invoices, Customers, Payments)
+  isCommercialMenuOpen = signal<boolean>(false);
+  activeCommercialSubTab = signal<string>('invoices'); // 'invoices' | 'customers' | 'payments'
+  commercialSummary = signal<CommercialSummary | null>(null);
+  customers = signal<Customer[]>([]);
+  invoices = signal<SaleInvoice[]>([]);
+  payments = signal<PaymentTransaction[]>([]);
+
+  isNewInvoiceModalOpen = signal<boolean>(false);
+  isNewCustomerModalOpen = signal<boolean>(false);
+  isPaymentModalOpen = signal<boolean>(false);
+  isInvoicePrintModalOpen = signal<boolean>(false);
+
+  selectedInvoiceForDetail = signal<SaleInvoice | null>(null);
+  selectedInvoiceForPayment = signal<SaleInvoice | null>(null);
+  selectedInvoiceForPrint = signal<SaleInvoice | null>(null);
+  selectedCustomerForDetail = signal<Customer | null>(null);
+
+  invoiceFilterStatus = signal<string>('ALL');
+  invoicesSearchTerm = signal<string>('');
+  customersSearchTerm = signal<string>('');
+  customerTypeFilter = signal<string>('ALL');
+  paymentsSearchTerm = signal<string>('');
+
+  invoicesCurrentPage = signal<number>(1);
+  invoicesPageSize = signal<number>(6);
+
+  customersCurrentPage = signal<number>(1);
+  customersPageSize = signal<number>(6);
+
+  paymentsCurrentPage = signal<number>(1);
+  paymentsPageSize = signal<number>(8);
+
+  // Commercial Forms
+  newInvoiceForm = {
+    customerId: 1,
+    issueDate: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
+    discountFcfa: 0,
+    taxFcfa: 0,
+    notes: '',
+    paymentMethod: 'WAVE' as PaymentMethod,
+    paymentReference: '',
+    immediatePayment: false,
+    items: [
+      {
+        productId: 1 as number | undefined,
+        productName: 'Fromage Fermier Frais Bio (200g)',
+        productType: 'CHEESE' as ProductType | undefined,
+        quantity: 10,
+        unit: 'pièces 200g',
+        unitPriceFcfa: 2000,
+        lineTotalFcfa: 20000
+      }
+    ] as Array<{
+      productId?: number;
+      productName: string;
+      productType?: ProductType;
+      quantity: number;
+      unit: string;
+      unitPriceFcfa: number;
+      lineTotalFcfa: number;
+    }>
+  };
+
+  newCustomerForm: Customer = {
+    name: '',
+    companyName: '',
+    customerType: 'SUPERMARKET',
+    phone: '',
+    email: '',
+    address: '',
+    city: 'Dakar',
+    nineaNumber: '',
+    notes: ''
+  };
+
+  paymentForm = {
+    amountPaidFcfa: 0,
+    paymentMethod: 'WAVE' as PaymentMethod,
+    transactionReference: '',
+    receivedBy: 'Comptabilité Ferme LAWTAN',
+    notes: ''
+  };
+
+  // ==========================================
+  // SPRINT 5: ALIMENTATION, SOLAIRE & AUDIT
+  // ==========================================
+  feedStocks = signal<FeedStock[]>([]);
+  feedRations = signal<FeedRation[]>([]);
+  solarTelemetry = signal<SolarTelemetry | null>(null);
+
+  activeFeedSubTab = signal<'stocks' | 'rations'>('stocks');
+  isFeedStockModalOpen = signal<boolean>(false);
+  isFeedRationModalOpen = signal<boolean>(false);
+  isAuditReportModalOpen = signal<boolean>(false);
+  selectedAuditReportType = signal<string>('BIO_CERTIFICATE');
+
+  feedStockForm: FeedStock = {
+    name: '',
+    category: 'FORAGE_GREEN',
+    currentStockKg: 500,
+    alertThresholdKg: 200,
+    unitPricePerKgFcfa: 80,
+    supplierName: '',
+    storageLocation: 'Hangar Principal',
+    notes: ''
+  };
+
+  feedRationForm: FeedRation = {
+    rationName: '',
+    targetCategory: 'Vaches Haute Lactation',
+    dailyDryMatterKg: 15.0,
+    compositionDescription: '',
+    dailyCostFcfa: 2400,
+    energyUfl: 13.0,
+    proteinPdiGrams: 1250
+  };
+
+  feedStockSearchTerm = signal<string>('');
+  feedCategoryFilter = signal<string>('ALL');
+  feedStocksCurrentPage = signal<number>(1);
+  feedStocksItemsPerPage = signal<number>(6);
+
   // Charts
   private milkChartInstance: Chart | null = null;
   private donutChartInstance: Chart | null = null;
@@ -343,6 +469,12 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     // 7. Sprint 3: Transformation, Recipes & Stocks
     this.loadTransformationData();
+
+    // 8. Sprint 4: Commercial, Customers, Invoices & Payments
+    this.loadCommercialData();
+
+    // 9. Sprint 5: Feed, Rations & Solar Telemetry
+    this.loadFeedAndSolarData();
   }
 
   loadReproductionData(): void {
@@ -2244,6 +2376,1288 @@ export class AppComponent implements OnInit, AfterViewInit {
     });
   }
 
+  // ==========================================
+  // SPRINT 4: COMMERCIAL & FINANCES LOGIC
+  // ==========================================
+
+  loadCommercialData(): void {
+    // 1. Fetch Customers
+    this.apiService.getAllCustomers().subscribe(custs => {
+      if (custs && custs.length > 0) {
+        this.customers.set(custs);
+      } else {
+        this.loadFallbackCustomers();
+      }
+    });
+
+    // 2. Fetch Invoices
+    this.apiService.getAllInvoices().subscribe(invs => {
+      if (invs && invs.length > 0) {
+        this.invoices.set(invs);
+      } else {
+        this.loadFallbackInvoices();
+      }
+    });
+
+    // 3. Fetch Payments
+    this.apiService.getAllPayments().subscribe(pays => {
+      if (pays && pays.length > 0) {
+        this.payments.set(pays);
+      } else {
+        this.loadFallbackPayments();
+      }
+    });
+
+    // 4. Fetch Summary
+    this.apiService.getCommercialSummary().subscribe(sum => {
+      if (sum) {
+        this.commercialSummary.set(sum);
+      } else {
+        this.updateLocalCommercialSummary();
+      }
+    });
+  }
+
+  loadFallbackCustomers(): void {
+    const custs: Customer[] = [
+      {
+        id: 1,
+        name: 'Supermarché Auchan (Plateau)',
+        companyName: 'Auchan Retail Sénégal SA',
+        customerType: 'SUPERMARKET',
+        phone: '+221 33 889 40 00',
+        email: 'achats@auchan.sn',
+        address: 'Avenue Georges Pompidou',
+        city: 'Dakar',
+        nineaNumber: 'SN-DKR-2015-B-142',
+        totalOrdersCount: 2,
+        totalSpentFcfa: 246000,
+        balanceDueFcfa: 0,
+        notes: 'Distributeur officiel Bio — Livraison hebdomadaire les mardis et jeudis.'
+      },
+      {
+        id: 2,
+        name: 'Hôtel Pullman Teranga',
+        companyName: 'Accor Hospitality Sénégal',
+        customerType: 'HOTEL_RESTAURANT',
+        phone: '+221 33 889 22 00',
+        email: 'chef.cuisine@pullman-teranga.com',
+        address: "Place de l'Indépendance",
+        city: 'Dakar',
+        nineaNumber: 'SN-DKR-2008-B-088',
+        totalOrdersCount: 1,
+        totalSpentFcfa: 97500,
+        balanceDueFcfa: 0,
+        notes: 'Commandes de fromages affinés et beurres fermiers pour le petit-déjeuner prestige.'
+      },
+      {
+        id: 3,
+        name: "L'Épicerie Bio des Almadies",
+        companyName: 'Terroir & Saveurs SARL',
+        customerType: 'GROCERY_BIO',
+        phone: '+221 77 645 12 34',
+        email: 'contact@epiceriebio-almadies.sn',
+        address: 'Route des Almadies, en face Pharmacie',
+        city: 'Dakar',
+        nineaNumber: 'SN-DKR-2020-B-991',
+        totalOrdersCount: 1,
+        totalSpentFcfa: 54000,
+        balanceDueFcfa: 24000,
+        notes: 'Boutique diététique & bio. Reste à payer en attente de livraison complémentaire.'
+      },
+      {
+        id: 4,
+        name: 'Dr. Amadou Sow',
+        companyName: 'Abonné Particulier Lait & Terroir',
+        customerType: 'INDIVIDUAL',
+        phone: '+221 78 123 45 67',
+        email: 'amadou.sow@gmail.com',
+        address: 'Cité Keur Gorgui, Villa 42',
+        city: 'Dakar',
+        totalOrdersCount: 1,
+        totalSpentFcfa: 14000,
+        balanceDueFcfa: 0,
+        notes: 'Abonnement mensuel Lait frais pasteurisé et Lait caillé Sow.'
+      }
+    ];
+    this.customers.set(custs);
+  }
+
+  loadFallbackInvoices(): void {
+    const today = new Date();
+    const dStr = (offsetDays: number) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + offsetDays);
+      return d.toISOString().split('T')[0];
+    };
+
+    const invs: SaleInvoice[] = [
+      {
+        id: 1,
+        invoiceNumber: 'FAC-2026-0001',
+        customerId: 1,
+        customerName: 'Supermarché Auchan (Plateau)',
+        customerPhone: '+221 33 889 40 00',
+        customerEmail: 'achats@auchan.sn',
+        customerAddress: 'Avenue Georges Pompidou, Dakar',
+        customerNinea: 'SN-DKR-2015-B-142',
+        issueDate: dStr(-5),
+        dueDate: dStr(10),
+        subTotalFcfa: 106000,
+        discountFcfa: 0,
+        taxFcfa: 0,
+        totalAmountFcfa: 106000,
+        paidAmountFcfa: 106000,
+        remainingAmountFcfa: 0,
+        status: 'PAID',
+        paymentMethod: 'WAVE',
+        paymentReference: 'WAVE-SN-9982410',
+        notes: 'Livraison conforme chambre froide Auchan.',
+        items: [
+          { id: 1, productId: 1, productName: 'Fromage Fermier Frais Bio (200g)', productType: 'CHEESE', quantity: 20, unit: 'pièces 200g', unitPriceFcfa: 2000, lineTotalFcfa: 40000 },
+          { id: 2, productId: 3, productName: 'Yaourt Brassé Bio Nature (Pot 125g)', productType: 'YOGURT', quantity: 60, unit: 'pots 125g', unitPriceFcfa: 600, lineTotalFcfa: 36000 },
+          { id: 3, productId: 2, productName: 'Lait Caillé Bio Artisanal (Sow 1L)', productType: 'CURDLED_MILK', quantity: 25, unit: 'bouteilles 1L', unitPriceFcfa: 1200, lineTotalFcfa: 30000 }
+        ]
+      },
+      {
+        id: 2,
+        invoiceNumber: 'FAC-2026-0002',
+        customerId: 2,
+        customerName: 'Hôtel Pullman Teranga',
+        customerPhone: '+221 33 889 22 00',
+        customerEmail: 'chef.cuisine@pullman-teranga.com',
+        customerAddress: "Place de l'Indépendance, Dakar",
+        customerNinea: 'SN-DKR-2008-B-088',
+        issueDate: dStr(-3),
+        dueDate: dStr(12),
+        subTotalFcfa: 97500,
+        discountFcfa: 0,
+        taxFcfa: 0,
+        totalAmountFcfa: 97500,
+        paidAmountFcfa: 97500,
+        remainingAmountFcfa: 0,
+        status: 'PAID',
+        paymentMethod: 'BANK_TRANSFER',
+        paymentReference: 'VIR-BOA-88201',
+        notes: 'Commande spéciale banquet.',
+        items: [
+          { id: 4, productId: 1, productName: 'Fromage Fermier Frais Bio (200g)', productType: 'CHEESE', quantity: 30, unit: 'pièces 200g', unitPriceFcfa: 2000, lineTotalFcfa: 60000 },
+          { id: 5, productId: 4, productName: 'Beurre Fermier Bio Demi-Sel (250g)', productType: 'BUTTER', quantity: 15, unit: 'plaquettes 250g', unitPriceFcfa: 2500, lineTotalFcfa: 37500 }
+        ]
+      },
+      {
+        id: 3,
+        invoiceNumber: 'FAC-2026-0003',
+        customerId: 3,
+        customerName: "L'Épicerie Bio des Almadies",
+        customerPhone: '+221 77 645 12 34',
+        customerEmail: 'contact@epiceriebio-almadies.sn',
+        customerAddress: 'Route des Almadies, Dakar',
+        customerNinea: 'SN-DKR-2020-B-991',
+        issueDate: dStr(-1),
+        dueDate: dStr(14),
+        subTotalFcfa: 54000,
+        discountFcfa: 0,
+        taxFcfa: 0,
+        totalAmountFcfa: 54000,
+        paidAmountFcfa: 30000,
+        remainingAmountFcfa: 24000,
+        status: 'PARTIALLY_PAID',
+        paymentMethod: 'ORANGE_MONEY',
+        paymentReference: 'OM-SN-441029',
+        notes: 'Acompte versé par Orange Money à la commande.',
+        items: [
+          { id: 6, productId: 2, productName: 'Lait Caillé Bio Artisanal (Sow 1L)', productType: 'CURDLED_MILK', quantity: 25, unit: 'bouteilles 1L', unitPriceFcfa: 1200, lineTotalFcfa: 30000 },
+          { id: 7, productId: 3, productName: 'Yaourt Brassé Bio Nature (Pot 125g)', productType: 'YOGURT', quantity: 40, unit: 'pots 125g', unitPriceFcfa: 600, lineTotalFcfa: 24000 }
+        ]
+      },
+      {
+        id: 4,
+        invoiceNumber: 'FAC-2026-0004',
+        customerId: 4,
+        customerName: 'Dr. Amadou Sow',
+        customerPhone: '+221 78 123 45 67',
+        customerEmail: 'amadou.sow@gmail.com',
+        customerAddress: 'Cité Keur Gorgui, Villa 42, Dakar',
+        issueDate: dStr(0),
+        dueDate: dStr(7),
+        subTotalFcfa: 14000,
+        discountFcfa: 0,
+        taxFcfa: 0,
+        totalAmountFcfa: 14000,
+        paidAmountFcfa: 14000,
+        remainingAmountFcfa: 0,
+        status: 'PAID',
+        paymentMethod: 'CASH',
+        paymentReference: 'CASH-DIRECT',
+        notes: 'Livraison directe à domicile.',
+        items: [
+          { id: 8, productId: 5, productName: 'Lait Frais Pasteurisé Bio (1L)', productType: 'PASTEURIZED_MILK', quantity: 10, unit: 'bouteilles 1L', unitPriceFcfa: 1000, lineTotalFcfa: 10000 },
+          { id: 9, productId: 1, productName: 'Fromage Fermier Frais Bio (200g)', productType: 'CHEESE', quantity: 2, unit: 'pièces 200g', unitPriceFcfa: 2000, lineTotalFcfa: 4000 }
+        ]
+      }
+    ];
+    this.invoices.set(invs);
+    this.updateLocalCommercialSummary();
+  }
+
+  loadFallbackPayments(): void {
+    const today = new Date();
+    const dStr = (offsetDays: number) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + offsetDays);
+      return d.toISOString().replace('T', ' ').slice(0, 16);
+    };
+
+    const pays: PaymentTransaction[] = [
+      {
+        id: 1,
+        invoiceId: 1,
+        invoiceNumber: 'FAC-2026-0001',
+        customerId: 1,
+        customerName: 'Supermarché Auchan (Plateau)',
+        paymentDate: dStr(-5),
+        amountPaidFcfa: 106000,
+        paymentMethod: 'WAVE',
+        transactionReference: 'WAVE-SN-9982410',
+        receiptNumber: 'REC-2026-0001',
+        receivedBy: 'Comptabilité LAWTAN',
+        notes: 'Règlement complet Wave'
+      },
+      {
+        id: 2,
+        invoiceId: 2,
+        invoiceNumber: 'FAC-2026-0002',
+        customerId: 2,
+        customerName: 'Hôtel Pullman Teranga',
+        paymentDate: dStr(-3),
+        amountPaidFcfa: 97500,
+        paymentMethod: 'BANK_TRANSFER',
+        transactionReference: 'VIR-BOA-88201',
+        receiptNumber: 'REC-2026-0002',
+        receivedBy: 'Service Finance',
+        notes: 'Virement Bancaire BOA'
+      },
+      {
+        id: 3,
+        invoiceId: 3,
+        invoiceNumber: 'FAC-2026-0003',
+        customerId: 3,
+        customerName: "L'Épicerie Bio des Almadies",
+        paymentDate: dStr(-1),
+        amountPaidFcfa: 30000,
+        paymentMethod: 'ORANGE_MONEY',
+        transactionReference: 'OM-SN-441029',
+        receiptNumber: 'REC-2026-0003',
+        receivedBy: 'Caisse Ferme',
+        notes: 'Acompte Orange Money'
+      },
+      {
+        id: 4,
+        invoiceId: 4,
+        invoiceNumber: 'FAC-2026-0004',
+        customerId: 4,
+        customerName: 'Dr. Amadou Sow',
+        paymentDate: dStr(0),
+        amountPaidFcfa: 14000,
+        paymentMethod: 'CASH',
+        transactionReference: 'CASH-DIRECT',
+        receiptNumber: 'REC-2026-0004',
+        receivedBy: 'Livreur Ferme',
+        notes: 'Règlement en espèces à la livraison'
+      }
+    ];
+    this.payments.set(pays);
+  }
+
+  updateLocalCommercialSummary(): void {
+    const invs = this.invoices();
+    const activeInvs = invs.filter(i => i.status !== 'CANCELLED');
+    const totalRev = activeInvs.reduce((acc, i) => acc + (i.totalAmountFcfa || 0), 0);
+    const totalCol = activeInvs.reduce((acc, i) => acc + (i.paidAmountFcfa || 0), 0);
+    const totalOut = activeInvs.reduce((acc, i) => acc + (i.remainingAmountFcfa || 0), 0);
+    const paidCount = activeInvs.filter(i => i.status === 'PAID').length;
+    const pendCount = activeInvs.filter(i => i.status === 'ISSUED' || i.status === 'PARTIALLY_PAID').length;
+    const avgOrder = activeInvs.length > 0 ? totalRev / activeInvs.length : 0;
+
+    this.commercialSummary.set({
+      totalRevenueFcfa: totalRev,
+      totalCollectedFcfa: totalCol,
+      totalOutstandingFcfa: totalOut,
+      totalInvoicesCount: activeInvs.length,
+      paidInvoicesCount: paidCount,
+      pendingInvoicesCount: pendCount,
+      totalCustomersCount: this.customers().length,
+      averageOrderValueFcfa: Math.round(avgOrder)
+    });
+  }
+
+  // --- Commercial Navigation & Tabs ---
+  toggleCommercialMenu(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.isCommercialMenuOpen.update(v => !v);
+  }
+
+  navigateToCommercialSubTab(subTab: string): void {
+    this.isCommercialMenuOpen.set(true);
+    this.activeCommercialSubTab.set(subTab);
+    this.showPage('commercial');
+  }
+
+  switchCommercialSubTab(subTab: string): void {
+    this.activeCommercialSubTab.set(subTab);
+  }
+
+  // --- Invoices: Filtering & Pagination ---
+  filterInvoices(status: string): void {
+    this.invoiceFilterStatus.set(status);
+    this.invoicesCurrentPage.set(1);
+  }
+
+  get filteredInvoices(): SaleInvoice[] {
+    const st = this.invoiceFilterStatus();
+    const query = this.invoicesSearchTerm().toLowerCase().trim();
+
+    return this.invoices().filter(inv => {
+      // Status filter
+      if (st !== 'ALL' && inv.status !== st) {
+        return false;
+      }
+      // Query filter
+      if (query) {
+        const invNum = inv.invoiceNumber.toLowerCase();
+        const custName = (inv.customerName || '').toLowerCase();
+        return invNum.includes(query) || custName.includes(query);
+      }
+      return true;
+    });
+  }
+
+  get paginatedInvoices(): SaleInvoice[] {
+    const start = (this.invoicesCurrentPage() - 1) * this.invoicesPageSize();
+    return this.filteredInvoices.slice(start, start + this.invoicesPageSize());
+  }
+
+  get totalInvoicesPages(): number {
+    return Math.ceil(this.filteredInvoices.length / this.invoicesPageSize()) || 1;
+  }
+
+  get invoicesPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalInvoicesPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  setInvoicesPage(page: number): void {
+    if (page >= 1 && page <= this.totalInvoicesPages) {
+      this.invoicesCurrentPage.set(page);
+    }
+  }
+
+  nextInvoicesPage(): void {
+    if (this.invoicesCurrentPage() < this.totalInvoicesPages) {
+      this.invoicesCurrentPage.update(p => p + 1);
+    }
+  }
+
+  prevInvoicesPage(): void {
+    if (this.invoicesCurrentPage() > 1) {
+      this.invoicesCurrentPage.update(p => p - 1);
+    }
+  }
+
+  // --- Customers: Filtering & Pagination ---
+  filterCustomers(type: string): void {
+    this.customerTypeFilter.set(type);
+    this.customersCurrentPage.set(1);
+  }
+
+  get filteredCustomers(): Customer[] {
+    const tf = this.customerTypeFilter();
+    const query = this.customersSearchTerm().toLowerCase().trim();
+
+    return this.customers().filter(c => {
+      if (tf !== 'ALL' && c.customerType !== tf) {
+        return false;
+      }
+      if (query) {
+        const name = c.name.toLowerCase();
+        const company = (c.companyName || '').toLowerCase();
+        const city = (c.city || '').toLowerCase();
+        const phone = (c.phone || '').toLowerCase();
+        return name.includes(query) || company.includes(query) || city.includes(query) || phone.includes(query);
+      }
+      return true;
+    });
+  }
+
+  get paginatedCustomers(): Customer[] {
+    const start = (this.customersCurrentPage() - 1) * this.customersPageSize();
+    return this.filteredCustomers.slice(start, start + this.customersPageSize());
+  }
+
+  get totalCustomersPages(): number {
+    return Math.ceil(this.filteredCustomers.length / this.customersPageSize()) || 1;
+  }
+
+  get customersPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalCustomersPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  setCustomersPage(page: number): void {
+    if (page >= 1 && page <= this.totalCustomersPages) {
+      this.customersCurrentPage.set(page);
+    }
+  }
+
+  nextCustomersPage(): void {
+    if (this.customersCurrentPage() < this.totalCustomersPages) {
+      this.customersCurrentPage.update(p => p + 1);
+    }
+  }
+
+  prevCustomersPage(): void {
+    if (this.customersCurrentPage() > 1) {
+      this.customersCurrentPage.update(p => p - 1);
+    }
+  }
+
+  // --- Payments: Filtering & Pagination ---
+  get filteredPayments(): PaymentTransaction[] {
+    const query = this.paymentsSearchTerm().toLowerCase().trim();
+    return this.payments().filter(p => {
+      if (!query) return true;
+      const ref = (p.transactionReference || '').toLowerCase();
+      const rec = (p.receiptNumber || '').toLowerCase();
+      const cust = (p.customerName || '').toLowerCase();
+      const inv = (p.invoiceNumber || '').toLowerCase();
+      return ref.includes(query) || rec.includes(query) || cust.includes(query) || inv.includes(query);
+    });
+  }
+
+  get paginatedPayments(): PaymentTransaction[] {
+    const start = (this.paymentsCurrentPage() - 1) * this.paymentsPageSize();
+    return this.filteredPayments.slice(start, start + this.paymentsPageSize());
+  }
+
+  get totalPaymentsPages(): number {
+    return Math.ceil(this.filteredPayments.length / this.paymentsPageSize()) || 1;
+  }
+
+  get paymentsPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalPaymentsPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  setPaymentsPage(page: number): void {
+    if (page >= 1 && page <= this.totalPaymentsPages) {
+      this.paymentsCurrentPage.set(page);
+    }
+  }
+
+  nextPaymentsPage(): void {
+    if (this.paymentsCurrentPage() < this.totalPaymentsPages) {
+      this.paymentsCurrentPage.update(p => p + 1);
+    }
+  }
+
+  prevPaymentsPage(): void {
+    if (this.paymentsCurrentPage() > 1) {
+      this.paymentsCurrentPage.update(p => p - 1);
+    }
+  }
+
+  // --- New Invoice Actions ---
+  openNewInvoiceModal(preselectedCustomerId?: number): void {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const dueStr = new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0];
+    const custId = preselectedCustomerId || (this.customers().length > 0 ? this.customers()[0].id || 1 : 1);
+
+    this.newInvoiceForm = {
+      customerId: custId,
+      issueDate: todayStr,
+      dueDate: dueStr,
+      discountFcfa: 0,
+      taxFcfa: 0,
+      notes: '',
+      paymentMethod: 'WAVE',
+      paymentReference: 'WAVE-SN-' + Math.floor(100000 + Math.random() * 900000),
+      immediatePayment: false,
+      items: [
+        {
+          productId: 1,
+          productName: 'Fromage Fermier Frais Bio (200g)',
+          productType: 'CHEESE',
+          quantity: 10,
+          unit: 'pièces 200g',
+          unitPriceFcfa: 2000,
+          lineTotalFcfa: 20000
+        }
+      ]
+    };
+    this.isNewInvoiceModalOpen.set(true);
+  }
+
+  closeNewInvoiceModal(): void {
+    this.isNewInvoiceModalOpen.set(false);
+  }
+
+  addInvoiceItemLine(): void {
+    this.newInvoiceForm.items.push({
+      productId: undefined,
+      productName: '',
+      productType: 'CHEESE',
+      quantity: 1,
+      unit: 'unité',
+      unitPriceFcfa: 1000,
+      lineTotalFcfa: 1000
+    });
+  }
+
+  removeInvoiceItemLine(index: number): void {
+    if (this.newInvoiceForm.items.length > 1) {
+      this.newInvoiceForm.items.splice(index, 1);
+    }
+  }
+
+  onInvoiceItemProductSelect(index: number, stockId: any): void {
+    const id = Number(stockId);
+    const stock = this.productStocks().find(s => s.id === id);
+    if (stock) {
+      const item = this.newInvoiceForm.items[index];
+      item.productId = stock.id;
+      item.productName = stock.productName;
+      item.productType = stock.productType;
+      item.unit = stock.unit || 'unité';
+      item.unitPriceFcfa = stock.unitPriceFcfa || 1000;
+      item.lineTotalFcfa = item.quantity * item.unitPriceFcfa;
+    }
+  }
+
+  onInvoiceItemQtyPriceChange(index: number): void {
+    const item = this.newInvoiceForm.items[index];
+    item.lineTotalFcfa = (item.quantity || 0) * (item.unitPriceFcfa || 0);
+  }
+
+  get newInvoiceSubTotal(): number {
+    return this.newInvoiceForm.items.reduce((acc, item) => acc + ((item.quantity || 0) * (item.unitPriceFcfa || 0)), 0);
+  }
+
+  get newInvoiceGrandTotal(): number {
+    return Math.max(0, this.newInvoiceSubTotal - (this.newInvoiceForm.discountFcfa || 0));
+  }
+
+  submitNewInvoice(): void {
+    if (!this.newInvoiceForm.customerId) {
+      this.showToast('Erreur: Veuillez sélectionner un client.');
+      return;
+    }
+    if (this.newInvoiceForm.items.length === 0 || !this.newInvoiceForm.items[0].productName) {
+      this.showToast('Erreur: Veuillez ajouter au moins un produit à la facture.');
+      return;
+    }
+
+    const customer = this.customers().find(c => c.id === Number(this.newInvoiceForm.customerId));
+    const invCount = this.invoices().length + 1;
+    const invNum = `FAC-${new Date().getFullYear()}-${String(invCount).padStart(4, '0')}`;
+    const grandTotal = this.newInvoiceGrandTotal;
+    const paid = this.newInvoiceForm.immediatePayment ? grandTotal : 0;
+    const remaining = grandTotal - paid;
+    const status: InvoiceStatus = paid >= grandTotal ? 'PAID' : 'ISSUED';
+
+    const invoicePayload: SaleInvoice = {
+      invoiceNumber: invNum,
+      customerId: Number(this.newInvoiceForm.customerId),
+      customerName: customer?.name || 'Client',
+      customerPhone: customer?.phone,
+      customerEmail: customer?.email,
+      customerAddress: customer ? `${customer.address || ''}, ${customer.city || ''}` : '',
+      customerNinea: customer?.nineaNumber,
+      issueDate: this.newInvoiceForm.issueDate,
+      dueDate: this.newInvoiceForm.dueDate,
+      subTotalFcfa: this.newInvoiceSubTotal,
+      discountFcfa: this.newInvoiceForm.discountFcfa,
+      taxFcfa: 0,
+      totalAmountFcfa: grandTotal,
+      paidAmountFcfa: paid,
+      remainingAmountFcfa: remaining,
+      status: status,
+      paymentMethod: this.newInvoiceForm.immediatePayment ? this.newInvoiceForm.paymentMethod : undefined,
+      paymentReference: this.newInvoiceForm.immediatePayment ? this.newInvoiceForm.paymentReference : undefined,
+      notes: this.newInvoiceForm.notes,
+      items: this.newInvoiceForm.items.map(it => ({
+        productId: it.productId,
+        productName: it.productName,
+        productType: it.productType,
+        quantity: it.quantity,
+        unit: it.unit,
+        unitPriceFcfa: it.unitPriceFcfa,
+        lineTotalFcfa: it.quantity * it.unitPriceFcfa
+      }))
+    };
+
+    this.apiService.createInvoice(invoicePayload).subscribe({
+      next: (created) => {
+        this.invoices.update(list => [created, ...list]);
+        this.decrementStockFromInvoice(created);
+        this.updateLocalCommercialSummary();
+        this.showToast(`✅ Facture ${created.invoiceNumber} créée avec succès (${created.totalAmountFcfa.toLocaleString()} FCFA) !`);
+        this.closeNewInvoiceModal();
+      },
+      error: () => {
+        invoicePayload.id = Date.now();
+        this.invoices.update(list => [invoicePayload, ...list]);
+        this.decrementStockFromInvoice(invoicePayload);
+        this.updateLocalCommercialSummary();
+        this.showToast(`✅ Facture ${invoicePayload.invoiceNumber} enregistrée (${invoicePayload.totalAmountFcfa.toLocaleString()} FCFA) !`);
+        this.closeNewInvoiceModal();
+      }
+    });
+  }
+
+  private decrementStockFromInvoice(invoice: SaleInvoice): void {
+    if (invoice.items) {
+      invoice.items.forEach(item => {
+        if (item.productId) {
+          this.productStocks.update(stocks => stocks.map(s => {
+            if (s.id === item.productId) {
+              const newQty = Math.max(0, s.quantityAvailable - item.quantity);
+              return { ...s, quantityAvailable: newQty, totalValueFcfa: newQty * (s.unitPriceFcfa || 0) };
+            }
+            return s;
+          }));
+        }
+      });
+      this.updateLocalTransformationSummary();
+    }
+  }
+
+  // --- Customer Modals & Actions ---
+  openNewCustomerModal(): void {
+    this.newCustomerForm = {
+      name: '',
+      companyName: '',
+      customerType: 'SUPERMARKET',
+      phone: '',
+      email: '',
+      address: '',
+      city: 'Dakar',
+      nineaNumber: '',
+      notes: ''
+    };
+    this.isNewCustomerModalOpen.set(true);
+  }
+
+  closeNewCustomerModal(): void {
+    this.isNewCustomerModalOpen.set(false);
+  }
+
+  submitNewCustomer(): void {
+    if (!this.newCustomerForm.name || !this.newCustomerForm.name.trim()) {
+      this.showToast('Erreur: Veuillez renseigner le nom du client.');
+      return;
+    }
+
+    const payload: Customer = {
+      ...this.newCustomerForm,
+      totalOrdersCount: 0,
+      totalSpentFcfa: 0,
+      balanceDueFcfa: 0
+    };
+
+    this.apiService.createCustomer(payload).subscribe({
+      next: (created) => {
+        this.customers.update(list => [...list, created]);
+        this.updateLocalCommercialSummary();
+        this.showToast(`✅ Client "${created.name}" enregistré avec succès !`);
+        this.closeNewCustomerModal();
+      },
+      error: () => {
+        payload.id = Date.now();
+        this.customers.update(list => [...list, payload]);
+        this.updateLocalCommercialSummary();
+        this.showToast(`✅ Client "${payload.name}" enregistré !`);
+        this.closeNewCustomerModal();
+      }
+    });
+  }
+
+  // --- Payment Modal & Actions ---
+  openPaymentModal(invoice: SaleInvoice): void {
+    this.selectedInvoiceForPayment.set(invoice);
+    this.paymentForm = {
+      amountPaidFcfa: invoice.remainingAmountFcfa || invoice.totalAmountFcfa,
+      paymentMethod: 'WAVE',
+      transactionReference: this.generateSimulatedPaymentRef('WAVE'),
+      receivedBy: 'Comptabilité Ferme LAWTAN',
+      notes: `Règlement facture ${invoice.invoiceNumber}`
+    };
+    this.isPaymentModalOpen.set(true);
+  }
+
+  closePaymentModal(): void {
+    this.isPaymentModalOpen.set(false);
+    this.selectedInvoiceForPayment.set(null);
+  }
+
+  onPaymentMethodChange(): void {
+    this.paymentForm.transactionReference = this.generateSimulatedPaymentRef(this.paymentForm.paymentMethod);
+  }
+
+  generateSimulatedPaymentRef(method: PaymentMethod): string {
+    const rand = Math.floor(100000 + Math.random() * 900000);
+    switch (method) {
+      case 'WAVE': return `WAVE-SN-${rand}`;
+      case 'ORANGE_MONEY': return `OM-SN-${rand}`;
+      case 'CASH': return `CASH-REC-${rand.toString().slice(-4)}`;
+      case 'BANK_TRANSFER': return `VIR-BOA-${rand}`;
+      case 'CHECK': return `CHQ-SGBS-${rand}`;
+      default: return `PAY-${rand}`;
+    }
+  }
+
+  submitPayment(): void {
+    const inv = this.selectedInvoiceForPayment();
+    if (!inv || !inv.id) return;
+
+    const amount = Number(this.paymentForm.amountPaidFcfa);
+    if (!amount || amount <= 0) {
+      this.showToast('Erreur: Veuillez saisir un montant de règlement valide (> 0 FCFA).');
+      return;
+    }
+
+    const receiptNum = `REC-${new Date().getFullYear()}-${String(this.payments().length + 1).padStart(4, '0')}`;
+    const paymentPayload: PaymentTransaction = {
+      invoiceId: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      customerId: inv.customerId,
+      customerName: inv.customerName,
+      paymentDate: new Date().toISOString().replace('T', ' ').slice(0, 16),
+      amountPaidFcfa: amount,
+      paymentMethod: this.paymentForm.paymentMethod,
+      transactionReference: this.paymentForm.transactionReference,
+      receiptNumber: receiptNum,
+      receivedBy: this.paymentForm.receivedBy,
+      notes: this.paymentForm.notes
+    };
+
+    this.apiService.recordInvoicePayment(inv.id, paymentPayload).subscribe({
+      next: (updatedInvoice) => {
+        this.invoices.update(list => list.map(i => i.id === updatedInvoice.id ? updatedInvoice : i));
+        this.payments.update(list => [paymentPayload, ...list]);
+        this.updateLocalCommercialSummary();
+        this.showToast(`✅ Règlement de ${amount.toLocaleString()} FCFA enregistré (${paymentPayload.paymentMethod}) !`);
+        this.closePaymentModal();
+      },
+      error: () => {
+        const newPaid = (inv.paidAmountFcfa || 0) + amount;
+        const newRemaining = Math.max(0, (inv.totalAmountFcfa || 0) - newPaid);
+        const newStatus: InvoiceStatus = newRemaining <= 0 ? 'PAID' : 'PARTIALLY_PAID';
+
+        const localUpdated: SaleInvoice = {
+          ...inv,
+          paidAmountFcfa: newPaid,
+          remainingAmountFcfa: newRemaining,
+          status: newStatus,
+          paymentMethod: this.paymentForm.paymentMethod,
+          paymentReference: this.paymentForm.transactionReference
+        };
+
+        this.invoices.update(list => list.map(i => i.id === inv.id ? localUpdated : i));
+        paymentPayload.id = Date.now();
+        this.payments.update(list => [paymentPayload, ...list]);
+        this.updateLocalCommercialSummary();
+        this.showToast(`✅ Règlement de ${amount.toLocaleString()} FCFA enregistré !`);
+        this.closePaymentModal();
+      }
+    });
+  }
+
+  // --- Print / Detail Modal & Actions ---
+  openInvoicePrintModal(invoice: SaleInvoice): void {
+    this.selectedInvoiceForPrint.set(invoice);
+    this.isInvoicePrintModalOpen.set(true);
+  }
+
+  closeInvoicePrintModal(): void {
+    this.isInvoicePrintModalOpen.set(false);
+    this.selectedInvoiceForPrint.set(null);
+  }
+
+  triggerPrint(): void {
+    window.print();
+  }
+
+  // --- Commercial UI Label & Badge Helpers ---
+  getInvoiceStatusBadgeClass(status?: InvoiceStatus): string {
+    switch (status) {
+      case 'PAID': return 'badge-status-paid';
+      case 'PARTIALLY_PAID': return 'badge-status-partial';
+      case 'ISSUED': return 'badge-status-issued';
+      case 'OVERDUE': return 'badge-status-overdue';
+      case 'CANCELLED': return 'badge-status-cancelled';
+      default: return 'badge-status-issued';
+    }
+  }
+
+  getInvoiceStatusLabel(status?: InvoiceStatus): string {
+    switch (status) {
+      case 'PAID': return 'Soldée / Payée';
+      case 'PARTIALLY_PAID': return 'Acompte Versé';
+      case 'ISSUED': return 'Émise / En attente';
+      case 'OVERDUE': return 'En Retard';
+      case 'CANCELLED': return 'Annulée';
+      case 'DRAFT': return 'Brouillon';
+      default: return 'Émise';
+    }
+  }
+
+  getCustomerTypeBadgeClass(type?: CustomerType): string {
+    switch (type) {
+      case 'SUPERMARKET': return 'badge-cust-supermarket';
+      case 'HOTEL_RESTAURANT': return 'badge-cust-hotel';
+      case 'GROCERY_BIO': return 'badge-cust-grocery';
+      case 'INDIVIDUAL': return 'badge-cust-individual';
+      default: return 'badge-cust-individual';
+    }
+  }
+
+  getCustomerTypeLabel(type?: CustomerType): string {
+    switch (type) {
+      case 'SUPERMARKET': return '🛒 Supermarché / GMS';
+      case 'HOTEL_RESTAURANT': return '🏨 Hôtel & Resto';
+      case 'GROCERY_BIO': return '🏪 Épicerie Bio';
+      case 'INDIVIDUAL': return '🏡 Particulier';
+      default: return 'Client';
+    }
+  }
+
+  getPaymentMethodBadgeClass(method?: PaymentMethod): string {
+    switch (method) {
+      case 'WAVE': return 'badge-pay-wave';
+      case 'ORANGE_MONEY': return 'badge-pay-om';
+      case 'CASH': return 'badge-pay-cash';
+      case 'BANK_TRANSFER': return 'badge-pay-bank';
+      case 'CHECK': return 'badge-pay-check';
+      default: return 'badge-pay-cash';
+    }
+  }
+
+  getPaymentMethodLabel(method?: PaymentMethod): string {
+    switch (method) {
+      case 'WAVE': return '🌊 Wave Sénégal';
+      case 'ORANGE_MONEY': return '🟠 Orange Money';
+      case 'CASH': return '💵 Espèces';
+      case 'BANK_TRANSFER': return '🏦 Virement Bancaire';
+      case 'CHECK': return '📜 Chèque';
+      default: return 'Règlement';
+    }
+  }
+
+  getPaymentMethodIcon(method?: PaymentMethod): string {
+    switch (method) {
+      case 'WAVE': return '🌊';
+      case 'ORANGE_MONEY': return '🟠';
+      case 'CASH': return '💵';
+      case 'BANK_TRANSFER': return '🏦';
+      case 'CHECK': return '📜';
+      default: return '💳';
+    }
+  }
+
+  // ==========================================
+  // SPRINT 5: ALIMENTATION, SOLAIRE & AUDIT METHODS
+  // ==========================================
+
+  loadFeedAndSolarData(): void {
+    // 1. Feed Stocks
+    this.apiService.getAllFeedStocks().subscribe(stocks => {
+      if (stocks && stocks.length > 0) {
+        this.feedStocks.set(stocks);
+      } else {
+        this.loadFallbackFeedStocks();
+      }
+    });
+
+    // 2. Feed Rations
+    this.apiService.getAllFeedRations().subscribe(rations => {
+      if (rations && rations.length > 0) {
+        this.feedRations.set(rations);
+      } else {
+        this.loadFallbackFeedRations();
+      }
+    });
+
+    // 3. Solar Telemetry
+    this.apiService.getSolarTelemetry().subscribe(solar => {
+      if (solar) {
+        this.solarTelemetry.set(solar);
+      } else {
+        this.solarTelemetry.set({
+          currentSolarPowerKw: 38.4,
+          batterySocPercent: 94.0,
+          dailySolarYieldKwh: 215.0,
+          totalSolarYieldMwh: 68.4,
+          gridStatus: 'SOLAR_OPTIMAL',
+          coldRoomTempCelsius: 3.8,
+          secondColdRoomTempCelsius: 4.1,
+          waterPumpFlowM3h: 14.5,
+          waterTankLevelPercent: 92.0,
+          co2SavedKg: 182.5
+        });
+      }
+    });
+  }
+
+  loadFallbackFeedStocks(): void {
+    this.feedStocks.set([
+      { id: 1, name: 'Ensilage de Maïs Bio', category: 'FORAGE_GREEN', currentStockKg: 4200, alertThresholdKg: 1000, unitPricePerKgFcfa: 65, supplierName: 'Parcelles Bio Pout', storageLocation: 'Silo Couloir N°1', isLowStock: false },
+      { id: 2, name: 'Foin de Niébé Riche en Protéines', category: 'FORAGE_DRY', currentStockKg: 1850, alertThresholdKg: 500, unitPricePerKgFcfa: 110, supplierName: 'GIE Femmes Niayes', storageLocation: 'Hangar Fourrages', isLowStock: false },
+      { id: 3, name: 'Tourteau d\'Arachide Pressé à Froid', category: 'CONCENTRATE', currentStockKg: 850, alertThresholdKg: 300, unitPricePerKgFcfa: 240, supplierName: 'Huilerie Artisanale Kaolack', storageLocation: 'Magasin Concentrés', isLowStock: false },
+      { id: 4, name: 'Son de Blé Fin', category: 'CONCENTRATE', currentStockKg: 1200, alertThresholdKg: 400, unitPricePerKgFcfa: 140, supplierName: 'Grands Moulins de Dakar', storageLocation: 'Magasin Concentrés', isLowStock: false },
+      { id: 5, name: 'Poudre de Moringa & CMV Bio', category: 'MINERALS_VITAMINS', currentStockKg: 120, alertThresholdKg: 30, unitPricePerKgFcfa: 1500, supplierName: 'Plantation Bio Thiès', storageLocation: 'Pharmacie Vétérinaire', isLowStock: false },
+      { id: 6, name: 'Blocs à Lécher au Sel de Gandiol', category: 'MINERALS_VITAMINS', currentStockKg: 85, alertThresholdKg: 20, unitPricePerKgFcfa: 800, supplierName: 'Salins Siné Saloum', storageLocation: 'Magasin Concentrés', isLowStock: false }
+    ]);
+  }
+
+  loadFallbackFeedRations(): void {
+    this.feedRations.set([
+      {
+        id: 1,
+        rationName: 'Ration Haute Lactation (> 20 L/j)',
+        targetCategory: 'Vaches Haute Lactation',
+        dailyDryMatterKg: 16.5,
+        compositionDescription: '15 kg Ensilage Maïs + 4 kg Foin Niébé + 3.5 kg Tourteau Arachide + 2 kg Son de Blé + 150g CMV Bio',
+        dailyCostFcfa: 2850,
+        energyUfl: 14.2,
+        proteinPdiGrams: 1450
+      },
+      {
+        id: 2,
+        rationName: 'Ration Moyenne Lactation (14 - 18 L/j)',
+        targetCategory: 'Vaches en Lactation Standard',
+        dailyDryMatterKg: 14.0,
+        compositionDescription: '12 kg Ensilage Maïs + 4 kg Foin Niébé + 2 kg Tourteau Arachide + 1.5 kg Son de Blé + 100g CMV Bio',
+        dailyCostFcfa: 2150,
+        energyUfl: 11.8,
+        proteinPdiGrams: 1100
+      },
+      {
+        id: 3,
+        rationName: 'Ration Tarissement & Gestation Fin',
+        targetCategory: 'Vaches Taries & Gestantes',
+        dailyDryMatterKg: 11.5,
+        compositionDescription: '6 kg Ensilage Maïs + 5 kg Foin Niébé / Paille + 1 kg Son de Blé + Sel de Gandiol',
+        dailyCostFcfa: 1350,
+        energyUfl: 8.5,
+        proteinPdiGrams: 720
+      },
+      {
+        id: 4,
+        rationName: 'Ration Croissance Génisses',
+        targetCategory: 'Génisses de Renouvellement',
+        dailyDryMatterKg: 9.0,
+        compositionDescription: '5 kg Ensilage Maïs + 3 kg Foin Niébé + 1 kg Tourteau Arachide + 50g CMV',
+        dailyCostFcfa: 1200,
+        energyUfl: 7.8,
+        proteinPdiGrams: 680
+      }
+    ]);
+  }
+
+  // Navigation sub-tabs
+  switchFeedSubTab(tab: 'stocks' | 'rations'): void {
+    this.activeFeedSubTab.set(tab);
+  }
+
+  // Filters & Pagination for Feed Stocks
+  filterFeedStocks(category: string): void {
+    this.feedCategoryFilter.set(category);
+    this.feedStocksCurrentPage.set(1);
+  }
+
+  get filteredFeedStocks(): FeedStock[] {
+    let result = this.feedStocks();
+    const cat = this.feedCategoryFilter();
+    if (cat !== 'ALL') {
+      result = result.filter(s => s.category === cat);
+    }
+    const q = this.feedStockSearchTerm().toLowerCase().trim();
+    if (q) {
+      result = result.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        (s.supplierName && s.supplierName.toLowerCase().includes(q)) ||
+        (s.storageLocation && s.storageLocation.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }
+
+  get paginatedFeedStocks(): FeedStock[] {
+    const start = (this.feedStocksCurrentPage() - 1) * this.feedStocksItemsPerPage();
+    return this.filteredFeedStocks.slice(start, start + this.feedStocksItemsPerPage());
+  }
+
+  get totalFeedStocksPages(): number {
+    return Math.ceil(this.filteredFeedStocks.length / this.feedStocksItemsPerPage()) || 1;
+  }
+
+  get feedStocksPageNumbers(): number[] {
+    const total = this.totalFeedStocksPages;
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  setFeedStocksPage(page: number): void {
+    if (page >= 1 && page <= this.totalFeedStocksPages) {
+      this.feedStocksCurrentPage.set(page);
+    }
+  }
+
+  prevFeedStocksPage(): void {
+    if (this.feedStocksCurrentPage() > 1) {
+      this.feedStocksCurrentPage.update(p => p - 1);
+    }
+  }
+
+  nextFeedStocksPage(): void {
+    if (this.feedStocksCurrentPage() < this.totalFeedStocksPages) {
+      this.feedStocksCurrentPage.update(p => p + 1);
+    }
+  }
+
+  // Summaries
+  get totalFeedStockKg(): number {
+    return this.feedStocks().reduce((sum, s) => sum + (s.currentStockKg || 0), 0);
+  }
+
+  get lowFeedStockCount(): number {
+    return this.feedStocks().filter(s => s.currentStockKg <= s.alertThresholdKg).length;
+  }
+
+  get averageDailyFeedCostFcfa(): number {
+    const rations = this.feedRations();
+    if (rations.length === 0) return 0;
+    const total = rations.reduce((sum, r) => sum + (r.dailyCostFcfa || 0), 0);
+    return Math.round(total / rations.length);
+  }
+
+  // Modals & Actions Feed Stock
+  openNewFeedStockModal(): void {
+    this.feedStockForm = {
+      name: '',
+      category: 'FORAGE_GREEN',
+      currentStockKg: 500,
+      alertThresholdKg: 200,
+      unitPricePerKgFcfa: 80,
+      supplierName: '',
+      storageLocation: 'Hangar Fourrages',
+      notes: ''
+    };
+    this.isFeedStockModalOpen.set(true);
+  }
+
+  closeFeedStockModal(): void {
+    this.isFeedStockModalOpen.set(false);
+  }
+
+  saveFeedStock(): void {
+    if (!this.feedStockForm.name) {
+      this.showToast('Veuillez renseigner le nom de l\'aliment');
+      return;
+    }
+    this.apiService.createFeedStock(this.feedStockForm).subscribe({
+      next: (created) => {
+        this.feedStocks.update(stocks => [created, ...stocks]);
+        this.closeFeedStockModal();
+        this.showToast(`Aliment "${created.name}" ajouté avec succès !`);
+      },
+      error: () => {
+        const fallback: FeedStock = { ...this.feedStockForm, id: Date.now() };
+        this.feedStocks.update(stocks => [fallback, ...stocks]);
+        this.closeFeedStockModal();
+        this.showToast(`Aliment "${fallback.name}" enregistré (mode local)`);
+      }
+    });
+  }
+
+  quickAddFeedStockKg(stock: FeedStock, addKg: number): void {
+    const newQty = (stock.currentStockKg || 0) + addKg;
+    if (stock.id) {
+      this.apiService.updateFeedStockQuantity(stock.id, newQty).subscribe({
+        next: (updated) => {
+          this.feedStocks.update(list => list.map(s => s.id === updated.id ? updated : s));
+          this.showToast(`Stock de "${stock.name}" approvisionné (+${addKg} kg)`);
+        },
+        error: () => {
+          stock.currentStockKg = newQty;
+          stock.isLowStock = stock.currentStockKg <= stock.alertThresholdKg;
+          this.feedStocks.update(list => [...list]);
+          this.showToast(`Stock approvisionné (+${addKg} kg)`);
+        }
+      });
+    }
+  }
+
+  deleteFeedStock(id?: number): void {
+    if (!id) return;
+    if (confirm('Voulez-vous vraiment supprimer cet aliment du registre ?')) {
+      this.apiService.deleteFeedStock(id).subscribe({
+        next: () => {
+          this.feedStocks.update(list => list.filter(s => s.id !== id));
+          this.showToast('Aliment supprimé avec succès');
+        },
+        error: () => {
+          this.feedStocks.update(list => list.filter(s => s.id !== id));
+          this.showToast('Aliment supprimé (mode local)');
+        }
+      });
+    }
+  }
+
+  // Modals & Actions Feed Ration
+  openNewFeedRationModal(): void {
+    this.feedRationForm = {
+      rationName: '',
+      targetCategory: 'Vaches Haute Lactation',
+      dailyDryMatterKg: 15.0,
+      compositionDescription: '',
+      dailyCostFcfa: 2400,
+      energyUfl: 13.0,
+      proteinPdiGrams: 1250
+    };
+    this.isFeedRationModalOpen.set(true);
+  }
+
+  closeFeedRationModal(): void {
+    this.isFeedRationModalOpen.set(false);
+  }
+
+  saveFeedRation(): void {
+    if (!this.feedRationForm.rationName) {
+      this.showToast('Veuillez renseigner le nom de la formule');
+      return;
+    }
+    this.apiService.createFeedRation(this.feedRationForm).subscribe({
+      next: (created) => {
+        this.feedRations.update(rations => [created, ...rations]);
+        this.closeFeedRationModal();
+        this.showToast(`Fiche Ration "${created.rationName}" créée !`);
+      },
+      error: () => {
+        const fallback: FeedRation = { ...this.feedRationForm, id: Date.now() };
+        this.feedRations.update(rations => [fallback, ...rations]);
+        this.closeFeedRationModal();
+        this.showToast(`Fiche Ration "${fallback.rationName}" enregistrée (mode local)`);
+      }
+    });
+  }
+
+  deleteFeedRation(id?: number): void {
+    if (!id) return;
+    if (confirm('Voulez-vous supprimer cette formule de ration ?')) {
+      this.apiService.deleteFeedRation(id).subscribe({
+        next: () => {
+          this.feedRations.update(list => list.filter(r => r.id !== id));
+          this.showToast('Ration supprimée');
+        },
+        error: () => {
+          this.feedRations.update(list => list.filter(r => r.id !== id));
+          this.showToast('Ration supprimée (mode local)');
+        }
+      });
+    }
+  }
+
+  // Badge helpers Sprint 5
+  getFeedCategoryLabel(cat?: string): string {
+    switch (cat) {
+      case 'FORAGE_GREEN': return '🌱 Fourrage Vert / Ensilage';
+      case 'FORAGE_DRY': return '🌾 Fourrage Sec & Foin';
+      case 'CONCENTRATE': return '🌽 Concentré & Tourteau';
+      case 'MINERALS_VITAMINS': return '🧂 Minéraux, Sel & CMV';
+      default: return 'Aliment';
+    }
+  }
+
+  getFeedCategoryBadgeClass(cat?: string): string {
+    switch (cat) {
+      case 'FORAGE_GREEN': return 'badge-green';
+      case 'FORAGE_DRY': return 'badge-gold';
+      case 'CONCENTRATE': return 'badge-purple';
+      case 'MINERALS_VITAMINS': return 'badge-blue';
+      default: return 'badge-green';
+    }
+  }
+
+  // Audit & Exportations
+  openAuditReportModal(type: string = 'BIO_CERTIFICATE'): void {
+    this.selectedAuditReportType.set(type);
+    this.isAuditReportModalOpen.set(true);
+  }
+
+  closeAuditReportModal(): void {
+    this.isAuditReportModalOpen.set(false);
+  }
+
+  downloadAuditReport(reportType: string): void {
+    let reportTitle = 'Bilan_Audit_Bio_LAWTAN';
+    let content = `=================================================================\n`;
+    content += `FERME LAWTAN AGRO INDUSTRIES — RAPPORT D'AUDIT OFFICIEL\n`;
+    content += `Certification Agriculture & Élevage Biologique • Sénégal\n`;
+    content += `NINEA: SN-DKR-2023-A-0982 | Date: ${new Date().toLocaleDateString('fr-FR')}\n`;
+    content += `=================================================================\n\n`;
+
+    if (reportType === 'BIO_CERTIFICATE') {
+      reportTitle = `Certificat_Conformite_Bio_${new Date().getFullYear()}`;
+      content += `TYPE : PASSEPORT & CONFORMITÉ BIO\n`;
+      content += `- Cheptel total : ${this.animals().length} têtes identifiées RFID\n`;
+      content += `- Alimentation 100% Bio & Locale (Maïs bio, Niébé, Moringa, Sel de Gandiol)\n`;
+      content += `- Utilisation antibiotiques : 0 résidu détecté (délai d'attente respecté à 100%)\n`;
+      content += `- Énergie : 98.5% d'autonomie solaire photovoltaïque (45 kWc)\n`;
+      content += `- Produits finis certifiés : Lait frais, Lait caillé Sow, Fromage fermier, Yaourt bio, Beurre\n\n`;
+    } else if (reportType === 'DAIRY_ANNUAL') {
+      reportTitle = `Bilan_Lactation_Annuel_${new Date().getFullYear()}`;
+      content += `TYPE : BILAN DE LACTATION & COLLECTE LAITIÈRE\n`;
+      content += `- Collecte moyenne jour : 142.5 Litres/jour\n`;
+      content += `- Taux Butyrique moyen : 4.1%\n`;
+      content += `- Vaches en lactation : ${this.animals().filter(a => a.category === 'MILKING_COW').length} vaches\n`;
+      content += `- Température cuve moyenne : 3.8 °C (Chaîne du froid respectée à 100%)\n\n`;
+    } else {
+      reportTitle = `Compte_Exploitation_Commercial_${new Date().getFullYear()}`;
+      content += `TYPE : COMPTE D'EXPLOITATION & VALORISATION COMMERCIALE\n`;
+      content += `- Chiffre d'Affaires : ${(this.commercialSummary()?.totalRevenueFcfa || 1850000).toLocaleString()} FCFA\n`;
+      content += `- Total Encaissé (Wave/OM/Cash/Virement) : ${(this.commercialSummary()?.totalCollectedFcfa || 1780000).toLocaleString()} FCFA\n`;
+      content += `- Coût de l'Alimentation : ${this.averageDailyFeedCostFcfa * 30 * this.animals().length} FCFA/mois\n`;
+      content += `- Marge brute sur transformation : 38.2%\n\n`;
+    }
+
+    content += `Document certifié conforme par la Direction d'Exploitation Ferme LAWTAN.\n`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${reportTitle}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    this.showToast(`Rapport "${reportTitle}" téléchargé avec succès !`);
+    this.closeAuditReportModal();
+  }
+
   private initPerfModalChart(animal: Animal): void {
     const canvas = document.getElementById('perfModalChart') as HTMLCanvasElement;
     if (!canvas) return;
@@ -2271,3 +3685,4 @@ export class AppComponent implements OnInit, AfterViewInit {
     });
   }
 }
+

@@ -2780,4 +2780,187 @@ gap: 6px;
   margin-right: 6px;
 }
 
+/* ==========================================================================
+   SPRINT 4: COMMERCIALISATION, FACTURATION & PAIEMENTS CSS
+   ========================================================================== */
+
+/* 1. Sub-Tab Header Bar Buttons */
+.sub-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 14px 20px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sub-tab-btn:hover {
+  color: #0d381e;
+  background: rgba(13, 56, 30, 0.04);
+}
+
+.sub-tab-btn.active {
+  color: #0d381e;
+  border-bottom-color: #16a34a;
+  background: #ffffff;
+  font-weight: 700;
+}
+
+/* 2. Commercial Invoice Status Badges */
+.badge-status-paid {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+  font-weight: 700;
+}
+
+.badge-status-partial {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  font-weight: 700;
+}
+
+.badge-status-issued {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #7dd3fc;
+  font-weight: 600;
+}
+
+.badge-status-overdue {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  font-weight: 700;
+}
+
+.badge-status-cancelled {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+
+/* 3. Customer Type Badges */
+.badge-cust-supermarket {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-cust-hotel {
+  background: #faf5ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+}
+
+.badge-cust-grocery {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.badge-cust-individual {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+/* 4. Payment Method Badges */
+.badge-pay-wave {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #38bdf8;
+  font-weight: 700;
+}
+
+.badge-pay-om {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+  font-weight: 700;
+}
+
+.badge-pay-cash {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #6ee7b7;
+  font-weight: 700;
+}
+
+.badge-pay-bank {
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #a5b4fc;
+}
+
+.badge-pay-check {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+/* 5. Customer Card Hover & Micro-interactions */
+.customer-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.customer-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  border-color: #86efac !important;
+}
+
+/* 6. Print Stylesheet for A4 Invoice PDF */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .modal-overlay,
+  .modal-card {
+    position: static !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .modal-header,
+  .modal-close-btn,
+  .btn-primary,
+  .btn-secondary,
+  .sidebar,
+  .topbar,
+  .page-container {
+    display: none !important;
+  }
+
+  #printableInvoiceDocument,
+  #printableInvoiceDocument * {
+    visibility: visible !important;
+  }
+
+  #printableInvoiceDocument {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 20mm !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+
 

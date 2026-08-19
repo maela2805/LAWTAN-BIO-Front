@@ -6,6 +6,8 @@ import { HealthRecord, VaccineSchedule } from '../models/health.model';
 import { MilkProduction, DashboardStats, TankStatus, MilkHistory } from '../models/milk.model';
 import { ReproductionEvent, ReproductionAlert } from '../models/reproduction.model';
 import { Recipe, TransformationBatch, ProductStock, TransformationSummary } from '../models/transformation.model';
+import { Customer, SaleInvoice, PaymentTransaction, CommercialSummary, CustomerType, InvoiceStatus } from '../models/commercial.model';
+import { FeedStock, FeedRation, SolarTelemetry } from '../models/feed-solar.model';
 
 @Injectable({
   providedIn: 'root'
@@ -224,5 +226,157 @@ export class ApiService {
 
   deleteStock(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/stocks/${id}`);
+  }
+
+  // ==========================================
+  // SPRINT 4: COMMERCIAL, INVOICES & PAYMENTS
+  // ==========================================
+
+  // --- Customers ---
+  getAllCustomers(type?: CustomerType): Observable<Customer[]> {
+    const url = type ? `${this.baseUrl}/customers?type=${type}` : `${this.baseUrl}/customers`;
+    return this.http.get<Customer[]>(url).pipe(
+      catchError(err => {
+        console.warn('Backend non disponible pour les clients', err);
+        return of([]);
+      })
+    );
+  }
+
+  getCustomerById(id: number): Observable<Customer | null> {
+    return this.http.get<Customer>(`${this.baseUrl}/customers/${id}`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  createCustomer(customer: Customer): Observable<Customer> {
+    return this.http.post<Customer>(`${this.baseUrl}/customers`, customer);
+  }
+
+  updateCustomer(id: number, customer: Customer): Observable<Customer> {
+    return this.http.put<Customer>(`${this.baseUrl}/customers/${id}`, customer);
+  }
+
+  deleteCustomer(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/customers/${id}`);
+  }
+
+  // --- Invoices ---
+  getAllInvoices(status?: InvoiceStatus, customerId?: number): Observable<SaleInvoice[]> {
+    let url = `${this.baseUrl}/invoices`;
+    const params: string[] = [];
+    if (status) params.push(`status=${status}`);
+    if (customerId) params.push(`customerId=${customerId}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+
+    return this.http.get<SaleInvoice[]>(url).pipe(
+      catchError(err => {
+        console.warn('Backend non disponible pour les factures', err);
+        return of([]);
+      })
+    );
+  }
+
+  getInvoiceById(id: number): Observable<SaleInvoice | null> {
+    return this.http.get<SaleInvoice>(`${this.baseUrl}/invoices/${id}`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  createInvoice(invoice: SaleInvoice): Observable<SaleInvoice> {
+    return this.http.post<SaleInvoice>(`${this.baseUrl}/invoices`, invoice);
+  }
+
+  recordInvoicePayment(invoiceId: number, payment: PaymentTransaction): Observable<SaleInvoice> {
+    return this.http.post<SaleInvoice>(`${this.baseUrl}/invoices/${invoiceId}/pay`, payment);
+  }
+
+  updateInvoiceStatus(id: number, status: InvoiceStatus): Observable<SaleInvoice> {
+    return this.http.patch<SaleInvoice>(`${this.baseUrl}/invoices/${id}/status?status=${status}`, {});
+  }
+
+  deleteInvoice(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/invoices/${id}`);
+  }
+
+  // --- Payments ---
+  getAllPayments(invoiceId?: number, customerId?: number): Observable<PaymentTransaction[]> {
+    let url = `${this.baseUrl}/payments`;
+    const params: string[] = [];
+    if (invoiceId) params.push(`invoiceId=${invoiceId}`);
+    if (customerId) params.push(`customerId=${customerId}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+
+    return this.http.get<PaymentTransaction[]>(url).pipe(
+      catchError(err => {
+        console.warn('Backend non disponible pour les paiements', err);
+        return of([]);
+      })
+    );
+  }
+
+  // --- Commercial Summary ---
+  getCommercialSummary(): Observable<CommercialSummary | null> {
+    return this.http.get<CommercialSummary>(`${this.baseUrl}/commercial/summary`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  // ==========================================
+  // SPRINT 5: FEED, RATIONS & SOLAR TELEMETRY
+  // ==========================================
+
+  // --- Feed Stocks ---
+  getAllFeedStocks(): Observable<FeedStock[]> {
+    return this.http.get<FeedStock[]>(`${this.baseUrl}/feed/stocks`).pipe(
+      catchError(err => {
+        console.warn('Backend non disponible pour les stocks d\'aliments', err);
+        return of([]);
+      })
+    );
+  }
+
+  updateFeedStockQuantity(id: number, currentStockKg: number): Observable<FeedStock> {
+    return this.http.patch<FeedStock>(`${this.baseUrl}/feed/stocks/${id}/quantity`, { currentStockKg });
+  }
+
+  createFeedStock(feed: FeedStock): Observable<FeedStock> {
+    return this.http.post<FeedStock>(`${this.baseUrl}/feed/stocks`, feed);
+  }
+
+  deleteFeedStock(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/feed/stocks/${id}`);
+  }
+
+  // --- Feed Rations ---
+  getAllFeedRations(): Observable<FeedRation[]> {
+    return this.http.get<FeedRation[]>(`${this.baseUrl}/feed/rations`).pipe(
+      catchError(err => {
+        console.warn('Backend non disponible pour les fiches rations', err);
+        return of([]);
+      })
+    );
+  }
+
+  createFeedRation(ration: FeedRation): Observable<FeedRation> {
+    return this.http.post<FeedRation>(`${this.baseUrl}/feed/rations`, ration);
+  }
+
+  updateFeedRation(id: number, ration: FeedRation): Observable<FeedRation> {
+    return this.http.put<FeedRation>(`${this.baseUrl}/feed/rations/${id}`, ration);
+  }
+
+  deleteFeedRation(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/feed/rations/${id}`);
+  }
+
+  // --- Solar Telemetry ---
+  getSolarTelemetry(): Observable<SolarTelemetry | null> {
+    return this.http.get<SolarTelemetry>(`${this.baseUrl}/solar/telemetry`).pipe(
+      catchError(err => {
+        console.warn('Backend non disponible pour la télémétrie solaire', err);
+        return of(null);
+      })
+    );
   }
 }
