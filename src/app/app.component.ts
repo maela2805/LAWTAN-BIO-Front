@@ -377,6 +377,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   feedRations = signal<FeedRation[]>([]);
   solarTelemetry = signal<SolarTelemetry | null>(null);
 
+  isFeedMenuOpen = signal<boolean>(false);
   activeFeedSubTab = signal<'stocks' | 'rations' | 'suppliers'>('stocks');
   isFeedStockModalOpen = signal<boolean>(false);
   isFeedRationModalOpen = signal<boolean>(false);
@@ -3437,6 +3438,17 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   // Navigation sub-tabs
+  toggleFeedMenu(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.isFeedMenuOpen.update(v => !v);
+  }
+
+  navigateToFeedSubTab(subTab: 'stocks' | 'rations' | 'suppliers'): void {
+    this.isFeedMenuOpen.set(true);
+    this.activeFeedSubTab.set(subTab);
+    this.showPage('alimentation');
+  }
+
   switchFeedSubTab(tab: 'stocks' | 'rations' | 'suppliers'): void {
     this.activeFeedSubTab.set(tab);
   }

@@ -122,11 +122,41 @@
               </li>
             </ul>
           </li>
-          <li>
-            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'alimentation'" (click)="showPage('alimentation')">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-              <span>Alimentation & Fourrage</span>
-            </a>
+          <!-- Accordion Menu: Alimentation, Fourrages & Fournisseurs -->
+          <li class="nav-item-accordion">
+            <div class="nav-link-wrapper" [class.active]="activePage() === 'alimentation'">
+              <a href="javascript:void(0)" class="nav-link nav-link-parent" [class.active]="activePage() === 'alimentation'" (click)="navigateToFeedSubTab('stocks')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                <span>Alimentation & Fourrage</span>
+                <span class="nav-badge-count badge-success" *ngIf="feedStocks().length">{{ feedStocks().length }}</span>
+              </a>
+              <button type="button" class="nav-expand-btn nav-expand-btn-right" (click)="toggleFeedMenu($event)" title="Dérouler / Replier les sous-menus" aria-label="Dérouler">
+                <span *ngIf="!isFeedMenuOpen()">➕</span>
+                <span *ngIf="isFeedMenuOpen()">➖</span>
+              </button>
+            </div>
+
+            <!-- Sous-menus déroulants Alimentation & Fournisseurs -->
+            <ul class="nav-sub-menu" *ngIf="isFeedMenuOpen()">
+              <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'alimentation' && activeFeedSubTab() === 'stocks'" (click)="navigateToFeedSubTab('stocks')">
+                  <span class="nav-sub-bullet">🌾</span>
+                  <span>Stocks Fourrages ({{ feedStocks().length }})</span>
+                </a>
+              </li>
+              <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'alimentation' && activeFeedSubTab() === 'rations'" (click)="navigateToFeedSubTab('rations')">
+                  <span class="nav-sub-bullet">📋</span>
+                  <span>Fiches Rations ({{ feedRations().length }})</span>
+                </a>
+              </li>
+              <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'alimentation' && activeFeedSubTab() === 'suppliers'" (click)="navigateToFeedSubTab('suppliers')">
+                  <span class="nav-sub-bullet">🤝</span>
+                  <span>Fournisseurs & Intrants ({{ suppliers().length }})</span>
+                </a>
+              </li>
+            </ul>
           </li>
           <li>
             <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'tracabilite'" (click)="showPage('tracabilite')">
