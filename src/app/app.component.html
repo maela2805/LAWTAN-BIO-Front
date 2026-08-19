@@ -86,6 +86,42 @@
               <span>Production Laitière</span>
             </a>
           </li>
+          <!-- Accordion Menu: Atelier Transformation & Produits Dérivés -->
+          <li class="nav-item-accordion">
+            <div class="nav-link-wrapper" [class.active]="activePage() === 'transformation'">
+              <a href="javascript:void(0)" class="nav-link nav-link-parent" [class.active]="activePage() === 'transformation'" (click)="navigateToTransformationSubTab('batches')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                <span>Atelier Transformation</span>
+                <span class="nav-badge-count badge-success" *ngIf="transformationBatches().length">{{ transformationBatches().length }}</span>
+              </a>
+              <button type="button" class="nav-expand-btn nav-expand-btn-right" (click)="toggleTransformationMenu($event)" title="Dérouler / Replier les sous-menus" aria-label="Dérouler">
+                <span *ngIf="!isTransformationMenuOpen()">➕</span>
+                <span *ngIf="isTransformationMenuOpen()">➖</span>
+              </button>
+            </div>
+
+            <!-- Sous-menus déroulants -->
+            <ul class="nav-sub-menu" *ngIf="isTransformationMenuOpen()">
+              <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'transformation' && activeTransformationSubTab() === 'batches'" (click)="navigateToTransformationSubTab('batches')">
+                  <span class="nav-sub-bullet">🏷️</span>
+                  <span>Lots de Fabrication ({{ transformationBatches().length }})</span>
+                </a>
+              </li>
+              <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'transformation' && activeTransformationSubTab() === 'recipes'" (click)="navigateToTransformationSubTab('recipes')">
+                  <span class="nav-sub-bullet">📖</span>
+                  <span>Fiches Recettes ({{ recipes().length }})</span>
+                </a>
+              </li>
+              <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'transformation' && activeTransformationSubTab() === 'stocks'" (click)="navigateToTransformationSubTab('stocks')">
+                  <span class="nav-sub-bullet">📦</span>
+                  <span>Stock Produits Finis ({{ productStocks().length }})</span>
+                </a>
+              </li>
+            </ul>
+          </li>
           <li>
             <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'alimentation'" (click)="showPage('alimentation')">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
@@ -149,6 +185,7 @@
               <span *ngSwitchCase="'sante'">Santé Animale & Vétérinaire</span>
               <span *ngSwitchCase="'reproduction'">Reproduction, IA & Génétique</span>
               <span *ngSwitchCase="'lait'">Production Laitière Bio</span>
+              <span *ngSwitchCase="'transformation'">Atelier Transformation & Recettes (Fromagerie)</span>
               <span *ngSwitchCase="'alimentation'">Alimentation & Fourrages</span>
               <span *ngSwitchCase="'tracabilite'">Traçabilité & Lots Bio</span>
               <span *ngSwitchCase="'ventes'">Ventes & Distribution</span>
@@ -1125,6 +1162,429 @@
                 <strong style="font-size:0.9rem">Parcelle C — Herbe à Éléphant (0.5 ha)</strong>
                 <p style="font-size:0.75rem;color:#526658">Coupe quotidienne pour affouragement vert immédiat</p>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           PAGE 6B: ATELIER DE TRANSFORMATION LAITIERE (SPRINT 3)
+           ========================================== -->
+      <div class="page" *ngIf="activePage() === 'transformation'">
+        <div class="page-header-row">
+          <div class="page-header-text">
+            <h2>🥛 Atelier de Transformation Laitière & Fromagerie</h2>
+            <p>Fabrication agro-industrielle : Recettes standards, ordres de fabrication, calcul des rendements et stocks valorisés.</p>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn-secondary" (click)="openRecipeModal()">
+              <span>📖 + Nouvelle Recette</span>
+            </button>
+            <button class="btn-primary" (click)="openNewBatchModal()">
+              <span>⚙️ + Lancer un Lot de Fabrication</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. KPI Transformation Cards Row -->
+        <div class="kpi-grid">
+          <!-- KPI 1 -->
+          <div class="kpi-card">
+            <div class="kpi-card-top">
+              <div class="kpi-icon-wrap" style="background:#ecfdf5;color:#059669">
+                🥛
+              </div>
+              <span class="kpi-tag tag-positive">Collecte Valorisée</span>
+            </div>
+            <div class="kpi-value">{{ transformationSummary()?.totalMilkTransformedLiters || 180 }} <span class="kpi-unit">Litres</span></div>
+            <div class="kpi-label">Lait brut transformé ce mois</div>
+            <div class="kpi-sub">Prélevé sur Cuve Réfrigérée Bio</div>
+          </div>
+
+          <!-- KPI 2 -->
+          <div class="kpi-card">
+            <div class="kpi-card-top">
+              <div class="kpi-icon-wrap" style="background:#eff6ff;color:#2563eb">
+                📈
+              </div>
+              <span class="kpi-tag tag-positive">Standard Industriel</span>
+            </div>
+            <div class="kpi-value">{{ transformationSummary()?.averageYieldEfficiency || 98.8 }} <span class="kpi-unit">%</span></div>
+            <div class="kpi-label">Rendement Moyen d'Efficacité</div>
+            <div class="kpi-sub">Comparé aux ratios théoriques</div>
+          </div>
+
+          <!-- KPI 3 -->
+          <div class="kpi-card">
+            <div class="kpi-card-top">
+              <div class="kpi-icon-wrap" style="background:#fef3c7;color:#d97706">
+                ⚙️
+              </div>
+              <span class="kpi-tag tag-warning">{{ transformationSummary()?.activeBatchesCount || 1 }} Actifs</span>
+            </div>
+            <div class="kpi-value">{{ transformationSummary()?.activeBatchesCount || 1 }} <span class="kpi-unit">Lot(s)</span></div>
+            <div class="kpi-label">Fabrications en cours</div>
+            <div class="kpi-sub">Égouttage & Fermentation</div>
+          </div>
+
+          <!-- KPI 4 -->
+          <div class="kpi-card">
+            <div class="kpi-card-top">
+              <div class="kpi-icon-wrap" style="background:#fdf2f8;color:#db2777">
+                💰
+              </div>
+              <span class="kpi-tag tag-positive">Stock Marchand</span>
+            </div>
+            <div class="kpi-value">{{ (transformationSummary()?.totalStockValueFcfa || 203400) | number }} <span class="kpi-unit">FCFA</span></div>
+            <div class="kpi-label">Valeur du Stock Transformé</div>
+            <div class="kpi-sub">{{ productStocks().length }} références prêtes à la vente</div>
+          </div>
+        </div>
+
+        <!-- 2. Transformation Content Views (Pilotés par le Menu Latéral) -->
+        <div class="content-card" style="margin-top:20px;padding:0;overflow:hidden">
+          <!-- ==========================================
+               SUB-TAB 1: LOTS & ORDRES DE FABRICATION
+               ========================================== -->
+          <div *ngIf="activeTransformationSubTab() === 'batches'" style="padding:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+              <div class="filter-pill-tabs">
+                <button class="pill-tab-btn" [class.active]="transformationFilter() === 'all'" (click)="filterTransformation('all')">Tous les lots</button>
+                <button class="pill-tab-btn" [class.active]="transformationFilter() === 'in_progress'" (click)="filterTransformation('in_progress')">⚙️ En cours / Maturation</button>
+                <button class="pill-tab-btn" [class.active]="transformationFilter() === 'completed'" (click)="filterTransformation('completed')">✅ Terminés & Stockés</button>
+              </div>
+
+              <button class="btn-primary" style="font-size:0.85rem;padding:6px 14px" (click)="openNewBatchModal()">
+                <span>+ Lancer un Lot</span>
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>N° Lot</th>
+                    <th>Date</th>
+                    <th>Produit / Recette</th>
+                    <th>Lait Consommé</th>
+                    <th>Attendu vs Réel</th>
+                    <th>Rendement %</th>
+                    <th>Contrôle Qualité</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let b of paginatedBatches">
+                    <td>
+                      <code style="background:#e0f2fe;color:#0369a1;padding:3px 6px;border-radius:4px;font-weight:700">{{ b.batchNumber }}</code>
+                    </td>
+                    <td>{{ b.productionDate }}</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-size:1.2rem">{{ b.emoji || '🥛' }}</span>
+                        <div>
+                          <strong>{{ b.recipeName }}</strong>
+                          <div style="font-size:0.75rem;color:#64748b">{{ b.recipeCode }} • {{ b.operatorName }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <strong>{{ b.milkLitersConsumed }} L</strong>
+                      <div style="font-size:0.75rem;color:#64748b">{{ b.sourceTank }}</div>
+                    </td>
+                    <td>
+                      <div>
+                        Théorique : <strong>{{ b.expectedQuantity }} {{ b.unit }}</strong>
+                      </div>
+                      <div *ngIf="b.actualQuantityProduced !== undefined && b.actualQuantityProduced !== null" style="color:#15803d;font-weight:600">
+                        Réel : {{ b.actualQuantityProduced }} {{ b.unit }}
+                      </div>
+                      <div *ngIf="b.actualQuantityProduced === undefined || b.actualQuantityProduced === null" style="color:#d97706;font-style:italic">
+                        En fabrication...
+                      </div>
+                    </td>
+                    <td>
+                      <div *ngIf="b.yieldEfficiencyPercentage !== undefined && b.yieldEfficiencyPercentage !== null">
+                        <span class="badge-pill" [ngClass]="b.yieldEfficiencyPercentage >= 95 ? 'badge-green' : (b.yieldEfficiencyPercentage >= 90 ? 'badge-yellow' : 'badge-red')">
+                          {{ b.yieldEfficiencyPercentage }}%
+                        </span>
+                        <div *ngIf="b.wasteLossQuantity" style="font-size:0.75rem;color:#dc2626">
+                          Perte : {{ b.wasteLossQuantity }} {{ b.unit }}
+                        </div>
+                      </div>
+                      <span *ngIf="b.yieldEfficiencyPercentage === undefined || b.yieldEfficiencyPercentage === null" class="badge-pill badge-yellow">
+                        En calcul
+                      </span>
+                    </td>
+                    <td>
+                      <div style="font-size:0.8rem">
+                        <span *ngIf="b.phLevel">pH : <strong>{{ b.phLevel }}</strong> • </span>
+                        <span *ngIf="b.fatPercentage">MG : <strong>{{ b.fatPercentage }}%</strong></span>
+                      </div>
+                      <div style="font-size:0.75rem;color:#64748b;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" [title]="b.qualityNotes || ''">
+                        {{ b.qualityNotes || 'Conforme' }}
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge-pill badge-green" *ngIf="b.status === 'COMPLETED'">✅ Terminé</span>
+                      <span class="badge-pill badge-yellow" *ngIf="b.status === 'IN_PROGRESS'">⚙️ En cours</span>
+                      <span class="badge-pill badge-blue" *ngIf="b.status === 'PLANNED'">📅 Planifié</span>
+                    </td>
+                    <td>
+                      <div style="display:flex;gap:6px;align-items:center">
+                        <button *ngIf="b.status === 'IN_PROGRESS' || b.status === 'PLANNED'" class="btn-primary" style="padding:4px 8px;font-size:0.75rem;background:#15803d" title="Finaliser la fabrication et créer le stock" (click)="openCompleteBatchModal(b)">
+                          ✅ Clôturer
+                        </button>
+                        <button class="table-icon-btn" title="Voir Passeport Traçabilité" (click)="openTraceabilityCertificate(b.batchNumber, b.recipeName || '', b.productionDate, b.milkLitersConsumed + ' Litres')">
+                          🔍
+                        </button>
+                        <button class="table-icon-btn" title="Supprimer ce lot" style="color:#dc2626" (click)="deleteBatch(b.id)">
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination Lots de Fabrication -->
+            <div class="pagination-bar" *ngIf="totalBatchesPages > 1" style="margin-top:16px">
+              <button class="pagination-btn" (click)="prevBatchesPage()" [disabled]="batchesCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m15 18-6-6 6-6"/>
+                </svg>
+                <span>Précédent</span>
+              </button>
+              
+              <div class="pagination-pages-wrapper">
+                <button *ngFor="let p of batchesPageNumbers" class="page-number-btn" [class.active]="p === batchesCurrentPage()" (click)="setBatchesPage(p)">
+                  {{ p }}
+                </button>
+              </div>
+
+              <div class="pagination-info-pill">
+                <span>🏷️</span>
+                <span>Page <strong>{{ batchesCurrentPage() }}</strong> / {{ totalBatchesPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ filteredBatches.length }}</strong> lots</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextBatchesPage()" [disabled]="batchesCurrentPage() === totalBatchesPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- ==========================================
+               SUB-TAB 2: FICHES RECETTES & STANDARDS
+               ========================================== -->
+          <div *ngIf="activeTransformationSubTab() === 'recipes'" style="padding:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+              <div>
+                <h3 style="margin:0;font-size:1.1rem;color:#0d381e">Standards de Transformation & Ratios de Conversion</h3>
+                <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Paramétrage des besoins en lait brut par unité de produit fini valorisé.</p>
+              </div>
+
+              <button class="btn-primary" style="font-size:0.85rem;padding:6px 14px" (click)="openRecipeModal()">
+                <span>+ Nouvelle Recette Standard</span>
+              </button>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:16px">
+              <div *ngFor="let r of paginatedRecipes" class="content-card" style="margin:0;display:flex;flex-direction:column;justify-content:space-between;border-top:4px solid #16a34a">
+                <div>
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span style="font-size:2rem;background:#f0fdf4;padding:6px;border-radius:8px;border:1px solid #bbf7d0">{{ r.emoji || '🧀' }}</span>
+                      <div>
+                        <h4 style="margin:0;font-size:1rem;color:#0d381e">{{ r.name }}</h4>
+                        <span style="font-size:0.75rem;font-weight:700;color:#059669">{{ r.code }}</span>
+                      </div>
+                    </div>
+                    <span class="badge-pill badge-green" style="font-size:0.7rem">{{ r.productType }}</span>
+                  </div>
+
+                  <!-- Ratio Highlight Banner -->
+                  <div style="background:linear-gradient(135deg, #ecfdf5, #f0fdf4);border:1px solid #a7f3d0;padding:10px 14px;border-radius:8px;margin:12px 0">
+                    <div style="font-size:0.75rem;color:#047857;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Ratio de Conversion Standard</div>
+                    <div style="font-size:1.05rem;font-weight:800;color:#065f46;margin-top:2px">
+                      🥛 {{ r.milkLitersPerUnit }} L de lait ➔ 1 {{ r.targetUnit }}
+                    </div>
+                  </div>
+
+                  <!-- Details -->
+                  <div style="font-size:0.8rem;display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+                    <div>
+                      <span style="color:#64748b">Ingrédients : </span>
+                      <strong>{{ r.ingredientsList || 'Lait entier bio' }}</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between">
+                      <span>Conservation (DLC) : <strong>{{ r.shelfLifeDays || 30 }} jours</strong></span>
+                      <span>Prix Indicatif : <strong style="color:#15803d">{{ (r.standardSellingPriceFcfa || 1500) | number }} FCFA</strong></span>
+                    </div>
+                    <div *ngIf="r.processInstructions" style="background:#f8fafc;padding:8px;border-radius:6px;font-size:0.75rem;color:#475569;margin-top:4px;border-left:3px solid #cbd5e1">
+                      <strong style="color:#334155">Directives atelier :</strong> {{ r.processInstructions }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Footer Card Actions -->
+                <div style="display:flex;gap:8px;padding-top:12px;border-top:1px solid #f1f5f9;margin-top:8px">
+                  <button class="btn-primary" style="flex:2;font-size:0.8rem;padding:6px 10px;justify-content:center" (click)="openNewBatchModal(r.id)">
+                    ▶️ Lancer ce Lot
+                  </button>
+                  <button class="btn-secondary" style="flex:1;font-size:0.8rem;padding:6px 8px;justify-content:center" (click)="openRecipeModal(r)">
+                    ✏️ Modifier
+                  </button>
+                  <button class="btn-secondary" style="font-size:0.8rem;padding:6px 8px;color:#dc2626" (click)="deleteRecipe(r.id)">
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pagination Fiches Recettes -->
+            <div class="pagination-bar" *ngIf="totalRecipesPages > 1" style="margin-top:20px">
+              <button class="pagination-btn" (click)="prevRecipesPage()" [disabled]="recipesCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m15 18-6-6 6-6"/>
+                </svg>
+                <span>Précédent</span>
+              </button>
+              
+              <div class="pagination-pages-wrapper">
+                <button *ngFor="let p of recipesPageNumbers" class="page-number-btn" [class.active]="p === recipesCurrentPage()" (click)="setRecipesPage(p)">
+                  {{ p }}
+                </button>
+              </div>
+
+              <div class="pagination-info-pill">
+                <span>📖</span>
+                <span>Page <strong>{{ recipesCurrentPage() }}</strong> / {{ totalRecipesPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ recipes().length }}</strong> fiches</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextRecipesPage()" [disabled]="recipesCurrentPage() === totalRecipesPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- ==========================================
+               SUB-TAB 3: STOCK PRODUITS FINIS & DLC
+               ========================================== -->
+          <div *ngIf="activeTransformationSubTab() === 'stocks'" style="padding:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+              <div class="filter-pill-tabs">
+                <button class="pill-tab-btn" [class.active]="stockCategoryFilter() === 'all'" (click)="filterStock('all')">Tous les stocks ({{ productStocks().length }})</button>
+                <button class="pill-tab-btn" [class.active]="stockCategoryFilter() === 'CHEESE'" (click)="filterStock('CHEESE')">🧀 Fromages</button>
+                <button class="pill-tab-btn" [class.active]="stockCategoryFilter() === 'YOGURT'" (click)="filterStock('YOGURT')">🥣 Yaourts</button>
+                <button class="pill-tab-btn" [class.active]="stockCategoryFilter() === 'CURDLED_MILK'" (click)="filterStock('CURDLED_MILK')">🥛 Lait Caillé (Sow)</button>
+                <button class="pill-tab-btn" [class.active]="stockCategoryFilter() === 'BUTTER'" (click)="filterStock('BUTTER')">🧈 Beurre</button>
+              </div>
+
+              <div style="font-size:0.9rem;font-weight:700;color:#0d381e">
+                Total Valorisé : <span style="color:#15803d;font-size:1.1rem">{{ (transformationSummary()?.totalStockValueFcfa || 203400) | number }} FCFA</span>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Produit Fini</th>
+                    <th>N° Lot Traçabilité</th>
+                    <th>Quantité en Stock</th>
+                    <th>Prix Unitaire</th>
+                    <th>Valeur Marchande</th>
+                    <th>Date Fabrication</th>
+                    <th>Date Limite (DLC)</th>
+                    <th>Emplacement</th>
+                    <th>Certificat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let s of paginatedStocks">
+                    <td>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-size:1.3rem">{{ s.emoji || '📦' }}</span>
+                        <div>
+                          <strong>{{ s.productName }}</strong>
+                          <div><span class="badge-pill badge-green" style="font-size:0.65rem">100% Bio Ferme</span></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <code style="background:#f1f5f9;padding:3px 6px;border-radius:4px;font-weight:700">{{ s.batchNumber || 'LOT-TR-STD' }}</code>
+                    </td>
+                    <td>
+                      <strong style="font-size:1rem;color:#0d381e">{{ s.quantityAvailable }} {{ s.unit }}</strong>
+                    </td>
+                    <td>{{ (s.unitPriceFcfa || 0) | number }} FCFA</td>
+                    <td>
+                      <strong style="color:#15803d">{{ (s.totalValueFcfa || (s.quantityAvailable * s.unitPriceFcfa)) | number }} FCFA</strong>
+                    </td>
+                    <td>{{ s.mfgDate }}</td>
+                    <td>
+                      <div>
+                        <strong>{{ s.dlcExpiryDate }}</strong>
+                      </div>
+                      <div *ngIf="s.daysRemainingDlc !== undefined && s.daysRemainingDlc !== null">
+                        <span class="badge-pill" [ngClass]="s.daysRemainingDlc > 10 ? 'badge-green' : (s.daysRemainingDlc > 3 ? 'badge-yellow' : 'badge-red')" style="font-size:0.7rem">
+                          J-{{ s.daysRemainingDlc }} avant fin DLC
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <span style="font-size:0.8rem;color:#475569">❄️ {{ s.storageLocation || 'Chambre Froide (+4°C)' }}</span>
+                    </td>
+                    <td>
+                      <button class="btn-secondary" style="padding:4px 8px;font-size:0.75rem" (click)="openTraceabilityCertificate(s.batchNumber || 'LOT-080', s.productName, s.mfgDate || '13/08/2026', s.quantityAvailable + ' ' + s.unit)">
+                        🔍 QR Code
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination Stocks de Produits Finis -->
+            <div class="pagination-bar" *ngIf="totalStocksPages > 1" style="margin-top:16px">
+              <button class="pagination-btn" (click)="prevStocksPage()" [disabled]="stocksCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m15 18-6-6 6-6"/>
+                </svg>
+                <span>Précédent</span>
+              </button>
+              
+              <div class="pagination-pages-wrapper">
+                <button *ngFor="let p of stocksPageNumbers" class="page-number-btn" [class.active]="p === stocksCurrentPage()" (click)="setStocksPage(p)">
+                  {{ p }}
+                </button>
+              </div>
+
+              <div class="pagination-info-pill">
+                <span>📦</span>
+                <span>Page <strong>{{ stocksCurrentPage() }}</strong> / {{ totalStocksPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ filteredStocks.length }}</strong> références</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextStocksPage()" [disabled]="stocksCurrentPage() === totalStocksPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -2123,6 +2583,372 @@
           </button>
           <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
             Valider & Enregistrer l'Acte
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL 1: LANCER UN LOT DE TRANSFORMATION (SPRINT 3)
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isNewBatchModalOpen()" (click)="closeNewBatchModal()">
+  <div class="modal-card modal-card-lg" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title-icon-box" style="background:linear-gradient(135deg, #0d4a22, #15803d);color:#f59e0b">
+          ⚙️
+        </div>
+        <div>
+          <h3>Lancer un Ordre de Fabrication (Lot)</h3>
+          <p>Prélèvement cuve de lait, application du ratio recette et calcul du rendement théorique.</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="closeNewBatchModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitNewBatch()" style="padding:24px 28px;overflow-y:auto;max-height:calc(90vh - 80px)">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        
+        <!-- Mode Choix Recette Standard vs Nouveau Produit Dérivé Personnalisé -->
+        <div style="background:#f0fdf4;padding:12px 16px;border-radius:10px;border:1px solid #bbf7d0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div>
+            <strong style="color:#0d381e;font-size:0.9rem">Produit Dérivé à fabriquer :</strong>
+            <p style="margin:2px 0 0 0;font-size:0.78rem;color:#15803d">Choisissez une recette enregistrée ou saisissez librement un nouveau produit.</p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="pill-tab-btn" [class.active]="!newBatchForm.isCustomProduct" (click)="newBatchForm.isCustomProduct = false" style="font-size:0.8rem;padding:4px 12px">
+              📖 Recette Standard
+            </button>
+            <button type="button" class="pill-tab-btn" [class.active]="newBatchForm.isCustomProduct" (click)="newBatchForm.isCustomProduct = true" style="font-size:0.8rem;padding:4px 12px">
+              ✍️ Nouveau Produit Personnalisé
+            </button>
+          </div>
+        </div>
+
+        <!-- Option A: Sélection Recette Standard -->
+        <div class="form-grid-layout" *ngIf="!newBatchForm.isCustomProduct">
+          <div class="form-group-item">
+            <label>Recette Standard de Fabrication *</label>
+            <select [(ngModel)]="newBatchForm.recipeId" name="batchRecipe" required>
+              <option *ngFor="let rec of recipes()" [value]="rec.id">
+                {{ rec.emoji }} {{ rec.name }} (Ratio: {{ rec.milkLitersPerUnit }}L / {{ rec.targetUnit }})
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group-item">
+            <label>Cuve Laitière de Prélèvement *</label>
+            <select [(ngModel)]="newBatchForm.sourceTank" name="batchTank">
+              <option value="Cuve Réfrigérée N°1 (Bio)">Cuve Réfrigérée N°1 (Bio) — 3.9°C</option>
+              <option value="Cuve Réfrigérée N°2">Cuve Réfrigérée N°2 — 4.1°C</option>
+              <option value="Traite Directe du Matin">Traite Directe du Matin</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Option B: Saisie Libre de Produit Dérivé Personnalisé -->
+        <div *ngIf="newBatchForm.isCustomProduct" style="background:#ffffff;border:1px solid #cbd5e1;padding:16px;border-radius:10px;display:flex;flex-direction:column;gap:14px">
+          <div class="form-grid-layout">
+            <div class="form-group-item" style="flex:2">
+              <label>Nom du Produit Dérivé Personnalisé *</label>
+              <input type="text" [(ngModel)]="newBatchForm.customProductName" name="customProdName" placeholder="Ex: Fromage Blanc Vanille Bio (500g), Crème Dessert..." required />
+            </div>
+            <div class="form-group-item" style="flex:1">
+              <label>Catégorie de Produit *</label>
+              <select [(ngModel)]="newBatchForm.customProductType" name="customProdType">
+                <option value="CHEESE">🧀 Fromage</option>
+                <option value="YOGURT">🥣 Yaourt</option>
+                <option value="CURDLED_MILK">🥛 Lait Caillé (Sow)</option>
+                <option value="BUTTER">🧈 Beurre</option>
+                <option value="CREAM">🍶 Crème Fraîche</option>
+                <option value="PASTEURIZED_MILK">🥛 Lait Pasteurisé</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-layout">
+            <div class="form-group-item">
+              <label>Unité de Conditionnement Finie *</label>
+              <input type="text" [(ngModel)]="newBatchForm.customTargetUnit" name="customTargetUnit" placeholder="Ex: pot 250g, bouteille 500ml, pièce 300g" required />
+            </div>
+
+            <div class="form-group-item">
+              <label>Ratio : Lait Brut Requis par Unité (Litres) *</label>
+              <input type="number" step="0.1" min="0.1" [(ngModel)]="newBatchForm.customMilkRatio" name="customMilkRatio" placeholder="2.0" required />
+            </div>
+
+            <div class="form-group-item">
+              <label>Cuve Laitière de Prélèvement *</label>
+              <select [(ngModel)]="newBatchForm.sourceTank" name="customBatchTank">
+                <option value="Cuve Réfrigérée N°1 (Bio)">Cuve Réfrigérée N°1 (Bio) — 3.9°C</option>
+                <option value="Cuve Réfrigérée N°2">Cuve Réfrigérée N°2 — 4.1°C</option>
+                <option value="Traite Directe du Matin">Traite Directe du Matin</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" id="saveRecipeCheckbox" [(ngModel)]="newBatchForm.saveAsNewRecipe" name="saveRecipeCb" style="width:16px;height:16px;accent-color:#16a34a" />
+            <label for="saveRecipeCheckbox" style="font-size:0.82rem;font-weight:600;color:#0d381e;cursor:pointer">
+              Enregistrer automatiquement cette nouvelle fiche dans le catalogue standard des recettes
+            </label>
+          </div>
+        </div>
+
+        <!-- Row 2: Volume de Lait Prélevé & Date -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Volume de Lait Brut Prélevé (Litres) *</label>
+            <input type="number" step="0.5" min="1" [(ngModel)]="newBatchForm.milkLitersConsumed" name="batchMilk" required placeholder="Ex: 40" />
+          </div>
+
+          <div class="form-group-item">
+            <label>Date de Lancement *</label>
+            <input type="date" [(ngModel)]="newBatchForm.productionDate" name="batchDate" required />
+          </div>
+        </div>
+
+        <!-- Dynamic Yield Calculation Preview Banner -->
+        <div class="projections-calc-box">
+          <div class="calc-box-title">
+            <span>⚙️ <strong>Calculateur Dynamique de Rendement Théorique</strong></span>
+          </div>
+          <div class="calc-grid-preview">
+            <div class="calc-item">
+              <span class="lbl">Lait Brut Prévu :</span>
+              <strong class="val" style="color:#0369a1">🥛 {{ newBatchForm.milkLitersConsumed || 0 }} Litres</strong>
+            </div>
+            <div class="calc-item">
+              <span class="lbl">Production Théorique Attendue :</span>
+              <strong class="val" style="color:#15803d">
+                📦 {{ getCalculatedExpectedYield(newBatchForm.recipeId, newBatchForm.milkLitersConsumed) }} Unités
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Responsable, MG% et pH -->
+        <div class="form-grid-layout" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+          <div class="form-group-item">
+            <label>Maître Fromager / Opérateur</label>
+            <input type="text" [(ngModel)]="newBatchForm.operatorName" name="batchOperator" placeholder="Mamadou Diallo" />
+          </div>
+
+          <div class="form-group-item">
+            <label>Taux de Matière Grasse (%)</label>
+            <input type="number" step="0.1" [(ngModel)]="newBatchForm.fatPercentage" name="batchFat" placeholder="4.2" />
+          </div>
+
+          <div class="form-group-item">
+            <label>pH Initial Contrôle</label>
+            <input type="number" step="0.1" [(ngModel)]="newBatchForm.phLevel" name="batchPh" placeholder="6.6" />
+          </div>
+        </div>
+
+        <!-- Row 4: Notes de Fabrication -->
+        <div class="form-group-item">
+          <label>Consignes & Remarques Particulières</label>
+          <textarea rows="2" [(ngModel)]="newBatchForm.qualityNotes" name="batchNotes" placeholder="Ex: Température d'emprésurage stabilisée à 36°C, égouttage prévu 18h..."></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeNewBatchModal()">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Lancer la Fabrication & Décrémenter Cuve
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL 2: FINALISER LE LOT (CLÔTURE & RENDEMENT)
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isCompleteBatchModalOpen()" (click)="closeCompleteBatchModal()">
+  <div class="modal-card modal-card-lg" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title-icon-box" style="background:linear-gradient(135deg, #0d4a22, #15803d);color:#f59e0b">
+          ✅
+        </div>
+        <div>
+          <h3>Finaliser la Production & Créer le Stock</h3>
+          <p>Lot : <strong>{{ selectedBatchForCompletion()?.batchNumber }}</strong> ({{ selectedBatchForCompletion()?.recipeName }})</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="closeCompleteBatchModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitCompleteBatch()" style="padding:24px 28px;overflow-y:auto;max-height:calc(90vh - 80px)">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        
+        <!-- Batch Recap Info -->
+        <div style="background:#f8fafc;padding:12px 16px;border-radius:8px;border:1px solid #e2e8f0;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:0.85rem">
+          <div>Lait Consommé : <strong>{{ selectedBatchForCompletion()?.milkLitersConsumed }} L</strong></div>
+          <div>Quantité Théorique : <strong>{{ selectedBatchForCompletion()?.expectedQuantity }} {{ selectedBatchForCompletion()?.unit }}</strong></div>
+          <div>Date de Fabrication : <strong>{{ selectedBatchForCompletion()?.productionDate }}</strong></div>
+        </div>
+
+        <!-- Row 1: Quantité Réelle et Pertes -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Quantité Réelle Obtenue & Conditionnée ({{ selectedBatchForCompletion()?.unit }}) *</label>
+            <input type="number" step="0.1" min="0" [(ngModel)]="completeBatchForm.actualQuantityProduced" name="compQty" required />
+          </div>
+
+          <div class="form-group-item">
+            <label>Pertes ou Rebuts Constatés ({{ selectedBatchForCompletion()?.unit }})</label>
+            <input type="number" step="0.1" min="0" [(ngModel)]="completeBatchForm.wasteLossQuantity" name="compWaste" placeholder="0" />
+          </div>
+        </div>
+
+        <!-- Live Efficiency Banner -->
+        <div class="projections-calc-box" style="background:#f0fdf4;border-color:#86efac">
+          <div class="calc-box-title" style="color:#166534">
+            <span>📈 <strong>Calcul d'Efficacité du Rendement Réel</strong></span>
+          </div>
+          <div class="calc-grid-preview">
+            <div class="calc-item">
+              <span class="lbl">Rendement Industriel Calculé :</span>
+              <strong class="val" style="color:#15803d;font-size:1.3rem">
+                {{ selectedBatchForCompletion()?.expectedQuantity ? ((completeBatchForm.actualQuantityProduced / (selectedBatchForCompletion()?.expectedQuantity || 1)) * 100 | number:'1.1-1') : 100 }} %
+              </strong>
+            </div>
+            <div class="calc-item">
+              <span class="lbl">Alimentation Stock Automatique :</span>
+              <strong class="val" style="color:#0369a1">+{{ completeBatchForm.actualQuantityProduced || 0 }} {{ selectedBatchForCompletion()?.unit }} en Chambre Froide</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: pH Final & Qualité -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>pH Final Mesuré</label>
+            <input type="number" step="0.1" [(ngModel)]="completeBatchForm.phLevel" name="compPh" placeholder="4.8" />
+          </div>
+
+          <div class="form-group-item">
+            <label>Rapport Organoleptique & Qualité</label>
+            <input type="text" [(ngModel)]="completeBatchForm.qualityNotes" name="compNotes" placeholder="Texture onctueuse, goût équilibré..." />
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeCompleteBatchModal()">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Valider la Clôture & Ajouter au Stock
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL 3: FICHE RECETTE (CREATION / MODIF)
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isRecipeModalOpen()" (click)="closeRecipeModal()">
+  <div class="modal-card modal-card-lg" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title-icon-box" style="background:linear-gradient(135deg, #0d4a22, #15803d);color:#f59e0b">
+          📖
+        </div>
+        <div>
+          <h3>{{ selectedRecipe() ? 'Modifier la Recette' : 'Créer une Recette Standard' }}</h3>
+          <p>Paramétrage des ratios lait/produit, DLC et directives de fabrication.</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="closeRecipeModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitRecipe()" style="padding:24px 28px;overflow-y:auto;max-height:calc(90vh - 80px)">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        
+        <!-- Row 1: Code, Nom & Emoji -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Code Recette *</label>
+            <input type="text" [(ngModel)]="recipeForm.code" name="recCode" required placeholder="REC-CHEESE-02" />
+          </div>
+
+          <div class="form-group-item">
+            <label>Nom Commercial du Produit *</label>
+            <input type="text" [(ngModel)]="recipeForm.name" name="recName" required placeholder="Fromage Affiné Bio (500g)" />
+          </div>
+
+          <div class="form-group-item" style="max-width:80px">
+            <label>Emoji</label>
+            <input type="text" [(ngModel)]="recipeForm.emoji" name="recEmoji" placeholder="🧀" />
+          </div>
+        </div>
+
+        <!-- Row 2: Catégorie, Unité Cible & Ratio -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Catégorie de Produit *</label>
+            <select [(ngModel)]="recipeForm.productType" name="recType">
+              <option value="CHEESE">🧀 Fromage</option>
+              <option value="YOGURT">🥣 Yaourt</option>
+              <option value="CURDLED_MILK">🥛 Lait Caillé (Sow)</option>
+              <option value="BUTTER">🧈 Beurre</option>
+              <option value="CREAM">🍶 Crème Fraîche</option>
+              <option value="PASTEURIZED_MILK">🥛 Lait Pasteurisé</option>
+            </select>
+          </div>
+
+          <div class="form-group-item">
+            <label>Unité de Conditionnement *</label>
+            <input type="text" [(ngModel)]="recipeForm.targetUnit" name="recUnit" required placeholder="Ex: pièce 200g, pot 125g, bouteille 1L" />
+          </div>
+
+          <div class="form-group-item">
+            <label>Lait Requis par Unité (Litres) *</label>
+            <input type="number" step="0.05" min="0.05" [(ngModel)]="recipeForm.milkLitersPerUnit" name="recRatio" required placeholder="2.0" />
+          </div>
+        </div>
+
+        <!-- Row 3: Ingrédients & DLC & Prix -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Ingrédients & Additifs Bio</label>
+            <input type="text" [(ngModel)]="recipeForm.ingredientsList" name="recIng" placeholder="Lait entier bio, ferments lactiques, sel de Saloum" />
+          </div>
+
+          <div class="form-group-item">
+            <label>Durée de Conservation DLC (Jours)</label>
+            <input type="number" min="1" [(ngModel)]="recipeForm.shelfLifeDays" name="recShelf" placeholder="30" />
+          </div>
+
+          <div class="form-group-item">
+            <label>Prix de Vente Standard (FCFA)</label>
+            <input type="number" step="50" min="0" [(ngModel)]="recipeForm.standardSellingPriceFcfa" name="recPrice" placeholder="2000" />
+          </div>
+        </div>
+
+        <!-- Row 4: Directives de Fabrication -->
+        <div class="form-group-item">
+          <label>Directives & Process de Fabrication Atelier</label>
+          <textarea rows="3" [(ngModel)]="recipeForm.processInstructions" name="recProc" placeholder="Étapes : Pasteurisation, ensemencement, étuvage, égouttage, affinage..."></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeRecipeModal()">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Enregistrer la Fiche Recette
           </button>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { Animal, Pedigree } from './models/animal.model';
 import { HealthRecord, VaccineSchedule } from './models/health.model';
 import { DashboardStats, MilkProduction, TankStatus, MilkHistory } from './models/milk.model';
 import { ReproductionEvent, ReproductionAlert, ReproEventType } from './models/reproduction.model';
+import { Recipe, TransformationBatch, ProductStock, TransformationSummary, ProductType, BatchStatus } from './models/transformation.model';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -181,6 +182,76 @@ export class AppComponent implements OnInit, AfterViewInit {
     isConfirmed: true
   };
 
+  // Sprint 3: Transformation & Recipes Modals & State
+  isNewBatchModalOpen = signal<boolean>(false);
+  isCompleteBatchModalOpen = signal<boolean>(false);
+  isRecipeModalOpen = signal<boolean>(false);
+  selectedBatchForCompletion = signal<TransformationBatch | null>(null);
+  selectedRecipe = signal<Recipe | null>(null);
+
+  isTransformationMenuOpen = signal<boolean>(true); // Menu déroulant accordéon
+  activeTransformationSubTab = signal<string>('batches'); // 'batches' | 'recipes' | 'stocks'
+  transformationFilter = signal<string>('all'); // 'all' | 'in_progress' | 'completed'
+  stockCategoryFilter = signal<string>('all'); // 'all' | 'CHEESE' | 'YOGURT' | 'CURDLED_MILK' | 'BUTTER' | 'PASTEURIZED_MILK'
+
+  // Sprint 3: Forms
+  newBatchForm: {
+    recipeId: number;
+    milkLitersConsumed: number;
+    productionDate: string;
+    operatorName: string;
+    sourceTank: string;
+    fatPercentage: number;
+    phLevel: number;
+    qualityNotes: string;
+    isCustomProduct: boolean;
+    customProductName: string;
+    customProductType: ProductType;
+    customTargetUnit: string;
+    customMilkRatio: number;
+    saveAsNewRecipe: boolean;
+  } = {
+    recipeId: 1,
+    milkLitersConsumed: 30,
+    productionDate: new Date().toISOString().split('T')[0],
+    operatorName: 'Mamadou Diallo (Maître Fromager)',
+    sourceTank: 'Cuve Réfrigérée N°1 (Bio)',
+    fatPercentage: 4.2,
+    phLevel: 5.2,
+    qualityNotes: '',
+    isCustomProduct: false,
+    customProductName: '',
+    customProductType: 'CHEESE',
+    customTargetUnit: 'pièce 200g',
+    customMilkRatio: 2.0,
+    saveAsNewRecipe: true
+  };
+
+  completeBatchForm: {
+    actualQuantityProduced: number;
+    wasteLossQuantity: number;
+    phLevel: number;
+    qualityNotes: string;
+  } = {
+    actualQuantityProduced: 0,
+    wasteLossQuantity: 0,
+    phLevel: 4.8,
+    qualityNotes: ''
+  };
+
+  recipeForm: Recipe = {
+    code: '',
+    name: '',
+    productType: 'CHEESE',
+    targetUnit: 'pièce 200g',
+    milkLitersPerUnit: 2.0,
+    ingredientsList: '',
+    shelfLifeDays: 30,
+    processInstructions: '',
+    emoji: '🧀',
+    standardSellingPriceFcfa: 2000
+  };
+
   // Data Collections
   animals = signal<Animal[]>([]);
   healthRecords = signal<HealthRecord[]>([]);
@@ -195,6 +266,21 @@ export class AppComponent implements OnInit, AfterViewInit {
   reproFilter = signal<string>('all');
   reproCurrentPage = signal<number>(1);
   reproPageSize = signal<number>(5);
+
+  // Sprint 3: Data Collections & Pagination
+  recipes = signal<Recipe[]>([]);
+  transformationBatches = signal<TransformationBatch[]>([]);
+  productStocks = signal<ProductStock[]>([]);
+  transformationSummary = signal<TransformationSummary | null>(null);
+
+  batchesCurrentPage = signal<number>(1);
+  batchesPageSize = signal<number>(5);
+
+  recipesCurrentPage = signal<number>(1);
+  recipesPageSize = signal<number>(6);
+
+  stocksCurrentPage = signal<number>(1);
+  stocksPageSize = signal<number>(5);
 
   // Charts
   private milkChartInstance: Chart | null = null;
@@ -254,6 +340,9 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     // 6. Sprint 2: Tank Status & Milk History
     this.loadMilkData();
+
+    // 7. Sprint 3: Transformation, Recipes & Stocks
+    this.loadTransformationData();
   }
 
   loadReproductionData(): void {
@@ -418,6 +507,783 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
     ];
     this.reproductionAlerts.set(alerts);
+  }
+
+  // ==========================================
+  // SPRINT 3: TRANSFORMATION METHODS & LOADERS
+  // ==========================================
+  loadTransformationData(): void {
+    // 1. Recipes
+    this.apiService.getAllRecipes().subscribe(recs => {
+      if (recs && recs.length > 0) {
+        this.recipes.set(recs);
+      } else {
+        this.loadFallbackRecipes();
+      }
+    });
+
+    // 2. Batches
+    this.apiService.getAllBatches().subscribe(b => {
+      if (b && b.length > 0) {
+        this.transformationBatches.set(b);
+      } else {
+        this.loadFallbackBatches();
+      }
+    });
+
+    // 3. Stocks
+    this.apiService.getAllStocks().subscribe(s => {
+      if (s && s.length > 0) {
+        this.productStocks.set(s);
+      } else {
+        this.loadFallbackStocks();
+      }
+    });
+
+    // 4. Summary
+    this.apiService.getTransformationSummary().subscribe(sum => {
+      if (sum) {
+        this.transformationSummary.set(sum);
+      } else {
+        this.updateLocalTransformationSummary();
+      }
+    });
+  }
+
+  loadFallbackRecipes(): void {
+    const recs: Recipe[] = [
+      {
+        id: 1,
+        code: 'REC-CHEESE-01',
+        name: 'Fromage Fermier Frais Bio (200g)',
+        productType: 'CHEESE',
+        targetUnit: 'pièce 200g',
+        milkLitersPerUnit: 2.0,
+        ingredientsList: 'Lait entier bio pasteurisé, ferments mésophiles, présure liquide naturelle, sel de Saloum non raffiné',
+        shelfLifeDays: 45,
+        processInstructions: 'Pasteurisation douce 65°C 30min, refroidissement 36°C, ensemencement ferments 30min, emprésurage 45min, découpe caillé en dés 1cm, égouttage en faisselle 18h, salage manuel.',
+        emoji: '🧀',
+        standardSellingPriceFcfa: 2000
+      },
+      {
+        id: 2,
+        code: 'REC-YOG-01',
+        name: 'Yaourt Brassé Bio Nature (Pot 125g)',
+        productType: 'YOGURT',
+        targetUnit: 'pot 125g',
+        milkLitersPerUnit: 0.15,
+        ingredientsList: 'Lait entier bio, ferments lactiques vivants (Lactobacillus bulgaricus & Streptococcus thermophilus)',
+        shelfLifeDays: 21,
+        processInstructions: 'Chauffage 85°C 5min, refroidissement 43°C, ensemencement ferments vivants, étuvage 6h à 42°C, brassage délicat et mise en pots.',
+        emoji: '🥣',
+        standardSellingPriceFcfa: 600
+      },
+      {
+        id: 3,
+        code: 'REC-SOW-01',
+        name: 'Lait Caillé Bio Artisanal (Sow - Bouteille 1L)',
+        productType: 'CURDLED_MILK',
+        targetUnit: 'bouteille 1L',
+        milkLitersPerUnit: 1.0,
+        ingredientsList: 'Lait entier bio pasteurisé, ferments traditionnels de terroir, sucre de canne bio (option)',
+        shelfLifeDays: 14,
+        processInstructions: 'Pasteurisation 72°C 15s, maturation lente à 30°C pendant 12h jusqu\'à pH 4.2, battage traditionnel et embouteillage stérile.',
+        emoji: '🥛',
+        standardSellingPriceFcfa: 1200
+      },
+      {
+        id: 4,
+        code: 'REC-BUTTER-01',
+        name: 'Beurre Fermier Bio Demi-Sel (Plaquette 250g)',
+        productType: 'BUTTER',
+        targetUnit: 'plaquette 250g',
+        milkLitersPerUnit: 5.0,
+        ingredientsList: 'Crème fraîche maturée bio, sel fin de Saloum (2%)',
+        shelfLifeDays: 60,
+        processInstructions: 'Écrémage du lait du matin, pasteurisation crème, maturation biologique 18h à 14°C, barattage mécanique, lavage eau glacée, malaxage et moulage.',
+        emoji: '🧈',
+        standardSellingPriceFcfa: 2500
+      },
+      {
+        id: 5,
+        code: 'REC-MILK-01',
+        name: 'Lait Frais Entier Pasteurisé Bio (1L)',
+        productType: 'PASTEURIZED_MILK',
+        targetUnit: 'bouteille 1L',
+        milkLitersPerUnit: 1.0,
+        ingredientsList: '100% Lait entier de vaches nourries à l\'herbe bio',
+        shelfLifeDays: 7,
+        processInstructions: 'Homogénéisation légère, pasteurisation flash 75°C 20s, refroidissement immédiat à 3°C et conditionnement sous flux laminaire.',
+        emoji: '🍶',
+        standardSellingPriceFcfa: 1000
+      }
+    ];
+    this.recipes.set(recs);
+  }
+
+  loadFallbackBatches(): void {
+    const today = new Date();
+    const dStr = (offsetDays: number) => {
+      const d = new Date(today.getTime() + offsetDays * 86400000);
+      return d.toISOString().slice(0, 10);
+    };
+
+    const batches: TransformationBatch[] = [
+      {
+        id: 1,
+        batchNumber: 'LOT-TR-' + dStr(-2).replace(/-/g, '') + '-01',
+        recipeId: 1,
+        recipeName: 'Fromage Fermier Frais Bio (200g)',
+        recipeCode: 'REC-CHEESE-01',
+        productType: 'CHEESE',
+        emoji: '🧀',
+        status: 'COMPLETED',
+        productionDate: dStr(-2),
+        milkLitersConsumed: 40.0,
+        expectedQuantity: 20.0,
+        actualQuantityProduced: 19.5,
+        unit: 'pièces',
+        yieldEfficiencyPercentage: 97.5,
+        wasteLossQuantity: 0.5,
+        dlcExpiryDate: dStr(43),
+        operatorName: 'Mamadou Diallo (Maître Fromager)',
+        qualityNotes: 'Excellente tenue de pâte, texture crémeuse, goût franc et doux.',
+        phLevel: 5.1,
+        fatPercentage: 4.2,
+        sourceTank: 'Cuve Réfrigérée N°1 (Bio)'
+      },
+      {
+        id: 2,
+        batchNumber: 'LOT-TR-' + dStr(-1).replace(/-/g, '') + '-01',
+        recipeId: 3,
+        recipeName: 'Lait Caillé Bio Artisanal (Sow 1L)',
+        recipeCode: 'REC-SOW-01',
+        productType: 'CURDLED_MILK',
+        emoji: '🥛',
+        status: 'COMPLETED',
+        productionDate: dStr(-1),
+        milkLitersConsumed: 50.0,
+        expectedQuantity: 50.0,
+        actualQuantityProduced: 50.0,
+        unit: 'bouteilles 1L',
+        yieldEfficiencyPercentage: 100.0,
+        wasteLossQuantity: 0.0,
+        dlcExpiryDate: dStr(13),
+        operatorName: 'Awa Seck (Responsable Laiterie)',
+        qualityNotes: 'Onctuosité parfaite, acidité maîtrisée pH 4.2.',
+        phLevel: 4.2,
+        fatPercentage: 4.1,
+        sourceTank: 'Cuve Réfrigérée N°1 (Bio)'
+      },
+      {
+        id: 3,
+        batchNumber: 'LOT-TR-' + dStr(0).replace(/-/g, '') + '-01',
+        recipeId: 2,
+        recipeName: 'Yaourt Brassé Bio Nature (Pot 125g)',
+        recipeCode: 'REC-YOG-01',
+        productType: 'YOGURT',
+        emoji: '🥣',
+        status: 'COMPLETED',
+        productionDate: dStr(0),
+        milkLitersConsumed: 30.0,
+        expectedQuantity: 200.0,
+        actualQuantityProduced: 198.0,
+        unit: 'pots 125g',
+        yieldEfficiencyPercentage: 99.0,
+        wasteLossQuantity: 2.0,
+        dlcExpiryDate: dStr(21),
+        operatorName: 'Awa Seck',
+        qualityNotes: 'Texture soyeuse, arôme naturel lactique pur.',
+        phLevel: 4.4,
+        fatPercentage: 4.0,
+        sourceTank: 'Cuve Réfrigérée N°1 (Bio)'
+      },
+      {
+        id: 4,
+        batchNumber: 'LOT-TR-' + dStr(0).replace(/-/g, '') + '-02',
+        recipeId: 1,
+        recipeName: 'Fromage Fermier Frais Bio (200g)',
+        recipeCode: 'REC-CHEESE-01',
+        productType: 'CHEESE',
+        emoji: '🧀',
+        status: 'IN_PROGRESS',
+        productionDate: dStr(0),
+        milkLitersConsumed: 60.0,
+        expectedQuantity: 30.0,
+        unit: 'pièces',
+        dlcExpiryDate: dStr(45),
+        operatorName: 'Mamadou Diallo',
+        qualityNotes: 'En cours d\'égouttage en faisselle dans la salle thermo-régulée.',
+        phLevel: 5.3,
+        fatPercentage: 4.2,
+        sourceTank: 'Cuve Réfrigérée N°1 (Bio)'
+      }
+    ];
+    this.transformationBatches.set(batches);
+  }
+
+  loadFallbackStocks(): void {
+    const today = new Date();
+    const dStr = (offsetDays: number) => {
+      const d = new Date(today.getTime() + offsetDays * 86400000);
+      return d.toISOString().slice(0, 10);
+    };
+
+    const stocks: ProductStock[] = [
+      {
+        id: 1,
+        recipeId: 1,
+        recipeName: 'Fromage Fermier Frais Bio (200g)',
+        productType: 'CHEESE',
+        emoji: '🧀',
+        batchId: 1,
+        batchNumber: 'LOT-TR-' + dStr(-2).replace(/-/g, '') + '-01',
+        productName: 'Fromage Fermier Frais Bio (200g)',
+        quantityAvailable: 18.0,
+        unit: 'pièces',
+        unitPriceFcfa: 2000,
+        totalValueFcfa: 36000,
+        mfgDate: dStr(-2),
+        dlcExpiryDate: dStr(43),
+        storageLocation: 'Chambre Froide Fromagerie (+4°C)',
+        isOrganicCertified: true,
+        daysRemainingDlc: 43
+      },
+      {
+        id: 2,
+        recipeId: 3,
+        recipeName: 'Lait Caillé Bio Artisanal (Sow 1L)',
+        productType: 'CURDLED_MILK',
+        emoji: '🥛',
+        batchId: 2,
+        batchNumber: 'LOT-TR-' + dStr(-1).replace(/-/g, '') + '-01',
+        productName: 'Lait Caillé Bio Artisanal (Sow 1L)',
+        quantityAvailable: 42.0,
+        unit: 'bouteilles 1L',
+        unitPriceFcfa: 1200,
+        totalValueFcfa: 50400,
+        mfgDate: dStr(-1),
+        dlcExpiryDate: dStr(13),
+        storageLocation: 'Chambre Froide Produits Frais (+4°C)',
+        isOrganicCertified: true,
+        daysRemainingDlc: 13
+      },
+      {
+        id: 3,
+        recipeId: 2,
+        recipeName: 'Yaourt Brassé Bio Nature (Pot 125g)',
+        productType: 'YOGURT',
+        emoji: '🥣',
+        batchId: 3,
+        batchNumber: 'LOT-TR-' + dStr(0).replace(/-/g, '') + '-01',
+        productName: 'Yaourt Brassé Bio Nature (Pot 125g)',
+        quantityAvailable: 195.0,
+        unit: 'pots 125g',
+        unitPriceFcfa: 600,
+        totalValueFcfa: 117000,
+        mfgDate: dStr(0),
+        dlcExpiryDate: dStr(21),
+        storageLocation: 'Chambre Froide Produits Frais (+4°C)',
+        isOrganicCertified: true,
+        daysRemainingDlc: 21
+      }
+    ];
+    this.productStocks.set(stocks);
+    this.updateLocalTransformationSummary();
+  }
+
+  updateLocalTransformationSummary(): void {
+    const batches = this.transformationBatches();
+    const completed = batches.filter(b => b.status === 'COMPLETED');
+    const totalMilk = completed.reduce((acc, b) => acc + (b.milkLitersConsumed || 0), 0);
+    const avgYield = completed.length > 0
+      ? completed.reduce((acc, b) => acc + (b.yieldEfficiencyPercentage || 100), 0) / completed.length
+      : 98.8;
+    const activeCount = batches.filter(b => b.status === 'IN_PROGRESS' || b.status === 'PLANNED').length;
+    const stocks = this.productStocks();
+    const totalStockVal = stocks.reduce((acc, s) => acc + (s.totalValueFcfa || 0), 0);
+    const dlcAlerts = stocks.filter(s => s.daysRemainingDlc !== undefined && s.daysRemainingDlc <= 5).length;
+
+    this.transformationSummary.set({
+      totalMilkTransformedLiters: Math.round(totalMilk * 10) / 10,
+      averageYieldEfficiency: Math.round(avgYield * 10) / 10,
+      activeBatchesCount: activeCount,
+      totalBatchesCount: batches.length,
+      totalStockValueFcfa: totalStockVal,
+      productsInStockCount: stocks.length,
+      dlcAlertsCount: dlcAlerts
+    });
+  }
+
+  // --- Transformation UI Controls & Filtering & Pagination ---
+  filterTransformation(filter: string): void {
+    this.transformationFilter.set(filter);
+    this.batchesCurrentPage.set(1);
+  }
+
+  filterStock(cat: string): void {
+    this.stockCategoryFilter.set(cat);
+    this.stocksCurrentPage.set(1);
+  }
+
+  toggleTransformationMenu(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.isTransformationMenuOpen.update(v => !v);
+  }
+
+  navigateToTransformationSubTab(subTab: string): void {
+    this.isTransformationMenuOpen.set(true);
+    this.activeTransformationSubTab.set(subTab);
+    this.showPage('transformation');
+  }
+
+  switchTransformationSubTab(subTab: string): void {
+    this.activeTransformationSubTab.set(subTab);
+  }
+
+  get filteredBatches(): TransformationBatch[] {
+    const f = this.transformationFilter();
+    return this.transformationBatches().filter(b => {
+      if (f === 'in_progress') return b.status === 'IN_PROGRESS' || b.status === 'PLANNED';
+      if (f === 'completed') return b.status === 'COMPLETED';
+      return true;
+    });
+  }
+
+  // --- Pagination: Lots de fabrication ---
+  get paginatedBatches(): TransformationBatch[] {
+    const start = (this.batchesCurrentPage() - 1) * this.batchesPageSize();
+    return this.filteredBatches.slice(start, start + this.batchesPageSize());
+  }
+
+  get totalBatchesPages(): number {
+    return Math.ceil(this.filteredBatches.length / this.batchesPageSize()) || 1;
+  }
+
+  get batchesPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalBatchesPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  setBatchesPage(page: number): void {
+    if (page >= 1 && page <= this.totalBatchesPages) {
+      this.batchesCurrentPage.set(page);
+    }
+  }
+
+  nextBatchesPage(): void {
+    if (this.batchesCurrentPage() < this.totalBatchesPages) {
+      this.batchesCurrentPage.update(p => p + 1);
+    }
+  }
+
+  prevBatchesPage(): void {
+    if (this.batchesCurrentPage() > 1) {
+      this.batchesCurrentPage.update(p => p - 1);
+    }
+  }
+
+  // --- Pagination: Fiches Recettes ---
+  get paginatedRecipes(): Recipe[] {
+    const start = (this.recipesCurrentPage() - 1) * this.recipesPageSize();
+    return this.recipes().slice(start, start + this.recipesPageSize());
+  }
+
+  get totalRecipesPages(): number {
+    return Math.ceil(this.recipes().length / this.recipesPageSize()) || 1;
+  }
+
+  get recipesPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalRecipesPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  setRecipesPage(page: number): void {
+    if (page >= 1 && page <= this.totalRecipesPages) {
+      this.recipesCurrentPage.set(page);
+    }
+  }
+
+  nextRecipesPage(): void {
+    if (this.recipesCurrentPage() < this.totalRecipesPages) {
+      this.recipesCurrentPage.update(p => p + 1);
+    }
+  }
+
+  prevRecipesPage(): void {
+    if (this.recipesCurrentPage() > 1) {
+      this.recipesCurrentPage.update(p => p - 1);
+    }
+  }
+
+  // --- Pagination: Stocks de Produits Finis ---
+  get filteredStocks(): ProductStock[] {
+    const cat = this.stockCategoryFilter();
+    return this.productStocks().filter(s => {
+      if (cat === 'all') return true;
+      return s.productType === cat;
+    });
+  }
+
+  get paginatedStocks(): ProductStock[] {
+    const start = (this.stocksCurrentPage() - 1) * this.stocksPageSize();
+    return this.filteredStocks.slice(start, start + this.stocksPageSize());
+  }
+
+  get totalStocksPages(): number {
+    return Math.ceil(this.filteredStocks.length / this.stocksPageSize()) || 1;
+  }
+
+  get stocksPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalStocksPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  setStocksPage(page: number): void {
+    if (page >= 1 && page <= this.totalStocksPages) {
+      this.stocksCurrentPage.set(page);
+    }
+  }
+
+  nextStocksPage(): void {
+    if (this.stocksCurrentPage() < this.totalStocksPages) {
+      this.stocksCurrentPage.update(p => p + 1);
+    }
+  }
+
+  prevStocksPage(): void {
+    if (this.stocksCurrentPage() > 1) {
+      this.stocksCurrentPage.update(p => p - 1);
+    }
+  }
+
+  getEmojiForProductType(type?: ProductType): string {
+    switch (type) {
+      case 'CHEESE': return '🧀';
+      case 'YOGURT': return '🥣';
+      case 'CURDLED_MILK': return '🥛';
+      case 'BUTTER': return '🧈';
+      case 'CREAM': return '🍶';
+      case 'PASTEURIZED_MILK': return '🥛';
+      default: return '🥛';
+    }
+  }
+
+  getCalculatedExpectedYield(recipeId: number, milkLiters: number): number {
+    if (this.newBatchForm.isCustomProduct) {
+      const ratio = this.newBatchForm.customMilkRatio > 0 ? this.newBatchForm.customMilkRatio : 1.0;
+      return Math.round((milkLiters / ratio) * 10) / 10;
+    }
+    const recipe = this.recipes().find(r => r.id === Number(recipeId));
+    if (!recipe || !recipe.milkLitersPerUnit || recipe.milkLitersPerUnit <= 0) {
+      return milkLiters;
+    }
+    return Math.round((milkLiters / recipe.milkLitersPerUnit) * 10) / 10;
+  }
+
+  // --- Modals & Actions for Transformation ---
+  openNewBatchModal(preselectedRecipeId?: number): void {
+    this.newBatchForm.isCustomProduct = false;
+    this.newBatchForm.customProductName = '';
+    this.newBatchForm.customMilkRatio = 2.0;
+    this.newBatchForm.customTargetUnit = 'pièce 200g';
+    if (preselectedRecipeId) {
+      this.newBatchForm.recipeId = preselectedRecipeId;
+    } else if (this.recipes().length > 0 && !this.newBatchForm.recipeId) {
+      this.newBatchForm.recipeId = this.recipes()[0].id || 1;
+    }
+    this.isNewBatchModalOpen.set(true);
+  }
+
+  closeNewBatchModal(): void {
+    this.isNewBatchModalOpen.set(false);
+  }
+
+  submitNewBatch(): void {
+    const isCustom = this.newBatchForm.isCustomProduct;
+    let rec: Recipe | undefined;
+
+    if (isCustom) {
+      if (!this.newBatchForm.customProductName || !this.newBatchForm.customProductName.trim()) {
+        this.showToast('Erreur: Veuillez saisir le nom du produit dérivé.');
+        return;
+      }
+      if (!this.newBatchForm.customMilkRatio || this.newBatchForm.customMilkRatio <= 0) {
+        this.showToast('Erreur: Veuillez indiquer un ratio de lait par unité valide (> 0).');
+        return;
+      }
+
+      const customRec: Recipe = {
+        code: 'REC-CUST-' + Date.now().toString().slice(-4),
+        name: this.newBatchForm.customProductName.trim(),
+        productType: this.newBatchForm.customProductType || 'CHEESE',
+        targetUnit: this.newBatchForm.customTargetUnit || 'unité',
+        milkLitersPerUnit: this.newBatchForm.customMilkRatio,
+        ingredientsList: 'Lait entier bio fermier, ingrédients naturels',
+        shelfLifeDays: 30,
+        processInstructions: 'Transformation artisanale sur-mesure.',
+        emoji: this.getEmojiForProductType(this.newBatchForm.customProductType),
+        standardSellingPriceFcfa: 2000
+      };
+
+      if (this.newBatchForm.saveAsNewRecipe) {
+        this.apiService.createRecipe(customRec).subscribe({
+          next: (savedRec) => {
+            this.recipes.update(list => [...list, savedRec]);
+            this.proceedLaunchBatchWithRecipe(savedRec);
+          },
+          error: () => {
+            customRec.id = Date.now();
+            this.recipes.update(list => [...list, customRec]);
+            this.proceedLaunchBatchWithRecipe(customRec);
+          }
+        });
+        return;
+      } else {
+        customRec.id = Date.now();
+        this.proceedLaunchBatchWithRecipe(customRec);
+        return;
+      }
+    } else {
+      rec = this.recipes().find(r => r.id === Number(this.newBatchForm.recipeId));
+      if (!rec) {
+        this.showToast('Erreur: Veuillez sélectionner une recette valide.');
+        return;
+      }
+      this.proceedLaunchBatchWithRecipe(rec);
+    }
+  }
+
+  private proceedLaunchBatchWithRecipe(rec: Recipe): void {
+    const expected = this.getCalculatedExpectedYield(rec.id || 1, this.newBatchForm.milkLitersConsumed);
+    const dateStr = this.newBatchForm.productionDate;
+    const batchNum = 'LOT-TR-' + dateStr.replace(/-/g, '') + '-' + String(this.transformationBatches().length + 1).padStart(2, '0');
+
+    const newBatch: TransformationBatch = {
+      batchNumber: batchNum,
+      recipeId: rec.id || 1,
+      recipeName: rec.name,
+      recipeCode: rec.code,
+      productType: rec.productType,
+      emoji: rec.emoji || '🥛',
+      status: 'IN_PROGRESS',
+      productionDate: dateStr,
+      milkLitersConsumed: this.newBatchForm.milkLitersConsumed,
+      expectedQuantity: expected,
+      unit: rec.targetUnit,
+      operatorName: this.newBatchForm.operatorName,
+      qualityNotes: this.newBatchForm.qualityNotes || 'Fabrication lancée.',
+      phLevel: this.newBatchForm.phLevel,
+      fatPercentage: this.newBatchForm.fatPercentage,
+      sourceTank: this.newBatchForm.sourceTank
+    };
+
+    this.apiService.launchBatch(newBatch).subscribe({
+      next: (created) => {
+        this.transformationBatches.update(list => [created, ...list]);
+        this.updateLocalTransformationSummary();
+        this.showToast(`✅ Lot ${created.batchNumber} lancé avec succès (${created.milkLitersConsumed}L prélevés) !`);
+        this.closeNewBatchModal();
+      },
+      error: () => {
+        newBatch.id = Date.now();
+        this.transformationBatches.update(list => [newBatch, ...list]);
+        this.updateLocalTransformationSummary();
+        this.showToast(`✅ Lot ${newBatch.batchNumber} lancé (${newBatch.milkLitersConsumed}L prélevés) !`);
+        this.closeNewBatchModal();
+      }
+    });
+  }
+
+  openCompleteBatchModal(batch: TransformationBatch): void {
+    this.selectedBatchForCompletion.set(batch);
+    this.completeBatchForm.actualQuantityProduced = batch.expectedQuantity || 0;
+    this.completeBatchForm.wasteLossQuantity = 0;
+    this.completeBatchForm.phLevel = batch.phLevel || 4.8;
+    this.completeBatchForm.qualityNotes = batch.qualityNotes || 'Contrôle visuel et gustatif conforme bio.';
+    this.isCompleteBatchModalOpen.set(true);
+  }
+
+  closeCompleteBatchModal(): void {
+    this.isCompleteBatchModalOpen.set(false);
+    this.selectedBatchForCompletion.set(null);
+  }
+
+  submitCompleteBatch(): void {
+    const batch = this.selectedBatchForCompletion();
+    if (!batch || !batch.id) return;
+
+    const actualQty = Number(this.completeBatchForm.actualQuantityProduced);
+    const waste = Number(this.completeBatchForm.wasteLossQuantity) || 0;
+    const efficiency = batch.expectedQuantity > 0 
+      ? Math.round((actualQty / batch.expectedQuantity) * 1000) / 10 
+      : 100;
+
+    const rec = this.recipes().find(r => r.id === batch.recipeId);
+    const unitPrice = (rec && rec.standardSellingPriceFcfa) ? rec.standardSellingPriceFcfa : 1500;
+
+    this.apiService.completeBatch(batch.id, {
+      actualQuantityProduced: actualQty,
+      wasteLossQuantity: waste,
+      qualityNotes: this.completeBatchForm.qualityNotes,
+      phLevel: this.completeBatchForm.phLevel
+    }).subscribe({
+      next: (completed) => {
+        this.transformationBatches.update(list => list.map(b => b.id === completed.id ? completed : b));
+        this.loadTransformationData();
+        this.showToast(`🎉 Lot ${completed.batchNumber} finalisé ! Rendement: ${completed.yieldEfficiencyPercentage}%`);
+        this.closeCompleteBatchModal();
+      },
+      error: () => {
+        // Fallback local update
+        const updated: TransformationBatch = {
+          ...batch,
+          status: 'COMPLETED',
+          actualQuantityProduced: actualQty,
+          wasteLossQuantity: waste,
+          yieldEfficiencyPercentage: efficiency,
+          phLevel: this.completeBatchForm.phLevel,
+          qualityNotes: this.completeBatchForm.qualityNotes
+        };
+
+        this.transformationBatches.update(list => list.map(b => b.id === batch.id ? updated : b));
+
+        // Create stock entry locally
+        const newStock: ProductStock = {
+          id: Date.now(),
+          recipeId: batch.recipeId,
+          recipeName: batch.recipeName,
+          productType: batch.productType,
+          emoji: batch.emoji,
+          batchId: batch.id,
+          batchNumber: batch.batchNumber,
+          productName: batch.recipeName || 'Produit Transformé',
+          quantityAvailable: actualQty,
+          unit: batch.unit,
+          unitPriceFcfa: unitPrice,
+          totalValueFcfa: actualQty * unitPrice,
+          mfgDate: batch.productionDate,
+          dlcExpiryDate: batch.dlcExpiryDate,
+          storageLocation: 'Chambre Froide Fromagerie (+4°C)',
+          isOrganicCertified: true,
+          daysRemainingDlc: 30
+        };
+
+        this.productStocks.update(stocks => [newStock, ...stocks]);
+        this.updateLocalTransformationSummary();
+        this.showToast(`🎉 Lot ${batch.batchNumber} finalisé ! Rendement: ${efficiency}% (${actualQty} ${batch.unit} ajoutés au stock)`);
+        this.closeCompleteBatchModal();
+      }
+    });
+  }
+
+  openRecipeModal(recipe?: Recipe): void {
+    if (recipe) {
+      this.selectedRecipe.set(recipe);
+      this.recipeForm = { ...recipe };
+    } else {
+      this.selectedRecipe.set(null);
+      this.recipeForm = {
+        code: 'REC-' + String(this.recipes().length + 1).padStart(2, '0'),
+        name: '',
+        productType: 'CHEESE',
+        targetUnit: 'pièce 200g',
+        milkLitersPerUnit: 2.0,
+        ingredientsList: '',
+        shelfLifeDays: 30,
+        processInstructions: '',
+        emoji: '🧀',
+        standardSellingPriceFcfa: 2000
+      };
+    }
+    this.isRecipeModalOpen.set(true);
+  }
+
+  closeRecipeModal(): void {
+    this.isRecipeModalOpen.set(false);
+    this.selectedRecipe.set(null);
+  }
+
+  submitRecipe(): void {
+    if (!this.recipeForm.name || !this.recipeForm.targetUnit) {
+      this.showToast('Veuillez remplir les champs obligatoires de la recette.');
+      return;
+    }
+
+    const sel = this.selectedRecipe();
+    if (sel && sel.id) {
+      this.apiService.updateRecipe(sel.id, this.recipeForm).subscribe({
+        next: (updated) => {
+          this.recipes.update(list => list.map(r => r.id === updated.id ? updated : r));
+          this.showToast(`✅ Recette "${updated.name}" mise à jour avec succès !`);
+          this.closeRecipeModal();
+        },
+        error: () => {
+          this.recipes.update(list => list.map(r => r.id === sel.id ? { ...this.recipeForm, id: sel.id } : r));
+          this.showToast(`✅ Recette "${this.recipeForm.name}" mise à jour !`);
+          this.closeRecipeModal();
+        }
+      });
+    } else {
+      this.apiService.createRecipe(this.recipeForm).subscribe({
+        next: (created) => {
+          this.recipes.update(list => [...list, created]);
+          this.showToast(`✅ Nouvelle recette "${created.name}" créée !`);
+          this.closeRecipeModal();
+        },
+        error: () => {
+          const created = { ...this.recipeForm, id: Date.now() };
+          this.recipes.update(list => [...list, created]);
+          this.showToast(`✅ Nouvelle recette "${this.recipeForm.name}" créée !`);
+          this.closeRecipeModal();
+        }
+      });
+    }
+  }
+
+  deleteBatch(id?: number): void {
+    if (!id) return;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet ordre de fabrication ?')) return;
+
+    this.apiService.deleteBatch(id).subscribe({
+      next: () => {
+        this.transformationBatches.update(list => list.filter(b => b.id !== id));
+        this.updateLocalTransformationSummary();
+        this.showToast('Lot de transformation supprimé.');
+      },
+      error: () => {
+        this.transformationBatches.update(list => list.filter(b => b.id !== id));
+        this.updateLocalTransformationSummary();
+        this.showToast('Lot de transformation supprimé.');
+      }
+    });
+  }
+
+  deleteRecipe(id?: number): void {
+    if (!id) return;
+    if (!confirm('Supprimer cette fiche recette standard ?')) return;
+
+    this.apiService.deleteRecipe(id).subscribe({
+      next: () => {
+        this.recipes.update(list => list.filter(r => r.id !== id));
+        this.showToast('Recette supprimée.');
+      },
+      error: () => {
+        this.recipes.update(list => list.filter(r => r.id !== id));
+        this.showToast('Recette supprimée.');
+      }
+    });
   }
 
   loadFallbackAnimals(): void {
@@ -653,6 +1519,8 @@ export class AppComponent implements OnInit, AfterViewInit {
       setTimeout(() => this.initDashboardCharts(), 150);
     } else if (pageId === 'lait') {
       setTimeout(() => this.initMilkChart(), 150);
+    } else if (pageId === 'transformation') {
+      this.loadTransformationData();
     } else if (pageId === 'finance') {
       setTimeout(() => this.initFinanceChart(), 150);
     }

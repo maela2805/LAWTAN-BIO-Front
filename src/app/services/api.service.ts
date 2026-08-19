@@ -5,6 +5,7 @@ import { Animal } from '../models/animal.model';
 import { HealthRecord, VaccineSchedule } from '../models/health.model';
 import { MilkProduction, DashboardStats, TankStatus, MilkHistory } from '../models/milk.model';
 import { ReproductionEvent, ReproductionAlert } from '../models/reproduction.model';
+import { Recipe, TransformationBatch, ProductStock, TransformationSummary } from '../models/transformation.model';
 
 @Injectable({
   providedIn: 'root'
@@ -147,5 +148,81 @@ export class ApiService {
     return this.http.get<MilkHistory[]>(`${this.baseUrl}/milk/history?days=${days}`).pipe(
       catchError(() => of([]))
     );
+  }
+
+  // ==========================================
+  // SPRINT 3: TRANSFORMATION, RECIPES & STOCKS
+  // ==========================================
+
+  // --- Recipes ---
+  getAllRecipes(): Observable<Recipe[]> {
+    return this.http.get<Recipe[]>(`${this.baseUrl}/recipes`).pipe(
+      catchError(err => {
+        console.warn('Backend non disponible pour les recettes', err);
+        return of([]);
+      })
+    );
+  }
+
+  createRecipe(recipe: Recipe): Observable<Recipe> {
+    return this.http.post<Recipe>(`${this.baseUrl}/recipes`, recipe);
+  }
+
+  updateRecipe(id: number, recipe: Recipe): Observable<Recipe> {
+    return this.http.put<Recipe>(`${this.baseUrl}/recipes/${id}`, recipe);
+  }
+
+  deleteRecipe(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/recipes/${id}`);
+  }
+
+  // --- Transformation Batches ---
+  getAllBatches(): Observable<TransformationBatch[]> {
+    return this.http.get<TransformationBatch[]>(`${this.baseUrl}/transformations/batches`).pipe(
+      catchError(err => {
+        console.warn('Backend non disponible pour les lots', err);
+        return of([]);
+      })
+    );
+  }
+
+  launchBatch(batch: TransformationBatch): Observable<TransformationBatch> {
+    return this.http.post<TransformationBatch>(`${this.baseUrl}/transformations/batches`, batch);
+  }
+
+  completeBatch(id: number, data: { actualQuantityProduced: number; wasteLossQuantity?: number; qualityNotes?: string; phLevel?: number }): Observable<TransformationBatch> {
+    return this.http.post<TransformationBatch>(`${this.baseUrl}/transformations/batches/${id}/complete`, data);
+  }
+
+  updateBatch(id: number, batch: TransformationBatch): Observable<TransformationBatch> {
+    return this.http.put<TransformationBatch>(`${this.baseUrl}/transformations/batches/${id}`, batch);
+  }
+
+  deleteBatch(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/transformations/batches/${id}`);
+  }
+
+  getTransformationSummary(): Observable<TransformationSummary | null> {
+    return this.http.get<TransformationSummary>(`${this.baseUrl}/transformations/summary`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  // --- Stocks ---
+  getAllStocks(): Observable<ProductStock[]> {
+    return this.http.get<ProductStock[]>(`${this.baseUrl}/stocks`).pipe(
+      catchError(err => {
+        console.warn('Backend non disponible pour les stocks', err);
+        return of([]);
+      })
+    );
+  }
+
+  createOrUpdateStock(stock: ProductStock): Observable<ProductStock> {
+    return this.http.post<ProductStock>(`${this.baseUrl}/stocks`, stock);
+  }
+
+  deleteStock(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/stocks/${id}`);
   }
 }
