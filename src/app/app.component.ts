@@ -9,6 +9,7 @@ import { ReproductionEvent, ReproductionAlert, ReproEventType } from './models/r
 import { Recipe, TransformationBatch, ProductStock, TransformationSummary, ProductType, BatchStatus } from './models/transformation.model';
 import { Customer, SaleInvoice, InvoiceItem, PaymentTransaction, CommercialSummary, CustomerType, InvoiceStatus, PaymentMethod } from './models/commercial.model';
 import { FeedStock, FeedRation, SolarTelemetry } from './models/feed-solar.model';
+import { Supplier } from './models/supplier.model';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -376,11 +377,45 @@ export class AppComponent implements OnInit, AfterViewInit {
   feedRations = signal<FeedRation[]>([]);
   solarTelemetry = signal<SolarTelemetry | null>(null);
 
-  activeFeedSubTab = signal<'stocks' | 'rations'>('stocks');
+  activeFeedSubTab = signal<'stocks' | 'rations' | 'suppliers'>('stocks');
   isFeedStockModalOpen = signal<boolean>(false);
   isFeedRationModalOpen = signal<boolean>(false);
   isAuditReportModalOpen = signal<boolean>(false);
   selectedAuditReportType = signal<string>('BIO_CERTIFICATE');
+
+  // Fournisseurs / Suppliers State
+  suppliers = signal<Supplier[]>([]);
+  isSupplierModalOpen = signal<boolean>(false);
+  isQuickSupplierModalOpen = signal<boolean>(false);
+  supplierSearchTerm = signal<string>('');
+  supplierCategoryFilter = signal<string>('ALL');
+  suppliersCurrentPage = signal<number>(1);
+  suppliersItemsPerPage = signal<number>(6);
+
+  supplierForm: Supplier = {
+    name: '',
+    companyName: '',
+    contactPerson: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: 'Thiès',
+    category: 'FOURRAGE_ALIMENT',
+    paymentTerms: 'Paiement à livraison / Wave',
+    bioCertified: true,
+    notes: ''
+  };
+
+  quickSupplierForm: Supplier = {
+    name: '',
+    companyName: '',
+    contactPerson: '',
+    phone: '',
+    city: 'Thiès',
+    category: 'FOURRAGE_ALIMENT',
+    paymentTerms: 'Comptant / Wave',
+    bioCertified: true
+  };
 
   feedStockForm: FeedStock = {
     name: '',
@@ -3318,6 +3353,31 @@ export class AppComponent implements OnInit, AfterViewInit {
         });
       }
     });
+
+    // 4. Fournisseurs / Suppliers
+    this.loadSuppliersData();
+  }
+
+  loadSuppliersData(): void {
+    this.apiService.getAllSuppliers().subscribe(sups => {
+      if (sups && sups.length > 0) {
+        this.suppliers.set(sups);
+      } else {
+        this.loadFallbackSuppliers();
+      }
+    });
+  }
+
+  loadFallbackSuppliers(): void {
+    this.suppliers.set([
+      { id: 1, name: 'Parcelles Bio Pout', companyName: 'Agro Pout Bio SARL', contactPerson: 'Mamadou Ousmane Ndiaye', phone: '+221 77 654 32 10', email: 'contact@agropout.sn', address: 'RN2 Pout', city: 'Thiès / Pout', category: 'FOURRAGE_ALIMENT', paymentTerms: 'Paiement à livraison / Wave', totalOrdersCount: 8, totalSpentFcfa: 1850000, bioCertified: true, active: true, notes: 'Producteur certifié d\'ensilage de maïs biologique.' },
+      { id: 2, name: 'GIE Femmes Niayes', companyName: 'GIE Femmes Productrices des Niayes', contactPerson: 'Fatou Sarr', phone: '+221 78 123 45 67', email: 'gie.niayes.bio@gmail.com', address: 'Zone Maraîchère Kayar', city: 'Kayar / Niayes', category: 'FOURRAGE_ALIMENT', paymentTerms: 'Comptant / OM', totalOrdersCount: 12, totalSpentFcfa: 940000, bioCertified: true, active: true, notes: 'Foin de niébé riche en protéines brutes.' },
+      { id: 3, name: 'Huilerie Artisanale Kaolack', companyName: 'Kaolack Agro Press GIE', contactPerson: 'Babacar Sy', phone: '+221 76 987 65 43', email: 'agro.kaolack@yahoo.fr', address: 'Avenue Valdiodio Ndiaye', city: 'Kaolack', category: 'FOURRAGE_ALIMENT', paymentTerms: '30 jours fin de mois', totalOrdersCount: 5, totalSpentFcfa: 1200000, bioCertified: true, active: true, notes: 'Tourteaux d\'arachide bio première pression à froid.' },
+      { id: 4, name: 'Grands Moulins de Dakar (GMD Agro)', companyName: 'Grands Moulins de Dakar SA', contactPerson: 'Jean-Baptiste Mendy', phone: '+221 33 839 00 00', email: 'commandes.agro@gmd.sn', address: 'Zone Industrielle Bel-Air', city: 'Dakar', category: 'FOURRAGE_ALIMENT', paymentTerms: 'Virement Bancaire', totalOrdersCount: 15, totalSpentFcfa: 2800000, bioCertified: false, active: true, notes: 'Son fin de blé et brisures de céréales.' },
+      { id: 5, name: 'Plantation Bio Thiès', companyName: 'Moringa & Bio Herb Africa', contactPerson: 'Dr. Aïssatou Ba', phone: '+221 77 345 67 89', email: 'aissatou.ba@moringa-africa.sn', address: 'Route de Mont-Rolland', city: 'Thiès', category: 'VETERINAIRE_SANTE', paymentTerms: 'Comptant / Wave', totalOrdersCount: 6, totalSpentFcfa: 450000, bioCertified: true, active: true, notes: 'Poudre de feuilles de Moringa et complexes CMV bio.' },
+      { id: 6, name: 'Salins Siné Saloum', companyName: 'Coopérative Sel Artisanal Gandiol', contactPerson: 'Cheikh Tidiane Diouf', phone: '+221 70 876 54 32', email: 'salins.gandiol@orange.sn', address: 'Delta du Saloum', city: 'Fatick / Foundiougne', category: 'FOURRAGE_ALIMENT', paymentTerms: 'Comptant à la commande', totalOrdersCount: 4, totalSpentFcfa: 180000, bioCertified: true, active: true, notes: 'Blocs à lécher en sel naturel purifié.' },
+      { id: 7, name: 'EcoPack Sénégal', companyName: 'EcoPack Solutions Packaging', contactPerson: 'Ibrahima Fall', phone: '+221 77 890 12 34', email: 'sales@ecopack.sn', address: 'Route de Rufisque Km 14', city: 'Dakar / Rufisque', category: 'EMBALLAGE_PACKAGING', paymentTerms: 'Acompte 50% / Solde livraison', totalOrdersCount: 10, totalSpentFcfa: 3200000, bioCertified: true, active: true, notes: 'Bocaux en verre recyclable pour yaourts et étiquettes bio.' }
+    ]);
   }
 
   loadFallbackFeedStocks(): void {
@@ -3377,7 +3437,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   // Navigation sub-tabs
-  switchFeedSubTab(tab: 'stocks' | 'rations'): void {
+  switchFeedSubTab(tab: 'stocks' | 'rations' | 'suppliers'): void {
     this.activeFeedSubTab.set(tab);
   }
 
@@ -3597,6 +3657,200 @@ export class AppComponent implements OnInit, AfterViewInit {
       case 'CONCENTRATE': return 'badge-purple';
       case 'MINERALS_VITAMINS': return 'badge-blue';
       default: return 'badge-green';
+    }
+  }
+
+  // ==========================================
+  // FOURNISSEURS (SUPPLIERS) LOGIC & MODALS
+  // ==========================================
+  filterSuppliers(category: string): void {
+    this.supplierCategoryFilter.set(category);
+    this.suppliersCurrentPage.set(1);
+  }
+
+  get filteredSuppliers(): Supplier[] {
+    let result = this.suppliers();
+    const cat = this.supplierCategoryFilter();
+    if (cat !== 'ALL') {
+      result = result.filter(s => s.category === cat);
+    }
+    const q = this.supplierSearchTerm().toLowerCase().trim();
+    if (q) {
+      result = result.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        (s.companyName && s.companyName.toLowerCase().includes(q)) ||
+        (s.contactPerson && s.contactPerson.toLowerCase().includes(q)) ||
+        (s.city && s.city.toLowerCase().includes(q)) ||
+        (s.phone && s.phone.includes(q))
+      );
+    }
+    return result;
+  }
+
+  get paginatedSuppliers(): Supplier[] {
+    const start = (this.suppliersCurrentPage() - 1) * this.suppliersItemsPerPage();
+    return this.filteredSuppliers.slice(start, start + this.suppliersItemsPerPage());
+  }
+
+  get totalSuppliersPages(): number {
+    return Math.ceil(this.filteredSuppliers.length / this.suppliersItemsPerPage()) || 1;
+  }
+
+  get suppliersPageNumbers(): number[] {
+    const total = this.totalSuppliersPages;
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  setSuppliersPage(page: number): void {
+    if (page >= 1 && page <= this.totalSuppliersPages) {
+      this.suppliersCurrentPage.set(page);
+    }
+  }
+
+  prevSuppliersPage(): void {
+    if (this.suppliersCurrentPage() > 1) {
+      this.suppliersCurrentPage.update(p => p - 1);
+    }
+  }
+
+  nextSuppliersPage(): void {
+    if (this.suppliersCurrentPage() < this.totalSuppliersPages) {
+      this.suppliersCurrentPage.update(p => p + 1);
+    }
+  }
+
+  get totalSuppliersSpent(): number {
+    return this.suppliers().reduce((sum, s) => sum + (s.totalSpentFcfa || 0), 0);
+  }
+
+  get bioCertifiedSuppliersCount(): number {
+    return this.suppliers().filter(s => s.bioCertified).length;
+  }
+
+  openNewSupplierModal(sup?: Supplier): void {
+    if (sup) {
+      this.supplierForm = { ...sup };
+    } else {
+      this.supplierForm = {
+        name: '',
+        companyName: '',
+        contactPerson: '',
+        phone: '',
+        email: '',
+        address: '',
+        city: 'Thiès',
+        category: 'FOURRAGE_ALIMENT',
+        paymentTerms: 'Paiement à livraison / Wave',
+        bioCertified: true,
+        notes: ''
+      };
+    }
+    this.isSupplierModalOpen.set(true);
+  }
+
+  closeSupplierModal(): void {
+    this.isSupplierModalOpen.set(false);
+  }
+
+  saveSupplier(): void {
+    if (!this.supplierForm.name.trim()) {
+      this.showToast('Veuillez renseigner le nom du fournisseur');
+      return;
+    }
+    if (this.supplierForm.id) {
+      this.apiService.updateSupplier(this.supplierForm.id, this.supplierForm).subscribe({
+        next: (updated) => {
+          this.suppliers.update(list => list.map(s => s.id === updated.id ? updated : s));
+          this.closeSupplierModal();
+          this.showToast(`Fournisseur "${updated.name}" mis à jour !`);
+        },
+        error: () => {
+          this.suppliers.update(list => list.map(s => s.id === this.supplierForm.id ? { ...this.supplierForm } : s));
+          this.closeSupplierModal();
+          this.showToast(`Fournisseur mis à jour (mode local)`);
+        }
+      });
+    } else {
+      this.apiService.createSupplier(this.supplierForm).subscribe({
+        next: (created) => {
+          this.suppliers.update(list => [created, ...list]);
+          this.closeSupplierModal();
+          this.showToast(`Fournisseur "${created.name}" ajouté avec succès !`);
+        },
+        error: () => {
+          const fallback: Supplier = { ...this.supplierForm, id: Date.now(), totalOrdersCount: 0, totalSpentFcfa: 0, active: true };
+          this.suppliers.update(list => [fallback, ...list]);
+          this.closeSupplierModal();
+          this.showToast(`Fournisseur "${fallback.name}" ajouté (mode local)`);
+        }
+      });
+    }
+  }
+
+  deleteSupplier(id?: number): void {
+    if (!id) return;
+    if (confirm('Voulez-vous désactiver ce fournisseur ?')) {
+      this.apiService.deleteSupplier(id).subscribe({
+        next: () => {
+          this.suppliers.update(list => list.filter(s => s.id !== id));
+          this.showToast('Fournisseur retiré avec succès');
+        },
+        error: () => {
+          this.suppliers.update(list => list.filter(s => s.id !== id));
+          this.showToast('Fournisseur retiré (mode local)');
+        }
+      });
+    }
+  }
+
+  // Quick Supplier Inline Creation (Used directly within order/restock forms)
+  openQuickSupplierModal(): void {
+    this.quickSupplierForm = {
+      name: '',
+      companyName: '',
+      contactPerson: '',
+      phone: '',
+      city: 'Thiès',
+      category: 'FOURRAGE_ALIMENT',
+      paymentTerms: 'Comptant / Wave',
+      bioCertified: true
+    };
+    this.isQuickSupplierModalOpen.set(true);
+  }
+
+  closeQuickSupplierModal(): void {
+    this.isQuickSupplierModalOpen.set(false);
+  }
+
+  saveQuickSupplier(): void {
+    if (!this.quickSupplierForm.name.trim()) {
+      this.showToast('Veuillez saisir le nom du fournisseur');
+      return;
+    }
+    this.apiService.createSupplier(this.quickSupplierForm).subscribe({
+      next: (created) => {
+        this.suppliers.update(list => [created, ...list]);
+        this.feedStockForm.supplierName = created.name;
+        this.closeQuickSupplierModal();
+        this.showToast(`Fournisseur "${created.name}" créé et sélectionné !`);
+      },
+      error: () => {
+        const fallback: Supplier = { ...this.quickSupplierForm, id: Date.now(), totalOrdersCount: 0, totalSpentFcfa: 0, active: true };
+        this.suppliers.update(list => [fallback, ...list]);
+        this.feedStockForm.supplierName = fallback.name;
+        this.closeQuickSupplierModal();
+        this.showToast(`Fournisseur "${fallback.name}" créé et sélectionné !`);
+      }
+    });
+  }
+
+  getSupplierCategoryLabel(cat?: string): string {
+    switch (cat) {
+      case 'FOURRAGE_ALIMENT': return '🌱 Fourrages & Aliments';
+      case 'EMBALLAGE_PACKAGING': return '📦 Packaging & Bouteilles';
+      case 'EQUIPEMENT_PIECES': return '⚙️ Équipements & Pièces';
+      case 'VETERINAIRE_SANTE': return '🩺 Vétérinaire & Hygiène';
+      default: return 'Général / Intrants';
     }
   }
 

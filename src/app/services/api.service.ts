@@ -8,6 +8,7 @@ import { ReproductionEvent, ReproductionAlert } from '../models/reproduction.mod
 import { Recipe, TransformationBatch, ProductStock, TransformationSummary } from '../models/transformation.model';
 import { Customer, SaleInvoice, PaymentTransaction, CommercialSummary, CustomerType, InvoiceStatus } from '../models/commercial.model';
 import { FeedStock, FeedRation, SolarTelemetry } from '../models/feed-solar.model';
+import { Supplier } from '../models/supplier.model';
 
 @Injectable({
   providedIn: 'root'
@@ -379,4 +380,41 @@ export class ApiService {
       })
     );
   }
+
+  // ==========================================
+  // FOURNISSEURS & APPROVISIONNEMENTS
+  // ==========================================
+  getAllSuppliers(): Observable<Supplier[]> {
+    return this.http.get<Supplier[]>(`${this.baseUrl}/suppliers`).pipe(
+      catchError(err => {
+        console.warn('Backend non disponible pour les fournisseurs', err);
+        return of([]);
+      })
+    );
+  }
+
+  getSupplierById(id: number): Observable<Supplier | null> {
+    return this.http.get<Supplier>(`${this.baseUrl}/suppliers/${id}`).pipe(
+      catchError(() => of(null))
+    );
+  }
+
+  searchSuppliers(query: string): Observable<Supplier[]> {
+    return this.http.get<Supplier[]>(`${this.baseUrl}/suppliers/search?query=${encodeURIComponent(query)}`).pipe(
+      catchError(() => of([]))
+    );
+  }
+
+  createSupplier(supplier: Supplier): Observable<Supplier> {
+    return this.http.post<Supplier>(`${this.baseUrl}/suppliers`, supplier);
+  }
+
+  updateSupplier(id: number, supplier: Supplier): Observable<Supplier> {
+    return this.http.put<Supplier>(`${this.baseUrl}/suppliers/${id}`, supplier);
+  }
+
+  deleteSupplier(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/suppliers/${id}`);
+  }
 }
+

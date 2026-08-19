@@ -929,28 +929,42 @@ background: var(--bg-surface);
   flex-wrap: wrap;
 }
 
+.filter-pill,
 .filter-btn {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
   padding: 6px 14px;
-  border-radius: var(--radius-xl);
+  border-radius: 9999px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: #475569;
   cursor: pointer;
-  transition: all 0.2s ease;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  white-space: nowrap;
 }
 
+.filter-pill:hover,
 .filter-btn:hover {
-  background: #eaf1e7;
-  color: var(--brand-forest-deep);
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+  transform: translateY(-1px);
 }
 
+.filter-pill.active,
 .filter-btn.active {
-  background: var(--brand-forest);
-  color: white;
-  border-color: var(--brand-forest);
-  box-shadow: 0 2px 8px rgba(20, 83, 45, 0.25);
+  background: #14532d;
+  color: #ffffff;
+  border-color: #14532d;
+  box-shadow: 0 2px 8px rgba(20, 83, 45, 0.28);
+  font-weight: 700;
+  transform: none;
 }
 
 .search-input-wrap {
@@ -2456,27 +2470,37 @@ gap: 6px;
 }
 
 .pill-tab-btn {
-  padding: 6px 12px;
-  font-size: 0.76rem;
-  font-weight: 700;
-  border: 1px solid var(--border-subtle);
-  background: #f8faf6;
-  color: var(--text-muted);
-  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  border-radius: 9999px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .pill-tab-btn:hover {
-  background: #e2e8dd;
-  color: var(--text-main);
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+  transform: translateY(-1px);
 }
 
 .pill-tab-btn.active {
-  background: #0e3d20;
+  background: #14532d;
   color: #ffffff;
-  border-color: #0e3d20;
-  box-shadow: 0 2px 8px rgba(14, 61, 32, 0.2);
+  border-color: #14532d;
+  box-shadow: 0 2px 8px rgba(20, 83, 45, 0.28);
+  font-weight: 700;
+  transform: none;
 }
 
 /* 4. Tank Supervision Card & Liquid Gauge */

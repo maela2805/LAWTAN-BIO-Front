@@ -1188,6 +1188,9 @@
             <button type="button" class="sub-tab-btn" [class.active]="activeFeedSubTab() === 'rations'" (click)="switchFeedSubTab('rations')">
               <span>📋 Fiches Rations Équilibrées ({{ feedRations().length }})</span>
             </button>
+            <button type="button" class="sub-tab-btn" [class.active]="activeFeedSubTab() === 'suppliers'" (click)="switchFeedSubTab('suppliers')">
+              <span>🤝 Répertoire Fournisseurs & Achats ({{ suppliers().length }})</span>
+            </button>
           </div>
 
           <!-- ==========================================
@@ -1362,6 +1365,105 @@
                     🗑️
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==========================================
+               SUB-TAB 3: RÉPERTOIRE DES FOURNISSEURS
+               ========================================== -->
+          <div *ngIf="activeFeedSubTab() === 'suppliers'" style="padding:20px">
+            
+            <!-- Filters & Search Toolbar -->
+            <div class="filter-search-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+              <div class="filter-pills-group">
+                <button class="filter-pill" [class.active]="supplierCategoryFilter() === 'ALL'" (click)="filterSuppliers('ALL')">Tous ({{ suppliers().length }})</button>
+                <button class="filter-pill" [class.active]="supplierCategoryFilter() === 'FOURRAGE_ALIMENT'" (click)="filterSuppliers('FOURRAGE_ALIMENT')">🌱 Fourrages & Aliments</button>
+                <button class="filter-pill" [class.active]="supplierCategoryFilter() === 'EMBALLAGE_PACKAGING'" (click)="filterSuppliers('EMBALLAGE_PACKAGING')">📦 Packaging</button>
+                <button class="filter-pill" [class.active]="supplierCategoryFilter() === 'VETERINAIRE_SANTE'" (click)="filterSuppliers('VETERINAIRE_SANTE')">🩺 Santé & CMV</button>
+                <button class="filter-pill" [class.active]="supplierCategoryFilter() === 'EQUIPEMENT_PIECES'" (click)="filterSuppliers('EQUIPEMENT_PIECES')">⚙️ Équipements</button>
+              </div>
+
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <div class="search-input-box" style="position:relative;min-width:240px">
+                  <input type="text" [(ngModel)]="supplierSearchTerm" placeholder="🔍 Rechercher fournisseur, ville, contact..." style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem" />
+                </div>
+                <button class="btn-primary" (click)="openNewSupplierModal()" style="display:inline-flex;align-items:center;gap:6px">
+                  <span>+ Nouveau Fournisseur</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Suppliers Data Table -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Fournisseur & Raison Sociale</th>
+                    <th>Contact & Téléphone</th>
+                    <th>Localité</th>
+                    <th>Catégorie d'Intrants</th>
+                    <th>Modalités de Paiement</th>
+                    <th>Commandes / Total</th>
+                    <th>Statut Bio</th>
+                    <th style="text-align:right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let sup of paginatedSuppliers">
+                    <td>
+                      <strong style="color:#0f172a;font-size:0.9rem">{{ sup.name }}</strong>
+                      <div style="font-size:0.75rem;color:#64748b" *ngIf="sup.companyName">{{ sup.companyName }}</div>
+                    </td>
+                    <td>
+                      <div style="font-weight:600;color:#334155;font-size:0.85rem">{{ sup.contactPerson || 'Service Commercial' }}</div>
+                      <a [href]="'tel:' + sup.phone" style="font-size:0.78rem;color:#166534;font-weight:600;text-decoration:none" *ngIf="sup.phone">
+                        📞 {{ sup.phone }}
+                      </a>
+                    </td>
+                    <td>
+                      <span style="font-size:0.85rem;color:#475569">📍 {{ sup.city || 'Sénégal' }}</span>
+                    </td>
+                    <td>
+                      <span class="badge-pill badge-green">{{ getSupplierCategoryLabel(sup.category) }}</span>
+                    </td>
+                    <td>
+                      <span style="font-size:0.8rem;color:#64748b;background:#f8fafc;padding:3px 8px;border-radius:6px;border:1px solid #e2e8f0">{{ sup.paymentTerms || 'Comptant / Wave' }}</span>
+                    </td>
+                    <td>
+                      <strong style="color:#0d381e;font-size:0.85rem">{{ sup.totalOrdersCount || 0 }} cdes</strong>
+                      <div style="font-size:0.75rem;color:#64748b" *ngIf="sup.totalSpentFcfa">{{ (sup.totalSpentFcfa || 0).toLocaleString() }} FCFA</div>
+                    </td>
+                    <td>
+                      <span class="badge-pill" [ngClass]="sup.bioCertified ? 'badge-green' : 'badge-gold'">
+                        {{ sup.bioCertified ? '🌿 Bio Certifié' : 'Standard' }}
+                      </span>
+                    </td>
+                    <td style="text-align:right">
+                      <div style="display:inline-flex;gap:6px">
+                        <button class="table-icon-btn" (click)="openNewSupplierModal(sup)" title="Modifier">✏️</button>
+                        <button class="table-icon-btn" style="color:#dc2626" (click)="deleteSupplier(sup.id)" title="Désactiver">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr *ngIf="paginatedSuppliers.length === 0">
+                    <td colspan="8" style="text-align:center;padding:28px;color:#64748b">
+                      Aucun fournisseur trouvé pour ces critères.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Suppliers Pagination -->
+            <div class="pagination-bar-wrapper" *ngIf="totalSuppliersPages > 1" style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:8px 4px">
+              <span style="font-size:0.8rem;color:#64748b">
+                Page {{ suppliersCurrentPage() }} sur {{ totalSuppliersPages }} ({{ filteredSuppliers.length }} fournisseurs)
+              </span>
+              <div class="pagination-buttons-group" style="display:flex;gap:4px">
+                <button class="filter-pill" [disabled]="suppliersCurrentPage() === 1" (click)="prevSuppliersPage()">◀ Précédent</button>
+                <button *ngFor="let p of suppliersPageNumbers" class="filter-pill" [class.active]="suppliersCurrentPage() === p" (click)="setSuppliersPage(p)">{{ p }}</button>
+                <button class="filter-pill" [disabled]="suppliersCurrentPage() === totalSuppliersPages" (click)="nextSuppliersPage()">Suivant ▶</button>
               </div>
             </div>
           </div>
@@ -1942,19 +2044,6 @@
 
         <!-- Main Commercial Navigation Content Card -->
         <div class="content-card" style="margin-top:20px;padding:0;overflow:hidden">
-          
-          <!-- Sub-Tab Header Bar -->
-          <div style="display:flex;border-bottom:1px solid #e2e8f0;background:#f8fafc;padding:0 16px;flex-wrap:wrap">
-            <button type="button" class="sub-tab-btn" [class.active]="activeCommercialSubTab() === 'invoices'" (click)="switchCommercialSubTab('invoices')">
-              <span>🧾 Factures & Ventes ({{ invoices().length }})</span>
-            </button>
-            <button type="button" class="sub-tab-btn" [class.active]="activeCommercialSubTab() === 'customers'" (click)="switchCommercialSubTab('customers')">
-              <span>👥 Répertoire Clients ({{ customers().length }})</span>
-            </button>
-            <button type="button" class="sub-tab-btn" [class.active]="activeCommercialSubTab() === 'payments'" (click)="switchCommercialSubTab('payments')">
-              <span>💳 Journal des Encaissements ({{ payments().length }})</span>
-            </button>
-          </div>
 
           <!-- ==========================================
                SUB-TAB 1: FACTURES & VENTES
@@ -4143,8 +4232,18 @@
         </div>
 
         <div class="form-group-item">
-          <label>Fournisseur / Origine Parcelle</label>
-          <input type="text" [(ngModel)]="feedStockForm.supplierName" name="fsSupp" placeholder="Parcelles Bio Pout, GIE Femmes Niayes..." />
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <label style="margin:0;font-weight:600">Fournisseur / Origine</label>
+            <button type="button" (click)="openQuickSupplierModal()" style="background:#e8f5e9;color:#166534;border:1px solid #86efac;border-radius:6px;padding:3px 10px;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.2s">
+              ➕ Nouveau Fournisseur
+            </button>
+          </div>
+          <select [(ngModel)]="feedStockForm.supplierName" name="fsSupp" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem;background:#fff;outline:none">
+            <option value="">-- Sélectionner un fournisseur dans la base --</option>
+            <option *ngFor="let sup of suppliers()" [value]="sup.name">
+              {{ sup.name }} ({{ sup.city || 'Sénégal' }}) — {{ getSupplierCategoryLabel(sup.category) }}
+            </option>
+          </select>
         </div>
 
         <div class="form-group-item">
@@ -4278,6 +4377,166 @@
         </button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL RAPIDE: CRÉATION FOURNISSEUR EN LIGNE
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isQuickSupplierModalOpen()" style="z-index:1100">
+  <div class="modal-card" style="max-width:520px">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0;font-size:1.15rem;color:#0d381e">🤝 Ajout Rapide d'un Fournisseur</h3>
+        <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Enregistrez le fournisseur pour l'associer directement à votre approvisionnement.</p>
+      </div>
+      <button class="modal-close-btn" (click)="closeQuickSupplierModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="saveQuickSupplier()" style="padding:20px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="form-group-item">
+          <label>Nom du Fournisseur / Raison Sociale *</label>
+          <input type="text" [(ngModel)]="quickSupplierForm.name" name="qSupName" placeholder="Ex: Coopérative Bio Niayes, GIE Agro Thiès..." required />
+        </div>
+
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Personne Contact</label>
+            <input type="text" [(ngModel)]="quickSupplierForm.contactPerson" name="qSupContact" placeholder="M. Mamadou Diop" />
+          </div>
+          <div class="form-group-item">
+            <label>Téléphone / WhatsApp *</label>
+            <input type="text" [(ngModel)]="quickSupplierForm.phone" name="qSupPhone" placeholder="+221 77 123 45 67" />
+          </div>
+        </div>
+
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Ville / Région</label>
+            <input type="text" [(ngModel)]="quickSupplierForm.city" name="qSupCity" placeholder="Thiès, Pout, Dakar, Kaolack..." />
+          </div>
+          <div class="form-group-item">
+            <label>Catégorie d'Intrants</label>
+            <select [(ngModel)]="quickSupplierForm.category" name="qSupCat">
+              <option value="FOURRAGE_ALIMENT">🌱 Fourrages & Aliments</option>
+              <option value="EMBALLAGE_PACKAGING">📦 Packaging & Flacons</option>
+              <option value="EQUIPEMENT_PIECES">⚙️ Équipements & Pièces</option>
+              <option value="VETERINAIRE_SANTE">🩺 Santé & Vétérinaire</option>
+              <option value="AUTRE">📋 Autre / Divers</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group-item">
+          <label>Modalités de Paiement Habituelles</label>
+          <input type="text" [(ngModel)]="quickSupplierForm.paymentTerms" name="qSupPay" placeholder="Comptant / Wave / 30 jours..." />
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:6px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeQuickSupplierModal()">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Créer et Sélectionner
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL COMPLET: FOURNISSEUR (CRÉATION / MODIF)
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isSupplierModalOpen()" style="z-index:1050">
+  <div class="modal-card" style="max-width:620px">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0;font-size:1.2rem;color:#0d381e">{{ supplierForm.id ? '✏️ Modifier Fournisseur' : '🤝 Nouveau Fournisseur Partenaire' }}</h3>
+        <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Fiche détaillée du fournisseur d'intrants et matières premières.</p>
+      </div>
+      <button class="modal-close-btn" (click)="closeSupplierModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="saveSupplier()" style="padding:20px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Nom Commercial / Sigle *</label>
+            <input type="text" [(ngModel)]="supplierForm.name" name="supName" placeholder="Parcelles Bio Pout" required />
+          </div>
+          <div class="form-group-item">
+            <label>Raison Sociale Complète</label>
+            <input type="text" [(ngModel)]="supplierForm.companyName" name="supComp" placeholder="Agro Pout Bio SARL" />
+          </div>
+        </div>
+
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Personne Responsable</label>
+            <input type="text" [(ngModel)]="supplierForm.contactPerson" name="supContact" placeholder="Mamadou Ousmane Ndiaye" />
+          </div>
+          <div class="form-group-item">
+            <label>Téléphone Contact *</label>
+            <input type="text" [(ngModel)]="supplierForm.phone" name="supPhone" placeholder="+221 77 654 32 10" required />
+          </div>
+        </div>
+
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Email Commercial</label>
+            <input type="email" [(ngModel)]="supplierForm.email" name="supEmail" placeholder="contact@fournisseur.sn" />
+          </div>
+          <div class="form-group-item">
+            <label>Catégorie</label>
+            <select [(ngModel)]="supplierForm.category" name="supCat">
+              <option value="FOURRAGE_ALIMENT">🌱 Fourrages & Aliments</option>
+              <option value="EMBALLAGE_PACKAGING">📦 Packaging & Bouteilles</option>
+              <option value="EQUIPEMENT_PIECES">⚙️ Équipements & Pièces</option>
+              <option value="VETERINAIRE_SANTE">🩺 Vétérinaire & Hygiène</option>
+              <option value="AUTRE">📋 Autre</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Ville / Localité</label>
+            <input type="text" [(ngModel)]="supplierForm.city" name="supCity" placeholder="Thiès, Kayar, Dakar..." />
+          </div>
+          <div class="form-group-item">
+            <label>Numéro NINEA</label>
+            <input type="text" [(ngModel)]="supplierForm.nineaNumber" name="supNinea" placeholder="SN-THS-2022-B-1234" />
+          </div>
+        </div>
+
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Conditions de Règlement</label>
+            <input type="text" [(ngModel)]="supplierForm.paymentTerms" name="supTerms" placeholder="Comptant / Wave / 30 jours" />
+          </div>
+          <div class="form-group-item" style="display:flex;align-items:center;gap:10px;padding-top:24px">
+            <input type="checkbox" id="supBioCert" [(ngModel)]="supplierForm.bioCertified" name="supBio" style="width:18px;height:18px;cursor:pointer" />
+            <label for="supBioCert" style="margin:0;cursor:pointer;font-weight:600;color:#166534">🌿 Certifié Conforme Agriculture Biologique</label>
+          </div>
+        </div>
+
+        <div class="form-group-item">
+          <label>Notes & Commentaires</label>
+          <textarea rows="2" [(ngModel)]="supplierForm.notes" name="supNotes" placeholder="Spécifications techniques, délais de livraison habituels..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:6px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeSupplierModal()">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            {{ supplierForm.id ? 'Enregistrer les Modifications' : 'Enregistrer le Fournisseur' }}
+          </button>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
 
