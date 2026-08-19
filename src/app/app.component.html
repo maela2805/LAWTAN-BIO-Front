@@ -889,7 +889,7 @@
           </div>
 
           <!-- Pagination Reproduction -->
-          <div class="pagination-bar" *ngIf="totalReproPages > 1" style="margin-top:16px">
+          <div class="pagination-bar" *ngIf="filteredReproEvents.length > 0" style="margin-top:16px">
             <button class="pagination-btn" (click)="prevReproPage()" [disabled]="reproCurrentPage() === 1">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="m15 18-6-6 6-6"/>
@@ -1285,7 +1285,7 @@
             </div>
 
             <!-- Pagination Bar -->
-            <div class="pagination-bar" *ngIf="totalFeedStocksPages > 1" style="margin-top:16px">
+            <div class="pagination-bar" *ngIf="filteredFeedStocks.length > 0" style="margin-top:16px">
               <button class="pagination-btn" (click)="prevFeedStocksPage()" [disabled]="feedStocksCurrentPage() === 1">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 <span>Précédent</span>
@@ -1455,16 +1455,30 @@
               </table>
             </div>
 
-            <!-- Suppliers Pagination -->
-            <div class="pagination-bar-wrapper" *ngIf="totalSuppliersPages > 1" style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:8px 4px">
-              <span style="font-size:0.8rem;color:#64748b">
-                Page {{ suppliersCurrentPage() }} sur {{ totalSuppliersPages }} ({{ filteredSuppliers.length }} fournisseurs)
-              </span>
-              <div class="pagination-buttons-group" style="display:flex;gap:4px">
-                <button class="filter-pill" [disabled]="suppliersCurrentPage() === 1" (click)="prevSuppliersPage()">◀ Précédent</button>
-                <button *ngFor="let p of suppliersPageNumbers" class="filter-pill" [class.active]="suppliersCurrentPage() === p" (click)="setSuppliersPage(p)">{{ p }}</button>
-                <button class="filter-pill" [disabled]="suppliersCurrentPage() === totalSuppliersPages" (click)="nextSuppliersPage()">Suivant ▶</button>
+            <!-- Suppliers Pagination Bar -->
+            <div class="pagination-bar" *ngIf="filteredSuppliers.length > 0" style="margin-top:16px">
+              <button class="pagination-btn" (click)="prevSuppliersPage()" [disabled]="suppliersCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Précédent</span>
+              </button>
+              
+              <div class="pagination-pages-wrapper">
+                <button *ngFor="let p of suppliersPageNumbers" class="page-number-btn" [class.active]="p === suppliersCurrentPage()" (click)="setSuppliersPage(p)">
+                  {{ p }}
+                </button>
               </div>
+
+              <div class="pagination-info-pill">
+                <span>🤝</span>
+                <span>Page <strong>{{ suppliersCurrentPage() }}</strong> / {{ totalSuppliersPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ filteredSuppliers.length }}</strong> fournisseurs</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextSuppliersPage()" [disabled]="suppliersCurrentPage() === totalSuppliersPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
             </div>
           </div>
         </div>
@@ -1653,7 +1667,7 @@
             </div>
 
             <!-- Pagination Lots de Fabrication -->
-            <div class="pagination-bar" *ngIf="totalBatchesPages > 1" style="margin-top:16px">
+            <div class="pagination-bar" *ngIf="filteredBatches.length > 0" style="margin-top:16px">
               <button class="pagination-btn" (click)="prevBatchesPage()" [disabled]="batchesCurrentPage() === 1">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="m15 18-6-6 6-6"/>
@@ -1752,7 +1766,7 @@
             </div>
 
             <!-- Pagination Fiches Recettes -->
-            <div class="pagination-bar" *ngIf="totalRecipesPages > 1" style="margin-top:20px">
+            <div class="pagination-bar" *ngIf="recipes().length > 0" style="margin-top:20px">
               <button class="pagination-btn" (click)="prevRecipesPage()" [disabled]="recipesCurrentPage() === 1">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="m15 18-6-6 6-6"/>
@@ -1861,7 +1875,7 @@
             </div>
 
             <!-- Pagination Stocks de Produits Finis -->
-            <div class="pagination-bar" *ngIf="totalStocksPages > 1" style="margin-top:16px">
+            <div class="pagination-bar" *ngIf="filteredStocks.length > 0" style="margin-top:16px">
               <button class="pagination-btn" (click)="prevStocksPage()" [disabled]="stocksCurrentPage() === 1">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="m15 18-6-6 6-6"/>
@@ -2145,7 +2159,7 @@
             </div>
 
             <!-- Pagination Bar Invoices -->
-            <div class="pagination-bar" *ngIf="totalInvoicesPages > 1" style="margin-top:16px">
+            <div class="pagination-bar" *ngIf="filteredInvoices.length > 0" style="margin-top:16px">
               <button class="pagination-btn" (click)="prevInvoicesPage()" [disabled]="invoicesCurrentPage() === 1">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 <span>Précédent</span>
@@ -2247,7 +2261,7 @@
             </div>
 
             <!-- Pagination Bar Customers -->
-            <div class="pagination-bar" *ngIf="totalCustomersPages > 1" style="margin-top:16px">
+            <div class="pagination-bar" *ngIf="filteredCustomers.length > 0" style="margin-top:16px">
               <button class="pagination-btn" (click)="prevCustomersPage()" [disabled]="customersCurrentPage() === 1">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 <span>Précédent</span>
@@ -2344,7 +2358,7 @@
             </div>
 
             <!-- Pagination Bar Payments -->
-            <div class="pagination-bar" *ngIf="totalPaymentsPages > 1" style="margin-top:16px">
+            <div class="pagination-bar" *ngIf="filteredPayments.length > 0" style="margin-top:16px">
               <button class="pagination-btn" (click)="prevPaymentsPage()" [disabled]="paymentsCurrentPage() === 1">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 <span>Précédent</span>
