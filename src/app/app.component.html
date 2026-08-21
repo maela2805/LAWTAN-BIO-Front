@@ -1638,16 +1638,38 @@
                SUB-TAB 1: LOTS & ORDRES DE FABRICATION
                ========================================== -->
           <div *ngIf="activeTransformationSubTab() === 'batches'" style="padding:20px">
+            
+            <!-- Live Tank Milk Status Banner for Workshop -->
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:42px;height:42px;background:#dcfce7;border-radius:10px;display:grid;place-items:center;font-size:1.4rem">
+                  🥛
+                </div>
+                <div>
+                  <strong style="color:#0d381e;font-size:0.95rem">Disponibilité du Lait Brut en Cuve (Cuve Bio N°1)</strong>
+                  <div style="font-size:0.8rem;color:#526658;margin-top:2px">
+                    Collecte Brute : <strong>{{ tankStatus()?.grossVolumeCollected || 155 }} L</strong> • 
+                    Prélevé Transformation : <span style="color:#dc2626;font-weight:700">-{{ tankStatus()?.transformedVolume || 0 }} L</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="text-align:right">
+                  <span style="font-size:0.72rem;color:#64748b;display:block">Solde Net Disponible en Cuve</span>
+                  <strong style="font-size:1.3rem;color:#16a34a">{{ tankStatus()?.currentVolume || 155 }} L</strong>
+                </div>
+                <button class="btn-primary" style="font-size:0.85rem;padding:7px 14px" (click)="openNewBatchModal()">
+                  ⚙️ + Lancer un Lot
+                </button>
+              </div>
+            </div>
+
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
               <div class="filter-pill-tabs">
                 <button class="pill-tab-btn" [class.active]="transformationFilter() === 'all'" (click)="filterTransformation('all')">Tous les lots</button>
                 <button class="pill-tab-btn" [class.active]="transformationFilter() === 'in_progress'" (click)="filterTransformation('in_progress')">⚙️ En cours / Maturation</button>
                 <button class="pill-tab-btn" [class.active]="transformationFilter() === 'completed'" (click)="filterTransformation('completed')">✅ Terminés & Stockés</button>
               </div>
-
-              <button class="btn-primary" style="font-size:0.85rem;padding:6px 14px" (click)="openNewBatchModal()">
-                <span>+ Lancer un Lot</span>
-              </button>
             </div>
 
             <div class="table-responsive">
