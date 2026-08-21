@@ -2014,6 +2014,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.newAnimalForm = {
       internalId: `FL-${idStr}`,
       name: '',
+      gender: 'FEMALE',
       category: 'MILKING_COW',
       status: 'HEALTHY',
       breed: 'Holstein Pure',
@@ -2033,12 +2034,12 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.showToast('Veuillez renseigner le nom de l\'animal.');
       return;
     }
-    const isMale = this.newAnimalForm.category === 'MALE_BULL';
+    const isMale = this.newAnimalForm.gender === 'MALE' || this.newAnimalForm.category === 'MALE_BULL';
     const animal: Animal = {
       ...this.newAnimalForm,
-      avatarEmoji: isMale ? '🐂' : (this.newAnimalForm.category === 'HEIFER_YOUNG' ? '🐮' : '🐄'),
       gender: isMale ? 'MALE' : 'FEMALE',
       genderLabel: isMale ? 'Mâle' : 'Femelle',
+      avatarEmoji: isMale ? '🐂' : (this.newAnimalForm.category === 'HEIFER_YOUNG' ? '🐮' : '🐄'),
       pedigree: {
         fatherName: this.newAnimalFather,
         fatherEarTag: this.newAnimalFatherEarTag,
@@ -2132,12 +2133,12 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   submitEditAnimal(): void {
-    const isMale = this.editAnimalForm.category === 'MALE_BULL';
+    const isMale = this.editAnimalForm.gender === 'MALE' || this.editAnimalForm.category === 'MALE_BULL';
     const updated: Animal = {
       ...this.editAnimalForm,
-      avatarEmoji: isMale ? '🐂' : (this.editAnimalForm.category === 'HEIFER_YOUNG' ? '🐮' : '🐄'),
       gender: isMale ? 'MALE' : 'FEMALE',
       genderLabel: isMale ? 'Mâle' : 'Femelle',
+      avatarEmoji: isMale ? '🐂' : (this.editAnimalForm.category === 'HEIFER_YOUNG' ? '🐮' : '🐄'),
       pedigree: {
         ...(this.editAnimalForm.pedigree || {}),
         fatherName: this.editAnimalFather,

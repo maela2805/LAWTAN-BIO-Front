@@ -3181,7 +3181,14 @@
           <input type="text" [(ngModel)]="newAnimalForm.name" name="newName" placeholder="Ex: Holstein 1043, Gobra 001..." required />
         </div>
 
-        <!-- Row 2: Race & Catégorie Zootechnique -->
+        <!-- Row 2: Sexe & Race du Bétail -->
+        <div class="form-group-item">
+          <label>Sexe (Genre) *</label>
+          <select [(ngModel)]="newAnimalForm.gender" name="newGender">
+            <option value="FEMALE">Femelle ♀</option>
+            <option value="MALE">Mâle ♂</option>
+          </select>
+        </div>
         <div class="form-group-item">
           <label>Race du Bétail</label>
           <select [(ngModel)]="newAnimalForm.breed" name="newBreed">
@@ -3196,7 +3203,9 @@
             <option value="Métisse / Autre">Métisse / Autre</option>
           </select>
         </div>
-        <div class="form-group-item">
+
+        <!-- Row 3: Catégorie Zootechnique -->
+        <div class="form-group-item full-width">
           <label>Catégorie Zootechnique</label>
           <select [(ngModel)]="newAnimalForm.category" name="newCat">
             <option value="MILKING_COW">Vache Laitière en Production</option>
@@ -3310,8 +3319,15 @@
           </div>
         </div>
 
-        <!-- Row 2: Race & Catégorie Zootechnique -->
+        <!-- Row 2: Sexe & Race -->
         <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Sexe (Genre) *</label>
+            <select [(ngModel)]="editAnimalForm.gender" name="editGender">
+              <option value="FEMALE">Femelle ♀</option>
+              <option value="MALE">Mâle ♂</option>
+            </select>
+          </div>
           <div class="form-group-item">
             <label>Race</label>
             <select [(ngModel)]="editAnimalForm.breed" name="editBreed">
@@ -3326,7 +3342,11 @@
               <option value="Métisse / Autre">Métisse / Autre</option>
             </select>
           </div>
-          <div class="form-group-item">
+        </div>
+
+        <!-- Row 3: Catégorie Zootechnique -->
+        <div class="form-grid-layout">
+          <div class="form-group-item full-width">
             <label>Catégorie Zootechnique</label>
             <select [(ngModel)]="editAnimalForm.category" name="editCat">
               <option value="MILKING_COW">Vache Laitière en Production</option>
