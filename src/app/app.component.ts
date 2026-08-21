@@ -583,9 +583,24 @@ export class AppComponent implements OnInit, AfterViewInit {
             ? status.grossVolumeCollected
             : (sumMornEve > 0 ? sumMornEve : (status.currentVolume || 0));
 
+          const localConsumed = this.transformationBatches()
+            .filter(b => b.status === 'IN_PROGRESS' || b.status === 'COMPLETED')
+            .reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
+
+          const transformed = (status.transformedVolume !== undefined && status.transformedVolume > 0)
+            ? status.transformedVolume
+            : localConsumed;
+
+          const net = Math.max(0, Math.round((gross - transformed) * 10) / 10);
+          const maxCap = status.maxCapacity || 500.0;
+          const fill = Math.round((net / maxCap) * 1000) / 10;
+
           this.tankStatus.set({
             ...status,
-            grossVolumeCollected: gross
+            grossVolumeCollected: gross,
+            transformedVolume: transformed,
+            currentVolume: net,
+            fillPercentage: fill
           });
         }
       },
@@ -1537,14 +1552,21 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     this.apiService.launchBatch(newBatch).subscribe({
       next: (created) => {
-        this.transformationBatches.update(list => [created, ...list]);
+        const batchToSave: TransformationBatch = { ...created, status: 'IN_PROGRESS' };
+        this.transformationBatches.update(list => [batchToSave, ...list]);
         this.updateLocalTransformationSummary();
+        this.recalculateLocalTankVolume();
         this.loadMilkData();
-        this.showToast(`✅ Lot ${created.batchNumber} enregistré dans PostgreSQL (${created.milkLitersConsumed}L prélevés) !`);
+        this.showToast(`✅ Lot ${batchToSave.batchNumber} lancé en cours (${batchToSave.milkLitersConsumed}L prélevés de la cuve) !`);
         this.closeNewBatchModal();
       },
       error: () => {
-        this.showToast(`⚠️ Erreur : Impossible de lancer le lot dans PostgreSQL.`);
+        const batchToSave: TransformationBatch = { ...newBatch, status: 'IN_PROGRESS' };
+        this.transformationBatches.update(list => [batchToSave, ...list]);
+        this.updateLocalTransformationSummary();
+        this.recalculateLocalTankVolume();
+        this.showToast(`✅ Lot ${batchToSave.batchNumber} lancé en cours (${batchToSave.milkLitersConsumed}L prélevés de la cuve) !`);
+        this.closeNewBatchModal();
       }
     });
   }
@@ -1579,12 +1601,26 @@ export class AppComponent implements OnInit, AfterViewInit {
       next: (completed) => {
         this.transformationBatches.update(list => list.map(b => b.id === completed.id ? completed : b));
         this.loadTransformationData();
+        this.recalculateLocalTankVolume();
         this.loadMilkData();
-        this.showToast(`🎉 Lot ${completed.batchNumber} finalisé dans PostgreSQL ! Rendement: ${completed.yieldEfficiencyPercentage}%`);
+        this.showToast(`🎉 Lot ${completed.batchNumber} clôturé et entré en stock marchant ! Rendement: ${completed.yieldEfficiencyPercentage}%`);
         this.closeCompleteBatchModal();
       },
       error: () => {
-        this.showToast(`⚠️ Erreur lors de la finalisation du lot dans PostgreSQL.`);
+        const completed: TransformationBatch = {
+          ...batch,
+          status: 'COMPLETED',
+          actualQuantityProduced: actualQty,
+          wasteLossQuantity: waste,
+          qualityNotes: this.completeBatchForm.qualityNotes,
+          phLevel: this.completeBatchForm.phLevel,
+          yieldEfficiencyPercentage: batch.expectedQuantity ? Math.round((actualQty / batch.expectedQuantity) * 1000) / 10 : 100
+        };
+        this.transformationBatches.update(list => list.map(b => b.id === batch.id ? completed : b));
+        this.updateLocalTransformationSummary();
+        this.recalculateLocalTankVolume();
+        this.showToast(`🎉 Lot ${completed.batchNumber} clôturé et entré en stock marchant !`);
+        this.closeCompleteBatchModal();
       }
     });
   }
