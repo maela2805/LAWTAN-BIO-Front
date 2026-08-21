@@ -577,24 +577,24 @@ export class AppComponent implements OnInit, AfterViewInit {
   loadMilkData(): void {
     this.apiService.getTankStatus().subscribe({
       next: (status) => {
-        if (status) this.tankStatus.set(status);
-      },
-      error: () => {
-        if (!this.tankStatus()) {
+        if (status) {
+          const consumed = this.transformationBatches().reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
+          const gross = status.grossVolumeCollected || 155.0;
+          const transformed = status.transformedVolume !== undefined ? status.transformedVolume : consumed;
+          const net = Math.max(0, Math.round((gross - transformed) * 10) / 10);
+          const fill = Math.round((net / (status.maxCapacity || 500.0)) * 1000) / 10;
+
           this.tankStatus.set({
-            tankName: 'Cuve Réfrigérée N°1 (Bio)',
-            currentVolume: 155.0,
-            maxCapacity: 500.0,
-            fillPercentage: 31.0,
-            temperature: 3.9,
-            phLevel: 6.68,
-            qualityStatus: 'CONFORME BIO & PASTEURISATION',
-            targetBatch: 'LOT-TR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-01',
-            morningVolume: 95.0,
-            eveningVolume: 60.0,
-            collectionDate: new Date().toISOString().slice(0, 10)
+            ...status,
+            grossVolumeCollected: gross,
+            transformedVolume: transformed,
+            currentVolume: net,
+            fillPercentage: fill
           });
         }
+      },
+      error: () => {
+        this.recalculateLocalTankVolume();
       }
     });
 
@@ -603,6 +603,29 @@ export class AppComponent implements OnInit, AfterViewInit {
         if (hist) this.milkHistory.set(hist);
       },
       error: () => {}
+    });
+  }
+
+  recalculateLocalTankVolume(): void {
+    const consumed = this.transformationBatches().reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
+    const gross = 155.0;
+    const net = Math.max(0, Math.round((gross - consumed) * 10) / 10);
+    const fill = Math.round((net / 500.0) * 1000) / 10;
+
+    this.tankStatus.set({
+      tankName: 'Cuve Réfrigérée N°1 (Bio)',
+      grossVolumeCollected: gross,
+      transformedVolume: consumed,
+      currentVolume: net,
+      maxCapacity: 500.0,
+      fillPercentage: fill,
+      temperature: 3.9,
+      phLevel: 6.68,
+      qualityStatus: net > 0 ? 'CONFORME BIO & PASTEURISATION' : 'CUVE VIDE / RECOLTE ATTENDUE',
+      targetBatch: 'LOT-TR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-01',
+      morningVolume: 95.0,
+      eveningVolume: 60.0,
+      collectionDate: new Date().toISOString().slice(0, 10)
     });
   }
 
@@ -1488,16 +1511,18 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   deleteBatch(id?: number): void {
     if (!id) return;
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet ordre de fabrication ?')) return;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet ordre de fabrication ? Le lait prélevé sera restitué à la cuve.')) return;
 
     this.apiService.deleteBatch(id).subscribe({
       next: () => {
         this.transformationBatches.update(list => list.filter(b => b.id !== id));
-        this.updateLocalTransformationSummary();
-        this.showToast('✅ Lot de transformation supprimé de PostgreSQL.');
+        this.loadMilkData();
+        this.showToast('✅ Lot de transformation supprimé. Le lait a été restitué à la cuve.');
       },
       error: () => {
-        this.showToast('⚠️ Erreur de suppression du lot dans PostgreSQL.');
+        this.transformationBatches.update(list => list.filter(b => b.id !== id));
+        this.recalculateLocalTankVolume();
+        this.showToast('🗑️ Lot supprimé localement.');
       }
     });
   }
