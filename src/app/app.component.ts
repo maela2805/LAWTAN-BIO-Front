@@ -110,20 +110,19 @@ export class AppComponent implements OnInit, AfterViewInit {
   };
 
   newAnimalForm: Animal = {
-    internalId: 'FL-014',
-    name: 'BINTOU',
-    earTagNumber: 'SN-DK-1436',
+    internalId: 'FL-020',
+    name: '',
     category: 'MILKING_COW',
     status: 'HEALTHY',
     breed: 'Holstein Pure',
-    birthDate: '2024-05-10',
+    birthDate: new Date().toISOString().split('T')[0],
     weight: 460,
     imageUrl: ''
   };
-  newAnimalFather = 'KADER';
-  newAnimalFatherEarTag = 'SN-DK-1010';
-  newAnimalMother = 'NDIRA';
-  newAnimalMotherEarTag = 'SN-DK-1001';
+  newAnimalFather = '';
+  newAnimalFatherEarTag = '';
+  newAnimalMother = '';
+  newAnimalMotherEarTag = '';
 
   editAnimalForm: Animal = {
     internalId: '',
@@ -1911,7 +1910,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       if (q) {
         matchesSearch = a.name.toLowerCase().includes(q) ||
           a.internalId.toLowerCase().includes(q) ||
-          a.earTagNumber.toLowerCase().includes(q) ||
+          (a.earTagNumber?.toLowerCase() || '').includes(q) ||
           a.breed.toLowerCase().includes(q);
       }
 
@@ -2015,7 +2014,6 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.newAnimalForm = {
       internalId: `FL-${idStr}`,
       name: '',
-      earTagNumber: `SN-DK-${1400 + count}`,
       category: 'MILKING_COW',
       status: 'HEALTHY',
       breed: 'Holstein Pure',

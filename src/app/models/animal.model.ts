@@ -29,7 +29,7 @@ export interface Animal {
   id?: number;
   internalId: string;
   name: string;
-  earTagNumber: string;
+  earTagNumber?: string;
   rfidCode?: string;
   breed: string;
   birthDate: string;
