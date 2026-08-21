@@ -915,11 +915,13 @@ export class AppComponent implements OnInit, AfterViewInit {
       next: (b) => {
         this.transformationBatches.set(b || []);
         this.updateLocalTransformationSummary();
+        this.recalculateLocalTankVolume();
       },
       error: () => {
         if (this.transformationBatches().length === 0) {
           this.loadFallbackBatches();
         }
+        this.recalculateLocalTankVolume();
       }
     });
 
