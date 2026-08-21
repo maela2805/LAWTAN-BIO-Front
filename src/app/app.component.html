@@ -1101,7 +1101,7 @@
               <div class="tank-stat-quad" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
                 <div class="tank-kpi-box">
                   <span class="lbl">Collecte Brute (Jour)</span>
-                  <strong class="val" style="color:#16a34a">{{ tankStatus()?.grossVolumeCollected || 0 }} L</strong>
+                  <strong class="val" style="color:#16a34a">{{ (tankStatus()?.grossVolumeCollected || ((tankStatus()?.morningVolume || 0) + (tankStatus()?.eveningVolume || 0)) || tankStatus()?.currentVolume || 0) }} L</strong>
                   <span class="sub-lbl">Matin {{ tankStatus()?.morningVolume || 0 }}L • Soir {{ tankStatus()?.eveningVolume || 0 }}L</span>
                 </div>
                 <div class="tank-kpi-box">
@@ -1653,7 +1653,7 @@
                 <div>
                   <strong style="color:#0d381e;font-size:0.95rem">Disponibilité du Lait Brut en Cuve (Cuve Bio N°1)</strong>
                   <div style="font-size:0.8rem;color:#526658;margin-top:2px">
-                    Collecte Brute : <strong>{{ tankStatus()?.grossVolumeCollected || 0 }} L</strong> • 
+                    Collecte Brute : <strong>{{ (tankStatus()?.grossVolumeCollected || ((tankStatus()?.morningVolume || 0) + (tankStatus()?.eveningVolume || 0)) || tankStatus()?.currentVolume || 0) }} L</strong> • 
                     Prélevé Transformation : <span style="color:#dc2626;font-weight:700">-{{ tankStatus()?.transformedVolume || 0 }} L</span>
                   </div>
                 </div>

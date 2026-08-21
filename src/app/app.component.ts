@@ -576,7 +576,17 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.getTankStatus().subscribe({
       next: (status) => {
         if (status) {
-          this.tankStatus.set(status);
+          const morn = status.morningVolume || 0;
+          const eve = status.eveningVolume || 0;
+          const sumMornEve = Math.round((morn + eve) * 10) / 10;
+          const gross = (status.grossVolumeCollected !== undefined && status.grossVolumeCollected !== null && status.grossVolumeCollected > 0)
+            ? status.grossVolumeCollected
+            : (sumMornEve > 0 ? sumMornEve : (status.currentVolume || 0));
+
+          this.tankStatus.set({
+            ...status,
+            grossVolumeCollected: gross
+          });
         }
       },
       error: () => {
@@ -593,7 +603,9 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   recalculateLocalTankVolume(): void {
-    const currentGross = this.tankStatus()?.grossVolumeCollected ?? 0.0;
+    const morn = this.tankStatus()?.morningVolume ?? 0.0;
+    const eve = this.tankStatus()?.eveningVolume ?? 0.0;
+    const currentGross = this.tankStatus()?.grossVolumeCollected || Math.round((morn + eve) * 10) / 10 || (this.tankStatus()?.currentVolume ?? 0.0);
     const consumed = this.transformationBatches()
       .filter(b => b.status === 'IN_PROGRESS' || b.status === 'COMPLETED')
       .reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
@@ -611,8 +623,8 @@ export class AppComponent implements OnInit, AfterViewInit {
       phLevel: 6.68,
       qualityStatus: net > 0 ? 'CONFORME BIO & PASTEURISATION' : (currentGross > 0 ? 'TRANSFORMÉ EN TOTALITÉ' : 'EN ATTENTE COLLECTE'),
       targetBatch: 'LOT-TR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-01',
-      morningVolume: this.tankStatus()?.morningVolume ?? 0.0,
-      eveningVolume: this.tankStatus()?.eveningVolume ?? 0.0,
+      morningVolume: morn,
+      eveningVolume: eve,
       collectionDate: new Date().toISOString().slice(0, 10)
     });
   }
