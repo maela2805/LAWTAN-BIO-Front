@@ -583,13 +583,14 @@ export class AppComponent implements OnInit, AfterViewInit {
             ? status.grossVolumeCollected
             : (sumMornEve > 0 ? sumMornEve : (status.currentVolume || 0));
 
-          const localConsumed = this.transformationBatches()
-            .filter(b => b.status === 'IN_PROGRESS' || b.status === 'COMPLETED')
+          const todayStr = new Date().toISOString().slice(0, 10);
+          const localConsumedToday = this.transformationBatches()
+            .filter(b => (!b.productionDate || b.productionDate === todayStr) && (b.status === 'IN_PROGRESS' || b.status === 'COMPLETED'))
             .reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
 
           const transformed = (status.transformedVolume !== undefined && status.transformedVolume > 0)
             ? status.transformedVolume
-            : localConsumed;
+            : localConsumedToday;
 
           const net = Math.max(0, Math.round((gross - transformed) * 10) / 10);
           const maxCap = status.maxCapacity || 500.0;
@@ -621,8 +622,9 @@ export class AppComponent implements OnInit, AfterViewInit {
     const morn = this.tankStatus()?.morningVolume ?? 0.0;
     const eve = this.tankStatus()?.eveningVolume ?? 0.0;
     const currentGross = this.tankStatus()?.grossVolumeCollected || Math.round((morn + eve) * 10) / 10 || (this.tankStatus()?.currentVolume ?? 0.0);
+    const todayStr = new Date().toISOString().slice(0, 10);
     const consumed = this.transformationBatches()
-      .filter(b => b.status === 'IN_PROGRESS' || b.status === 'COMPLETED')
+      .filter(b => (!b.productionDate || b.productionDate === todayStr) && (b.status === 'IN_PROGRESS' || b.status === 'COMPLETED'))
       .reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
     const net = Math.max(0, Math.round((currentGross - consumed) * 10) / 10);
     const fill = Math.round((net / 500.0) * 1000) / 10;
@@ -1396,11 +1398,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   getTankAvailableMilk(tankName: string): number {
-    const base = this.getTankCurrentVolume(tankName);
-    const consumedInBatches = this.transformationBatches()
-      .filter(b => b.status === 'IN_PROGRESS' && b.sourceTank === tankName)
-      .reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
-    return Math.max(0, Math.round((base - consumedInBatches) * 10) / 10);
+    return this.getTankCurrentVolume(tankName);
   }
 
   getEstimatedDurationForRecipe(recipeId: number): string {
