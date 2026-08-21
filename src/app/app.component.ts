@@ -2009,7 +2009,32 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.isOrderModalOpen.set(false);
   }
 
+  openNewAnimalModal(): void {
+    const count = this.animals().length + 1;
+    const idStr = String(count).padStart(3, '0');
+    this.newAnimalForm = {
+      internalId: `FL-${idStr}`,
+      name: '',
+      earTagNumber: `SN-DK-${1400 + count}`,
+      category: 'MILKING_COW',
+      status: 'HEALTHY',
+      breed: 'Holstein Pure',
+      birthDate: new Date().toISOString().split('T')[0],
+      weight: 480,
+      imageUrl: ''
+    };
+    this.newAnimalFather = '';
+    this.newAnimalFatherEarTag = '';
+    this.newAnimalMother = '';
+    this.newAnimalMotherEarTag = '';
+    this.isNewAnimalModalOpen.set(true);
+  }
+
   submitNewAnimal(): void {
+    if (!this.newAnimalForm.name || !this.newAnimalForm.name.trim()) {
+      this.showToast('Veuillez renseigner le nom de l\'animal.');
+      return;
+    }
     const isMale = this.newAnimalForm.category === 'MALE_BULL';
     const animal: Animal = {
       ...this.newAnimalForm,
@@ -2027,12 +2052,12 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.createAnimal(animal).subscribe({
       next: (created) => {
         this.animals.update(list => [...list, created]);
-        this.showToast(`✅ Animal ${animal.name} (${animal.internalId}) enregistré dans PostgreSQL !`);
+        this.showToast(`✅ Animal ${created.name} (${created.internalId}) enregistré dans PostgreSQL !`);
         this.isNewAnimalModalOpen.set(false);
       },
       error: (err) => {
         console.error('Erreur ajout animal:', err);
-        this.showToast(`⚠️ Erreur : Impossible d'enregistrer l'animal dans PostgreSQL (port 8080).`);
+        this.showToast(`⚠️ Erreur d'enregistrement dans PostgreSQL : vérifiez que l'identifiant est unique.`);
       }
     });
   }
