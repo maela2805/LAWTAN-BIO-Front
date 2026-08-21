@@ -260,8 +260,16 @@
       <div class="topbar-right">
         <!-- Infrastructure Status -->
         <div class="infra-tags-group">
+          <!-- PostgreSQL Live Database Indicator -->
+          <span *ngIf="apiService.isBackendConnected()" class="infra-tag tag-db-connected" (click)="refreshAndSyncAllData()" title="Base PostgreSQL Connectée (Neon DB) — Cliquer pour synchroniser">
+            🟢 BDD Connectée (PostgreSQL)
+          </span>
+          <span *ngIf="!apiService.isBackendConnected()" class="infra-tag tag-db-offline" (click)="refreshAndSyncAllData()" title="Backend non joignable — Cliquer pour retester">
+            🔴 BDD Déconnectée (Port 8080)
+          </span>
+
           <span class="infra-tag tag-solar" title="Installation Solaire Autonome active">☀️ Solaire 12 kWc (94%)</span>
-          <span class="infra-tag tag-network" (click)="toggleOffline()" style="cursor:pointer" title="Cliquez pour simuler le mode hors-ligne">
+          <span class="infra-tag tag-network" (click)="toggleOffline()" style="cursor:pointer" title="Cliquez pour basculer le mode hors-ligne">
             <span *ngIf="!isOffline()">🌐 4G Connectée</span>
             <span *ngIf="isOffline()" style="color:#dc2626">📴 Mode Hors-ligne</span>
           </span>
@@ -283,6 +291,20 @@
         </button>
       </div>
     </header>
+
+    <!-- Disconnected Backend Warning Banner -->
+    <div *ngIf="!apiService.isBackendConnected()" class="offline-warning-banner">
+      <div class="offline-warning-content">
+        <span class="offline-warning-icon">⚠️</span>
+        <div class="offline-warning-text">
+          <strong>Serveur Backend Spring Boot / Base de données PostgreSQL non joignable sur le port 8080.</strong>
+          <span>L'application tourne en mode mémoire locale. Pour enregistrer de façon permanente dans la base Neon PostgreSQL, lancez le backend avec <code>mvn spring-boot:run</code>.</span>
+        </div>
+      </div>
+      <div class="offline-warning-actions">
+        <button type="button" class="btn-sync-now" (click)="refreshAndSyncAllData()">🔄 Tester la connexion</button>
+      </div>
+    </div>
 
     <!-- Dropdown Notifications Panel -->
     <div class="notif-dropdown-box" *ngIf="isNotifOpen()">
@@ -343,71 +365,71 @@
           </div>
         </div>
 
-        <!-- KPI Cards Grid -->
+        <!-- KPI Cards Grid (Clickable to open corresponding modules) -->
         <section class="kpi-grid">
-          <div class="kpi-card card-green">
+          <div class="kpi-card card-green" (click)="showPage('lait')" title="Cliquer pour ouvrir la Production Laitière">
             <div class="kpi-header">
               <span class="kpi-title">Collecte Lait / Jour</span>
               <span class="kpi-icon-wrap">🥛</span>
             </div>
-            <div class="kpi-value">124.0 <span class="unit">L</span></div>
+            <div class="kpi-value">{{ (tankStatus()?.currentVolume || 155.0) | number:'1.1-1' }} <span class="unit">L</span></div>
             <div class="kpi-footer trend-up">
-              <span>▲ +8.2% vs semaine passée</span>
+              <span>▲ +12.4% vs semaine passée ➔</span>
             </div>
           </div>
 
-          <div class="kpi-card card-sky">
+          <div class="kpi-card card-sky" (click)="showPage('animaux')" title="Cliquer pour voir le Troupeau & Animaux">
             <div class="kpi-header">
               <span class="kpi-title">Vaches en Lactation</span>
               <span class="kpi-icon-wrap">🐄</span>
             </div>
             <div class="kpi-value">7 <span class="unit">/ 9 femelles</span></div>
             <div class="kpi-footer trend-neutral">
-              <span>2 génisses en croissance • 4 mâles</span>
+              <span>2 génisses en croissance • 4 mâles ➔</span>
             </div>
           </div>
 
-          <div class="kpi-card card-gold">
+          <div class="kpi-card card-gold" (click)="showPage('lait')" title="Cliquer pour voir les Statistiques Laitières">
             <div class="kpi-header">
               <span class="kpi-title">Moyenne Lait / Vache</span>
               <span class="kpi-icon-wrap">📈</span>
             </div>
             <div class="kpi-value">17.7 <span class="unit">L/j</span></div>
             <div class="kpi-footer trend-up">
-              <span>Objectif cible : 20.0 L/j</span>
+              <span>Objectif cible : 20.0 L/j ➔</span>
             </div>
           </div>
 
-          <div class="kpi-card card-red">
+          <div class="kpi-card card-red" (click)="showPage('sante')" title="Cliquer pour ouvrir le Suivi Santé & Vétérinaire">
             <div class="kpi-header">
               <span class="kpi-title">Santé & Alertes</span>
               <span class="kpi-icon-wrap">🚨</span>
             </div>
             <div class="kpi-value" style="color:#dc2626">1 <span class="unit">cas suivi</span></div>
             <div class="kpi-footer trend-down">
-              <span>DIOUMA (39.8°C) sous antibio</span>
+              <span>DIOUMA (39.8°C) sous antibio ➔</span>
             </div>
           </div>
 
-          <div class="kpi-card card-purple">
+          <div class="kpi-card card-purple" (click)="navigateToCommercialSubTab('invoices')" title="Cliquer pour ouvrir les Factures & Ventes">
             <div class="kpi-header">
               <span class="kpi-title">CA Mensuel (Août)</span>
               <span class="kpi-icon-wrap">💰</span>
             </div>
             <div class="kpi-value">1.24 <span class="unit">M FCFA</span></div>
             <div class="kpi-footer trend-up">
-              <span>Marge brute estimée : 45%</span>
+              <span>Marge brute estimée : 45% ➔</span>
             </div>
           </div>
 
-          <div class="kpi-card card-teal">
+          <div class="kpi-card card-teal" (click)="navigateToFeedSubTab('stocks')" title="Cliquer pour ouvrir l'Alimentation & Fourrages">
             <div class="kpi-header">
               <span class="kpi-title">Conversion Alimentaire</span>
               <span class="kpi-icon-wrap">🌾</span>
             </div>
             <div class="kpi-value">1.42 <span class="unit">kg/L</span></div>
             <div class="kpi-footer trend-neutral">
-              <span>Efficacité ration optimisée</span>
+              <span>Efficacité ration optimisée ➔</span>
             </div>
           </div>
         </section>
@@ -420,7 +442,7 @@
                 <h3>Production Laitière des 7 Derniers Jours</h3>
                 <p>Comparaison de la collecte traite du matin (06h00) vs traite du soir (17h00)</p>
               </div>
-              <span class="badge-pill badge-green">Moyenne : 124 L/jour</span>
+              <span class="badge-pill badge-green">Collecte : {{ (tankStatus()?.currentVolume || 155.0) | number:'1.1-1' }} L/jour</span>
             </div>
             <div class="chart-canvas-wrap">
               <canvas id="dashMilkChart"></canvas>
@@ -632,42 +654,44 @@
         </div>
 
         <div class="kpi-grid">
-          <div class="kpi-card card-green">
+          <div class="kpi-card card-green" (click)="showPage('animaux')" title="Cliquer pour voir le Troupeau">
             <div class="kpi-header"><span class="kpi-title">Animaux Sains</span><span>✅</span></div>
-            <div class="kpi-value">10 <span class="unit">/ 13</span></div>
-            <div class="kpi-footer trend-up"><span>77% du troupeau indemne</span></div>
+            <div class="kpi-value">16 <span class="unit">/ 18</span></div>
+            <div class="kpi-footer trend-up"><span>89% du troupeau indemne ➔</span></div>
           </div>
-          <div class="kpi-card card-gold">
+          <div class="kpi-card card-gold" (click)="showPage('reproduction')" title="Cliquer pour voir la Reproduction & Gestations">
             <div class="kpi-header"><span class="kpi-title">Sous Surveillance</span><span>⚠️</span></div>
             <div class="kpi-value">2 <span class="unit">vaches</span></div>
-            <div class="kpi-footer"><span>Fatou (œstrus) & Coumba (gestante)</span></div>
+            <div class="kpi-footer"><span>M-2713 & J-9163 (Gestantes) ➔</span></div>
           </div>
-          <div class="kpi-card card-red">
+          <div class="kpi-card card-red" (click)="showPage('sante')" title="Cliquer pour voir les soins vétérinaires">
             <div class="kpi-header"><span class="kpi-title">Cas Critique Actif</span><span>🚨</span></div>
-            <div class="kpi-value" style="color:#dc2626">1 <span class="unit">vache</span></div>
-            <div class="kpi-footer trend-down"><span>DIOUMA : Fièvre 39.8°C</span></div>
+            <div class="kpi-value" style="color:#dc2626">0 <span class="unit">cas</span></div>
+            <div class="kpi-footer trend-up"><span>Cheptel sain sous protocole bio ➔</span></div>
           </div>
-          <div class="kpi-card card-sky">
+          <div class="kpi-card card-sky" (click)="isVaccineModalOpen.set(true)" title="Cliquer pour planifier un vaccin">
             <div class="kpi-header"><span class="kpi-title">Prochain Vaccin</span><span>💉</span></div>
-            <div class="kpi-value">15 <span class="unit">Août</span></div>
-            <div class="kpi-footer"><span>Rappel Fièvre Aphteuse (13 têtes)</span></div>
+            <div class="kpi-value">15 <span class="unit">Jours</span></div>
+            <div class="kpi-footer"><span>Rappel Fièvre Aphteuse (18 têtes) ➔</span></div>
           </div>
         </div>
 
-        <div class="two-columns-grid">
+        <div class="two-columns-grid-asym">
           <div class="content-card">
             <div class="content-card-header">
               <h3>🩺 Historique des Interventions Récentes</h3>
               <span class="badge-pill badge-green">Suivi Dr. Fall</span>
             </div>
             <div class="table-responsive">
-              <table class="data-table">
+              <table class="data-table" style="min-width:680px">
                 <thead>
                   <tr>
                     <th>Date</th>
                     <th>Animal</th>
-                    <th>Diagnostic / Soin</th>
+                    <th>Acte & Diagnostic</th>
+                    <th>Prescription / Ordonnance</th>
                     <th>Praticien</th>
+                    <th>Délai Lait</th>
                     <th>Coût</th>
                     <th>Statut</th>
                     <th>Action</th>
@@ -677,11 +701,27 @@
                   <tr *ngFor="let rec of healthRecords()" [class.row-alert]="rec.status === 'En cours'">
                     <td><strong>{{ rec.recordDate }}</strong></td>
                     <td><strong>{{ rec.animalName }} ({{ rec.animalInternalId }})</strong></td>
-                    <td>{{ rec.diagnosis }}</td>
-                    <td>{{ rec.practitionerName }}</td>
+                    <td>
+                      <div style="font-weight:600;color:var(--text-dark)">{{ rec.actType }}</div>
+                      <div style="font-size:0.78rem;color:var(--text-muted)">{{ rec.diagnosis }}</div>
+                    </td>
+                    <td>
+                      <span style="font-size:0.8rem;color:#1e3a8a;background:#eff6ff;padding:3px 8px;border-radius:4px;display:inline-block;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" [title]="rec.treatmentPrescription || 'Aucune'">
+                        💊 {{ rec.treatmentPrescription || 'Aucune' }}
+                      </span>
+                    </td>
+                    <td>{{ rec.practitionerName || 'Dr. Fall' }}</td>
+                    <td>
+                      <span *ngIf="rec.milkWithdrawalDays && rec.milkWithdrawalDays > 0" class="badge-pill badge-red" title="Lait à écarter pendant le traitement">
+                        ⚠️ {{ rec.milkWithdrawalDays }}j
+                      </span>
+                      <span *ngIf="!rec.milkWithdrawalDays || rec.milkWithdrawalDays === 0" style="color:#059669;font-size:0.8rem;font-weight:600">
+                        0j (Conforme)
+                      </span>
+                    </td>
                     <td><code>{{ rec.costFcfa }} FCFA</code></td>
                     <td>
-                      <span class="badge-pill" [class.badge-red]="rec.status === 'En cours'" [class.badge-green]="rec.status === 'Terminé' || rec.status === 'Apte IA'" [class.badge-purple]="rec.status === 'Qualité A+'">
+                      <span class="badge-pill" [class.badge-red]="rec.status === 'En cours'" [class.badge-green]="rec.status === 'Terminé' || rec.status === 'Apte IA'" [class.badge-gold]="rec.status === 'Sous surveillance'" [class.badge-purple]="rec.status === 'Qualité A+'">
                         {{ rec.status }}
                       </span>
                     </td>
@@ -704,16 +744,18 @@
               <h3>💉 Calendrier Vaccinal & Traitements Préventifs</h3>
               <button class="btn-secondary" (click)="isVaccineModalOpen.set(true)">+ Planifier Vaccin</button>
             </div>
-            <ul style="list-style:none;display:flex;flex-direction:column;gap:12px">
-              <li *ngFor="let v of vaccineSchedules()" style="display:flex;gap:12px;align-items:center;padding:12px;background:#fef3c7;border-radius:8px;border-left:3px solid #f59e0b">
-                <div style="font-weight:800;font-size:0.95rem;color:#b45309">{{ v.scheduledDate }}</div>
-                <div>
-                  <strong>{{ v.vaccineType }}</strong>
-                  <p style="font-size:0.75rem;color:#526658">{{ v.targetHerd }}</p>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div *ngFor="let v of vaccineSchedules()" class="vaccine-item-card">
+                <div class="vaccine-date-pill">
+                  <span class="v-date">{{ v.scheduledDate }}</span>
                 </div>
-                <span class="badge-pill badge-gold" style="margin-left:auto">{{ v.status }}</span>
-              </li>
-            </ul>
+                <div class="vaccine-item-info">
+                  <div class="vaccine-item-title">{{ v.vaccineType }}</div>
+                  <div class="vaccine-item-sub">{{ v.targetHerd }} • {{ v.practitioner || 'Dr. Fall' }}</div>
+                </div>
+                <span class="badge-pill badge-gold">{{ v.status }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -812,28 +854,28 @@
 
         <!-- 3. KPI Statistics Reproduction -->
         <div class="kpi-grid">
-          <div class="kpi-card card-sky">
+          <div class="kpi-card card-sky" (click)="reproFilter.set('gestation')" title="Filtrer les gestations">
             <div class="kpi-header"><span class="kpi-title">Femelles Gestantes</span><span class="kpi-icon-wrap">🤰</span></div>
             <div class="kpi-value">{{ pregnantCows.length }} <span class="unit">/ {{ femaleCows.length }}</span></div>
-            <div class="kpi-footer trend-up"><span>COUMBA & ROKHAYA (Écho +)</span></div>
+            <div class="kpi-footer trend-up"><span>M-2713 & J-9163 (Écho +) ➔</span></div>
           </div>
 
-          <div class="kpi-card card-gold">
-            <div class="kpi-header"><span class="kpi-title">Prochain Vêlage</span><span class="kpi-icon-wrap">🐮</span></div>
-            <div class="kpi-value">12 <span class="unit">Jours</span></div>
-            <div class="kpi-footer trend-neutral"><span>ROKHAYA (FL-007) • Lignée Sultan</span></div>
+          <div class="kpi-card card-gold" (click)="reproFilter.set('velage')" title="Filtrer les vêlages à venir">
+            <div class="kpi-header"><span class="kpi-title">Prochains Vêlages</span><span class="kpi-icon-wrap">🐮</span></div>
+            <div class="kpi-value">2 <span class="unit">Prévus</span></div>
+            <div class="kpi-footer trend-neutral"><span>J-9163 (Jan 2027) & M-2713 (Fév 2027) ➔</span></div>
           </div>
 
-          <div class="kpi-card card-green">
+          <div class="kpi-card card-green" (click)="reproFilter.set('ia')" title="Filtrer les inséminations">
             <div class="kpi-header"><span class="kpi-title">Doses Semence Stockées</span><span class="kpi-icon-wrap">🧪</span></div>
-            <div class="kpi-value">20 <span class="unit">Doses A+</span></div>
-            <div class="kpi-footer trend-up"><span>12 KADER • 8 SAMBA en azote</span></div>
+            <div class="kpi-value">54 <span class="unit">Doses A+</span></div>
+            <div class="kpi-footer trend-up"><span>24 M-0022 • 30 H-0023 en cuve azote ➔</span></div>
           </div>
 
-          <div class="kpi-card card-purple">
+          <div class="kpi-card card-purple" (click)="reproFilter.set('all')" title="Afficher tous les événements">
             <div class="kpi-header"><span class="kpi-title">Taux de Réussite IA</span><span class="kpi-icon-wrap">🎯</span></div>
-            <div class="kpi-value">85.7 <span class="unit">%</span></div>
-            <div class="kpi-footer trend-up"><span>+12% vs moyenne nationale</span></div>
+            <div class="kpi-value">88.5 <span class="unit">%</span></div>
+            <div class="kpi-footer trend-up"><span>Performance élevage bio optimale ➔</span></div>
           </div>
         </div>
 
@@ -1036,29 +1078,31 @@
             <!-- Left: Animated Liquid Gauge -->
             <div class="tank-gauge-col">
               <div class="tank-cylinder">
-                <div class="tank-liquid" [style.height]="(tankStatus()?.fillPercentage || 24.8) + '%'">
+                <div class="tank-liquid" [style.height]="(tankStatus()?.fillPercentage || 31.0) + '%'">
                   <div class="liquid-wave"></div>
                 </div>
                 <div class="tank-gauge-label">
-                  <strong>{{ tankStatus()?.currentVolume || 124.0 }} L</strong>
+                  <strong>{{ tankStatus()?.currentVolume || 155.0 }} L</strong>
                   <span>/ {{ tankStatus()?.maxCapacity || 500.0 }} L</span>
                 </div>
               </div>
               <div class="tank-fill-info">
-                <span>Niveau Cuve : <strong>{{ tankStatus()?.fillPercentage || 24.8 }}%</strong></span>
+                <span>Solde Net Cuve : <strong>{{ tankStatus()?.fillPercentage || 31.0 }}%</strong></span>
               </div>
             </div>
 
             <!-- Right: Quality Indicators & Sessions -->
             <div class="tank-metrics-col">
-              <div class="tank-stat-quad">
+              <div class="tank-stat-quad" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
                 <div class="tank-kpi-box">
-                  <span class="lbl">Traite Matin</span>
-                  <strong class="val" style="color:#16a34a">{{ tankStatus()?.morningVolume || 68.0 }} L</strong>
+                  <span class="lbl">Collecte Brute (Jour)</span>
+                  <strong class="val" style="color:#16a34a">{{ tankStatus()?.grossVolumeCollected || 155.0 }} L</strong>
+                  <span class="sub-lbl">Matin 95L • Soir 60L</span>
                 </div>
                 <div class="tank-kpi-box">
-                  <span class="lbl">Traite Soir</span>
-                  <strong class="val" style="color:#0284c7">{{ tankStatus()?.eveningVolume || 56.0 }} L</strong>
+                  <span class="lbl">Prélevé Transformation</span>
+                  <strong class="val" style="color:#dc2626">-{{ tankStatus()?.transformedVolume || 0 }} L</strong>
+                  <span class="sub-lbl">Lots en fabrication & finis</span>
                 </div>
                 <div class="tank-kpi-box">
                   <span class="lbl">Température Cuve</span>
@@ -1073,7 +1117,7 @@
               </div>
 
               <div class="tank-footer-alert">
-                <span>🛡️ <strong>Sécurité sanitaire :</strong> DIOUMA (FL-003) sous antibiotique : lait 100% exclu de la cuve pour préserver le label Bio.</span>
+                <span>🛡️ <strong>Traçabilité & Qualité :</strong> Chaque lot lancé déduit automatiquement le lait de la cuve en temps réel.</span>
               </div>
             </div>
           </div>
@@ -1159,18 +1203,18 @@
 
         <!-- KPI Cards Grid -->
         <section class="kpi-grid">
-          <div class="kpi-card card-green">
+          <div class="kpi-card card-green" (click)="navigateToFeedSubTab('stocks')" title="Cliquer pour gérer les Stocks d'Aliments">
             <div class="kpi-header">
               <span class="kpi-title">Stock Global d'Aliments</span>
               <span class="kpi-icon">🌾</span>
             </div>
             <div class="kpi-value">{{ totalFeedStockKg.toLocaleString() }} <span class="unit">kg</span></div>
             <div class="kpi-footer trend-up">
-              <span>🌾 {{ feedStocks().length }} matières premières suivies</span>
+              <span>🌾 {{ feedStocks().length }} matières premières suivies ➔</span>
             </div>
           </div>
 
-          <div class="kpi-card" [ngClass]="lowFeedStockCount > 0 ? 'card-red' : 'card-blue'">
+          <div class="kpi-card" [ngClass]="lowFeedStockCount > 0 ? 'card-red' : 'card-blue'" (click)="navigateToFeedSubTab('stocks')" title="Cliquer pour voir les alertes de stock">
             <div class="kpi-header">
               <span class="kpi-title">Alerte Réapprovisionnement</span>
               <span class="kpi-icon">⚠️</span>
@@ -1179,30 +1223,30 @@
               {{ lowFeedStockCount }} <span class="unit">aliments bas</span>
             </div>
             <div class="kpi-footer">
-              <span *ngIf="lowFeedStockCount > 0">🚨 Seuil de sécurité atteint</span>
-              <span *ngIf="lowFeedStockCount === 0">✅ Tous les stocks sont optimaux</span>
+              <span *ngIf="lowFeedStockCount > 0">🚨 Seuil de sécurité atteint ➔</span>
+              <span *ngIf="lowFeedStockCount === 0">✅ Tous les stocks sont optimaux ➔</span>
             </div>
           </div>
 
-          <div class="kpi-card card-purple">
+          <div class="kpi-card card-purple" (click)="navigateToFeedSubTab('rations')" title="Cliquer pour voir les Rations">
             <div class="kpi-header">
               <span class="kpi-title">Coût Journalier Moyen Ration</span>
               <span class="kpi-icon">🥣</span>
             </div>
             <div class="kpi-value">{{ averageDailyFeedCostFcfa.toLocaleString() }} <span class="unit">FCFA</span></div>
             <div class="kpi-footer">
-              <span>Par vache en lactation / jour</span>
+              <span>Par vache en lactation / jour ➔</span>
             </div>
           </div>
 
-          <div class="kpi-card card-gold">
+          <div class="kpi-card card-gold" (click)="navigateToFeedSubTab('rations')" title="Cliquer pour voir les Formules de Ration">
             <div class="kpi-header">
               <span class="kpi-title">Formules Rations Actives</span>
               <span class="kpi-icon">📋</span>
             </div>
             <div class="kpi-value">{{ feedRations().length }} <span class="unit">règles</span></div>
             <div class="kpi-footer trend-up">
-              <span>Équilibrées en UFL & PDI</span>
+              <span>Équilibrées en UFL & PDI ➔</span>
             </div>
           </div>
         </section>
@@ -1614,6 +1658,7 @@
                     <th>Date</th>
                     <th>Produit / Recette</th>
                     <th>Lait Consommé</th>
+                    <th>Fin Estimée / Durée</th>
                     <th>Attendu vs Réel</th>
                     <th>Rendement %</th>
                     <th>Contrôle Qualité</th>
@@ -1638,7 +1683,12 @@
                     </td>
                     <td>
                       <strong>{{ b.milkLitersConsumed }} L</strong>
-                      <div style="font-size:0.75rem;color:#64748b">{{ b.sourceTank }}</div>
+                      <div style="font-size:0.75rem;color:#0284c7;font-weight:600">📍 {{ b.sourceTank }}</div>
+                    </td>
+                    <td>
+                      <span style="font-size:0.8rem;font-weight:600;color:#9a3412;background:#fff7ed;padding:3px 8px;border-radius:6px;border:1px solid #ffedd5">
+                        {{ getBatchDurationLabel(b) }}
+                      </span>
                     </td>
                     <td>
                       <div>
@@ -1648,7 +1698,7 @@
                         Réel : {{ b.actualQuantityProduced }} {{ b.unit }}
                       </div>
                       <div *ngIf="b.actualQuantityProduced === undefined || b.actualQuantityProduced === null" style="color:#d97706;font-style:italic">
-                        En fabrication...
+                        En transformation...
                       </div>
                     </td>
                     <td>
@@ -1661,7 +1711,7 @@
                         </div>
                       </div>
                       <span *ngIf="b.yieldEfficiencyPercentage === undefined || b.yieldEfficiencyPercentage === null" class="badge-pill badge-yellow">
-                        En calcul
+                        En cours
                       </span>
                     </td>
                     <td>
@@ -1680,8 +1730,8 @@
                     </td>
                     <td>
                       <div style="display:flex;gap:6px;align-items:center">
-                        <button *ngIf="b.status === 'IN_PROGRESS' || b.status === 'PLANNED'" class="btn-primary" style="padding:4px 8px;font-size:0.75rem;background:#15803d" title="Finaliser la fabrication et créer le stock" (click)="openCompleteBatchModal(b)">
-                          ✅ Clôturer
+                        <button *ngIf="b.status === 'IN_PROGRESS' || b.status === 'PLANNED'" class="btn-primary" style="padding:5px 10px;font-size:0.75rem;background:#15803d;white-space:nowrap" title="Finaliser la fabrication et ajouter immédiatement les produits en stock marchant" (click)="openCompleteBatchModal(b)">
+                          ✅ Clôturer & Entrer en Stock
                         </button>
                         <button class="table-icon-btn" title="Voir Passeport Traçabilité" (click)="openTraceabilityCertificate(b.batchNumber, b.recipeName || '', b.productionDate, b.milkLitersConsumed + ' Litres')">
                           🔍
@@ -2041,47 +2091,47 @@
 
         <!-- KPI Cards Grid Financiers -->
         <section class="kpi-grid">
-          <div class="kpi-card card-green">
+          <div class="kpi-card card-green" (click)="navigateToCommercialSubTab('invoices')" title="Cliquer pour voir les Factures">
             <div class="kpi-header">
               <span class="kpi-title">Chiffre d'Affaires Global</span>
               <span class="kpi-icon">💰</span>
             </div>
             <div class="kpi-value">{{ (commercialSummary()?.totalRevenueFcfa || 0).toLocaleString() }} <span class="unit">FCFA</span></div>
             <div class="kpi-footer trend-up">
-              <span>🧾 {{ commercialSummary()?.totalInvoicesCount || 0 }} factures émises</span>
+              <span>🧾 {{ commercialSummary()?.totalInvoicesCount || 0 }} factures émises ➔</span>
             </div>
           </div>
 
-          <div class="kpi-card card-blue">
+          <div class="kpi-card card-blue" (click)="navigateToCommercialSubTab('payments')" title="Cliquer pour voir les Encaissements">
             <div class="kpi-header">
               <span class="kpi-title">Total Encaissé Réel</span>
               <span class="kpi-icon">🌊</span>
             </div>
             <div class="kpi-value">{{ (commercialSummary()?.totalCollectedFcfa || 0).toLocaleString() }} <span class="unit">FCFA</span></div>
             <div class="kpi-footer trend-up">
-              <span>✅ {{ commercialSummary()?.paidInvoicesCount || 0 }} factures soldées</span>
+              <span>✅ {{ commercialSummary()?.paidInvoicesCount || 0 }} factures soldées ➔</span>
             </div>
           </div>
 
-          <div class="kpi-card card-gold">
+          <div class="kpi-card card-gold" (click)="navigateToCommercialSubTab('invoices')" title="Cliquer pour voir les Créances à Recouvrer">
             <div class="kpi-header">
               <span class="kpi-title">Créances à Recouvrer</span>
               <span class="kpi-icon">⏳</span>
             </div>
             <div class="kpi-value" style="color:#d97706">{{ (commercialSummary()?.totalOutstandingFcfa || 0).toLocaleString() }} <span class="unit">FCFA</span></div>
             <div class="kpi-footer">
-              <span>⚠️ {{ commercialSummary()?.pendingInvoicesCount || 0 }} en attente / acomptes</span>
+              <span>⚠️ {{ commercialSummary()?.pendingInvoicesCount || 0 }} en attente / acomptes ➔</span>
             </div>
           </div>
 
-          <div class="kpi-card card-purple">
+          <div class="kpi-card card-purple" (click)="navigateToCommercialSubTab('customers')" title="Cliquer pour voir les Clients">
             <div class="kpi-header">
               <span class="kpi-title">Panier Moyen / Vente</span>
               <span class="kpi-icon">🛒</span>
             </div>
             <div class="kpi-value">{{ (commercialSummary()?.averageOrderValueFcfa || 0).toLocaleString() }} <span class="unit">FCFA</span></div>
             <div class="kpi-footer">
-              <span>👥 {{ commercialSummary()?.totalCustomersCount || 0 }} clients actifs</span>
+              <span>👥 {{ commercialSummary()?.totalCustomersCount || 0 }} clients actifs ➔</span>
             </div>
           </div>
         </section>
@@ -2797,26 +2847,38 @@
      MODAL: SAISIE RAPIDE DE TRAITE
      ========================================== -->
 <div class="modal-overlay" *ngIf="isMilkModalOpen()" (click)="isMilkModalOpen.set(false)">
-  <div class="modal-card" style="max-width:520px" (click)="$event.stopPropagation()">
+  <div class="modal-card" style="max-width:540px" (click)="$event.stopPropagation()">
     <div class="modal-top-header">
       <div class="modal-title-wrap">
-        <div style="font-size:1.6rem">🥛</div>
+        <div class="modal-title-icon-box" style="background:#eff6ff">
+          🥛
+        </div>
         <div>
           <h3>Saisie de Collecte de Traite</h3>
-          <p style="font-size:0.75rem;color:rgba(255,255,255,0.75)">Enregistrement immédiat dans la base locale</p>
+          <p style="font-size:0.75rem;color:rgba(255,255,255,0.75)">Enregistrement direct dans la table `milk_productions` (PostgreSQL)</p>
         </div>
       </div>
       <button class="modal-close-btn" (click)="isMilkModalOpen.set(false)">✕</button>
     </div>
     <form (ngSubmit)="submitMilkEntry()" style="padding:22px">
       <div class="form-grid-layout" style="display:flex;flex-direction:column;gap:12px">
-        <div>
-          <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Vache Laitière</label>
-          <select [(ngModel)]="milkForm.cowId" name="cowId" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" required>
-            <option *ngFor="let c of milkingCows" [value]="c.internalId">{{ c.name }} ({{ c.internalId }}) — {{ c.breed }}</option>
-          </select>
+        
+        <!-- Vache & Date -->
+        <div class="form-grid-layout">
+          <div>
+            <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Vache Laitière *</label>
+            <select [(ngModel)]="milkForm.cowId" name="cowId" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" required>
+              <option *ngFor="let c of milkingCows" [value]="c.internalId">{{ c.name }} ({{ c.internalId }}) — {{ c.breed }}</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Date de Traite</label>
+            <input type="date" [(ngModel)]="milkForm.productionDate" name="milkDate" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" required />
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+        <!-- Session & Volume -->
+        <div class="form-grid-layout">
           <div>
             <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Session de Traite</label>
             <select [(ngModel)]="milkForm.session" name="session" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px">
@@ -2825,18 +2887,41 @@
             </select>
           </div>
           <div>
-            <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Volume (Litres)</label>
-            <input type="number" step="0.5" [(ngModel)]="milkForm.litres" name="litres" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" required />
+            <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Volume Collecté (Litres) *</label>
+            <input type="number" step="0.5" min="0.5" [(ngModel)]="milkForm.litres" name="litres" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" required />
           </div>
         </div>
+
+        <!-- Température & MG% -->
+        <div class="form-grid-layout">
+          <div>
+            <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Température Lait (°C)</label>
+            <input type="number" step="0.1" [(ngModel)]="milkForm.temp" name="temp" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" placeholder="34.2" />
+          </div>
+          <div>
+            <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Matière Grasse (% MG)</label>
+            <input type="number" step="0.1" [(ngModel)]="milkForm.fatPercentage" name="fatPercentage" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" placeholder="3.9" />
+          </div>
+        </div>
+
+        <!-- Destination Cuve & Conformité Bio -->
         <div>
-          <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Destination Cuve</label>
+          <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Destination Cuve Laitière</label>
           <select [(ngModel)]="milkForm.tank" name="tank" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px">
-            <option value="Cuve Réfrigérée N°1 (Bio)">Cuve Réfrigérée N°1 (Bio)</option>
+            <option value="Cuve Réfrigérée N°1 (Bio)">Cuve Réfrigérée N°1 (Bio) — 3.9°C</option>
+            <option value="Cuve Réfrigérée N°2">Cuve Réfrigérée N°2 — 4.1°C</option>
             <option value="Cuve Caillage N°2 (Sow)">Cuve Caillage N°2 (Sow)</option>
           </select>
         </div>
-        <button type="submit" class="btn-primary" style="margin-top:10px;justify-content:center">Valider & Enregistrer la Collecte</button>
+
+        <div style="display:flex;gap:12px;margin-top:10px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="isMilkModalOpen.set(false)">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Valider & Enregistrer la Collecte
+          </button>
+        </div>
       </div>
     </form>
   </div>
@@ -2846,62 +2931,182 @@
      MODAL: SOIN VETERINAIRE (EXACTEMENT COMME LA CAPTURE)
      ========================================== -->
 <div class="modal-overlay" *ngIf="isHealthModalOpen()" (click)="isHealthModalOpen.set(false)">
-  <div class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-card" style="max-width:650px" (click)="$event.stopPropagation()">
     <div class="modal-top-header">
       <div class="modal-title-wrap">
-        <div class="modal-title-icon-box">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="modal-title-icon-box" style="background:#eff6ff">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4.5 3v5a4.5 4.5 0 0 0 9 0V3M18 10h.01M18 10a3 3 0 1 1-3-3v5a6 6 0 0 1-12 0"/>
             <path d="M9 14.5A7.5 7.5 0 0 0 16.5 22h1a2.5 2.5 0 0 0 2.5-2.5V17a2 2 0 0 0-2-2h-1"/>
           </svg>
         </div>
         <div>
-          <h3>Nouvelle Intervention Santé</h3>
-          <p>Carnet vétérinaire & ordonnances</p>
+          <h3>Nouvelle Intervention Vétérinaire</h3>
+          <p>Diagnostic clinique, ordonnance, délai d'attente lait & carnet de santé</p>
         </div>
       </div>
       <button class="modal-close-btn" (click)="isHealthModalOpen.set(false)">✕</button>
     </div>
 
     <form (ngSubmit)="submitHealthEntry()" style="padding:24px 28px">
-      <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;flex-direction:column;gap:16px">
         
-        <!-- Animal concerné -->
-        <div class="form-group-item">
-          <label>Animal concerné</label>
-          <select [(ngModel)]="healthForm.cowId" name="healthCow" required>
-            <option *ngFor="let a of animals()" [value]="a.internalId">{{ a.name }} ({{ a.internalId }})</option>
-          </select>
-        </div>
-
-        <!-- Type d'acte + Coût Médical -->
+        <!-- Animal concerné & Date -->
         <div class="form-grid-layout">
           <div class="form-group-item">
-            <label>Type d'Acte</label>
+            <label>Animal concerné</label>
+            <select [(ngModel)]="healthForm.cowId" name="healthCow" required>
+              <option *ngFor="let a of animals()" [value]="a.internalId">{{ a.name }} ({{ a.internalId }})</option>
+            </select>
+          </div>
+          <div class="form-group-item">
+            <label>Date de l'Intervention</label>
+            <input type="date" [(ngModel)]="healthForm.recordDate" name="healthRecordDate" required />
+          </div>
+        </div>
+
+        <!-- Type d'acte + Praticien -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Type d'Acte Médical</label>
             <select [(ngModel)]="healthForm.actType" name="actType">
               <option value="Traitement Pathologie">Traitement Pathologie</option>
               <option value="Vaccination">Vaccination</option>
               <option value="Échographie Gestation">Échographie Gestation</option>
               <option value="Visite de Routine">Visite de Routine</option>
               <option value="Bilan Reproductif">Bilan Reproductif</option>
+              <option value="Soins des Onglons / Aplombs">Soins des Onglons / Aplombs</option>
+              <option value="Traitement Mastite">Traitement Mastite</option>
             </select>
           </div>
+          <div class="form-group-item">
+            <label>Vétérinaire / Praticien</label>
+            <input type="text" [(ngModel)]="healthForm.practitionerName" name="practitionerName" placeholder="Dr. Fall" />
+          </div>
+        </div>
+
+        <!-- Diagnostic Clinique -->
+        <div class="form-group-item">
+          <label>Diagnostic Clinique / Symptômes observés</label>
+          <input type="text" [(ngModel)]="healthForm.diagnosis" name="diagnosis" placeholder="Ex: Température 39.4°C, congestion mamelle arrière gauche..." required />
+        </div>
+
+        <!-- Prescription & Traitement Médical -->
+        <div class="form-group-item">
+          <label>Prescription & Traitement Médical (Ordonnance / Posologie)</label>
+          <textarea rows="3" [(ngModel)]="healthForm.treatmentPrescription" name="treatmentPrescription" placeholder="Ex: Injection Penicilline 20ml pendant 3 jours + Anti-inflammatoire flunixine..."></textarea>
+        </div>
+
+        <!-- Coût Médical, Délai Lait & Statut -->
+        <div class="form-grid-layout" style="grid-template-columns: 1fr 1fr 1fr">
           <div class="form-group-item">
             <label>Coût Médical (FCFA)</label>
             <input type="number" [(ngModel)]="healthForm.cost" name="cost" placeholder="12500" />
           </div>
-        </div>
-
-        <!-- Observations & Prescription -->
-        <div class="form-group-item">
-          <label>Observations & Prescription</label>
-          <textarea rows="3" [(ngModel)]="healthForm.prescription" name="prescription" placeholder="Diagnostic, médicaments injectés, recommandations..."></textarea>
+          <div class="form-group-item">
+            <label>Délai Attente Lait (Jours)</label>
+            <input type="number" [(ngModel)]="healthForm.milkWithdrawalDays" name="milkWithdrawalDays" placeholder="0" min="0" />
+          </div>
+          <div class="form-group-item">
+            <label>Statut de l'Acte</label>
+            <select [(ngModel)]="healthForm.status" name="healthStatus">
+              <option value="En cours">En cours</option>
+              <option value="Terminé">Terminé</option>
+              <option value="Sous surveillance">Sous surveillance</option>
+              <option value="Apte IA">Apte IA</option>
+            </select>
+          </div>
         </div>
 
         <!-- Bouton Valider -->
-        <button type="submit" class="modal-submit-btn">
-          Enregistrer au Dossier Médical
-        </button>
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="isHealthModalOpen.set(false)">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Enregistrer l'Intervention & Ordonnance
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL: PLANIFICATION VACCINALE (CALENDRIER PROPHYLAXIE)
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isVaccineModalOpen()" (click)="isVaccineModalOpen.set(false)">
+  <div class="modal-card" style="max-width:600px" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title-icon-box" style="background:#fef3c7">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m18 2 4 4-2.5 2.5-4-4L18 2z"/>
+            <path d="M14 6l-9 9v4h4l9-9"/>
+            <path d="m8.5 11.5 4 4"/>
+          </svg>
+        </div>
+        <div>
+          <h3>Planifier une Campagne de Vaccination</h3>
+          <p>Programmation prophylaxie & calendrier sanitaire du cheptel</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="isVaccineModalOpen.set(false)">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitVaccinePlan()" style="padding:24px 28px">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        
+        <!-- Type de vaccin -->
+        <div class="form-group-item">
+          <label>Nom du Vaccin / Type de Prophylaxie</label>
+          <input type="text" [(ngModel)]="vaccineForm.type" name="vaccineType" placeholder="Ex: Rappel Fièvre Aphteuse, Péricardite Exsudative, Charbon..." required />
+        </div>
+
+        <!-- Troupeau cible & Date prévue -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Troupeau / Lot Cible</label>
+            <select [(ngModel)]="vaccineForm.target" name="vaccineTarget">
+              <option value="Tout le troupeau (18 têtes)">Tout le troupeau (18 têtes)</option>
+              <option value="Vaches Laitières en Lactation">Vaches Laitières en Lactation</option>
+              <option value="Génisses & Veaux (6 têtes)">Génisses & Veaux (6 têtes)</option>
+              <option value="Taureaux Reproducteurs (M-0022, H-0023)">Taureaux Reproducteurs</option>
+            </select>
+          </div>
+          <div class="form-group-item">
+            <label>Date Prévue</label>
+            <input type="date" [(ngModel)]="vaccineForm.date" name="vaccineDate" required />
+          </div>
+        </div>
+
+        <!-- Vétérinaire & Coût estimé -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Vétérinaire Référent</label>
+            <input type="text" [(ngModel)]="vaccineForm.vet" name="vaccineVet" placeholder="Dr. Fall (Vétérinaire Ferme)" />
+          </div>
+          <div class="form-group-item">
+            <label>Budget Estimé (FCFA)</label>
+            <input type="number" [(ngModel)]="vaccineForm.cost" name="vaccineCost" placeholder="36000" />
+          </div>
+        </div>
+
+        <!-- Notes & Protocoles -->
+        <div class="form-group-item">
+          <label>Consignes sanitaires / Protocole d'administration</label>
+          <textarea rows="3" [(ngModel)]="vaccineForm.notes" name="vaccineNotes" placeholder="Respect de la chaîne du froid, désinfection cutanée, rappel à 6 mois..."></textarea>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="isVaccineModalOpen.set(false)">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Valider la Planification Vaccinale
+          </button>
+        </div>
       </div>
     </form>
   </div>
@@ -2953,64 +3158,91 @@
 
         <!-- Row 1 -->
         <div class="form-group-item">
-          <label>Matricule / ID *</label>
-          <input type="text" [(ngModel)]="newAnimalForm.internalId" name="newId" placeholder="FL-014" required />
+          <label>Matricule / ID Interne *</label>
+          <input type="text" [(ngModel)]="newAnimalForm.internalId" name="newId" placeholder="Ex: H-1043, M-0022..." required />
         </div>
         <div class="form-group-item">
           <label>Nom de l'Animal *</label>
-          <input type="text" [(ngModel)]="newAnimalForm.name" name="newName" placeholder="ex: BINTOU, YACINE..." required />
+          <input type="text" [(ngModel)]="newAnimalForm.name" name="newName" placeholder="Ex: Holstein 1043, Gobra 001..." required />
         </div>
 
         <!-- Row 2 -->
         <div class="form-group-item">
-          <label>Marque Auriculaire du Bétail *</label>
-          <input type="text" [(ngModel)]="newAnimalForm.earTagNumber" name="newTag" placeholder="ex: SN-DK-1436" required />
+          <label>Marque Auriculaire (Boucle) *</label>
+          <input type="text" [(ngModel)]="newAnimalForm.earTagNumber" name="newTag" placeholder="Ex: H-1043, G-001..." required />
         </div>
         <div class="form-group-item">
-          <label>Race</label>
-          <select [(ngModel)]="newAnimalForm.breed" name="newBreed">
-            <option value="Holstein Pure">Holstein Pure</option>
-            <option value="Montbéliarde">Montbéliarde</option>
-            <option value="Gir Laitier">Gir Laitier</option>
-            <option value="Métisse Holstein x N'Dama">Métisse Holstein x N'Dama</option>
-            <option value="Gobra Locale Sélectionnée">Gobra Locale Sélectionnée</option>
-          </select>
+          <label>Code RFID / Puce Électronique</label>
+          <input type="text" [(ngModel)]="newAnimalForm.rfidCode" name="newRfid" placeholder="Ex: RFID-1043-001" />
         </div>
 
         <!-- Row 3 -->
         <div class="form-group-item">
-          <label>Catégorie</label>
-          <select [(ngModel)]="newAnimalForm.category" name="newCat">
-            <option value="MILKING_COW">Vache Laitière en Production</option>
-            <option value="HEIFER_YOUNG">Jeune Génisse en Croissance</option>
-            <option value="MALE_BULL">Mâle / Taureau Reproducteur</option>
+          <label>Race du Bétail</label>
+          <select [(ngModel)]="newAnimalForm.breed" name="newBreed">
+            <option value="Holstein">Holstein Pure</option>
+            <option value="Montbeliarde">Montbéliarde Pure</option>
+            <option value="Jersiaise">Jersiaise Pure</option>
+            <option value="Gobra">Gobra Locale Sélectionnée</option>
+            <option value="Croisé Jersiaise/Holstein">Croisé Jersiaise / Holstein</option>
+            <option value="Croisé Montbéliard/Holstein">Croisé Montbéliard / Holstein</option>
+            <option value="Croisé JH et Montbéliarde">Croisé 3 Voies (JH x Montbéliarde)</option>
+            <option value="Croisé Jersiaise/Montbéliard">Croisé Jersiaise / Montbéliard</option>
+            <option value="Métisse / Autre">Métisse / Autre</option>
           </select>
         </div>
         <div class="form-group-item">
-          <label>Poids Actuel (kg)</label>
-          <input type="number" [(ngModel)]="newAnimalForm.weight" name="newWeight" placeholder="460" required />
+          <label>Catégorie Zootechnique</label>
+          <select [(ngModel)]="newAnimalForm.category" name="newCat">
+            <option value="MILKING_COW">Vache Laitière en Production</option>
+            <option value="HEIFER_YOUNG">Jeune Génisse / Veau en Croissance</option>
+            <option value="MALE_BULL">Mâle / Taureau Reproducteur</option>
+          </select>
         </div>
 
         <!-- Row 4 -->
         <div class="form-group-item">
-          <label>Date de Naissance</label>
-          <input type="date" [(ngModel)]="newAnimalForm.birthDate" name="newBirth" required />
+          <label>Poids Actuel (kg) *</label>
+          <input type="number" [(ngModel)]="newAnimalForm.weight" name="newWeight" placeholder="540" required />
         </div>
         <div class="form-group-item">
-          <label>Marque Auriculaire de la Mère</label>
-          <input type="text" [(ngModel)]="newAnimalMotherEarTag" name="motherTag" placeholder="ex: SN-DK-1001 (NDIRA)" />
+          <label>Date de Naissance *</label>
+          <input type="date" [(ngModel)]="newAnimalForm.birthDate" name="newBirth" required />
         </div>
 
-        <!-- Row 5 -->
+        <!-- Row 5: Généalogie Mère -->
+        <div class="form-group-item">
+          <label>Nom de la Mère</label>
+          <input type="text" [(ngModel)]="newAnimalMother" name="motherName" placeholder="Ex: Montbeliarde 2713, Jersiaise 9163..." />
+        </div>
+        <div class="form-group-item">
+          <label>Boucle Auriculaire de la Mère</label>
+          <input type="text" [(ngModel)]="newAnimalMotherEarTag" name="motherTag" placeholder="Ex: M-2713, J-9163..." />
+        </div>
+
+        <!-- Row 6: Généalogie Père -->
+        <div class="form-group-item">
+          <label>Nom du Père (Taureau / IA)</label>
+          <input type="text" [(ngModel)]="newAnimalFather" name="fatherName" placeholder="Ex: Montbeliard 022, Holstein 023, Fallou (IA)..." />
+        </div>
+        <div class="form-group-item">
+          <label>Boucle Auriculaire du Père</label>
+          <input type="text" [(ngModel)]="newAnimalFatherEarTag" name="fatherTag" placeholder="Ex: M-0022, H-0023..." />
+        </div>
+
+        <!-- Row 7: Origine & Remarques -->
         <div class="form-group-item full-width">
-          <label>Marque Auriculaire du Père (Taureau)</label>
-          <input type="text" [(ngModel)]="newAnimalFatherEarTag" name="fatherTag" placeholder="ex: SN-DK-1010 (KADER) ou SULTAN" />
+          <label>Origine / Notes Complémentaires</label>
+          <textarea rows="2" [(ngModel)]="newAnimalForm.notes" name="newNotes" placeholder="Remarques zootechniques, pedigree particulier, ligne génétique..."></textarea>
         </div>
 
         <!-- Submit Button Row -->
-        <div class="form-group-item full-width" style="margin-top:6px">
-          <button type="submit" class="modal-submit-btn">
-            Créer & Ajouter la Fiche Animal
+        <div class="form-group-item full-width" style="margin-top:6px;display:flex;gap:12px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="isNewAnimalModalOpen.set(false)">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Créer & Enregistrer la Fiche Animal
           </button>
         </div>
       </div>
@@ -3062,71 +3294,115 @@
         </div>
 
         <!-- Row 1 -->
-        <div class="form-group-item">
-          <label>Matricule / ID</label>
-          <input type="text" [(ngModel)]="editAnimalForm.internalId" name="editId" readonly style="background:#f1f5f9;cursor:not-allowed" />
-        </div>
-        <div class="form-group-item">
-          <label>Nom de l'Animal *</label>
-          <input type="text" [(ngModel)]="editAnimalForm.name" name="editName" required />
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Matricule / ID Interne</label>
+            <input type="text" [(ngModel)]="editAnimalForm.internalId" name="editId" readonly style="background:#f1f5f9;cursor:not-allowed" />
+          </div>
+          <div class="form-group-item">
+            <label>Nom de l'Animal *</label>
+            <input type="text" [(ngModel)]="editAnimalForm.name" name="editName" required />
+          </div>
         </div>
 
         <!-- Row 2 -->
-        <div class="form-group-item">
-          <label>Marque Auriculaire du Bétail *</label>
-          <input type="text" [(ngModel)]="editAnimalForm.earTagNumber" name="editTag" required />
-        </div>
-        <div class="form-group-item">
-          <label>Race</label>
-          <select [(ngModel)]="editAnimalForm.breed" name="editBreed">
-            <option value="Holstein Pure">Holstein Pure</option>
-            <option value="Montbéliarde">Montbéliarde</option>
-            <option value="Gir Laitier">Gir Laitier</option>
-            <option value="Métisse Holstein x N'Dama">Métisse Holstein x N'Dama</option>
-            <option value="Gobra Locale Sélectionnée">Gobra Locale Sélectionnée</option>
-          </select>
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Marque Auriculaire (Boucle) *</label>
+            <input type="text" [(ngModel)]="editAnimalForm.earTagNumber" name="editTag" required />
+          </div>
+          <div class="form-group-item">
+            <label>Code RFID / Puce</label>
+            <input type="text" [(ngModel)]="editAnimalForm.rfidCode" name="editRfid" />
+          </div>
         </div>
 
         <!-- Row 3 -->
-        <div class="form-group-item">
-          <label>Catégorie</label>
-          <select [(ngModel)]="editAnimalForm.category" name="editCat">
-            <option value="MILKING_COW">Vache Laitière en Production</option>
-            <option value="HEIFER_YOUNG">Jeune Génisse en Croissance</option>
-            <option value="MALE_BULL">Mâle / Taureau Reproducteur</option>
-          </select>
-        </div>
-        <div class="form-group-item">
-          <label>Statut</label>
-          <select [(ngModel)]="editAnimalForm.status" name="editStatus">
-            <option value="EXCELLENT">Excellente Santé</option>
-            <option value="HEALTHY">Sain</option>
-            <option value="GROWTH">En Croissance</option>
-            <option value="PREGNANT">Gestante</option>
-            <option value="IN_HEAT">En Chaleur</option>
-            <option value="FEVER_TREATMENT">En Soin / Fièvre</option>
-            <option value="BREEDER_BULL">Reproducteur A+</option>
-          </select>
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Race</label>
+            <select [(ngModel)]="editAnimalForm.breed" name="editBreed">
+              <option value="Holstein">Holstein Pure</option>
+              <option value="Montbeliarde">Montbéliarde Pure</option>
+              <option value="Jersiaise">Jersiaise Pure</option>
+              <option value="Gobra">Gobra Locale Sélectionnée</option>
+              <option value="Croisé Jersiaise/Holstein">Croisé Jersiaise / Holstein</option>
+              <option value="Croisé Montbéliard/Holstein">Croisé Montbéliard / Holstein</option>
+              <option value="Croisé JH et Montbéliarde">Croisé 3 Voies (JH x Montbéliarde)</option>
+              <option value="Croisé Jersiaise/Montbéliard">Croisé Jersiaise / Montbéliard</option>
+              <option value="Métisse / Autre">Métisse / Autre</option>
+            </select>
+          </div>
+          <div class="form-group-item">
+            <label>Catégorie Zootechnique</label>
+            <select [(ngModel)]="editAnimalForm.category" name="editCat">
+              <option value="MILKING_COW">Vache Laitière en Production</option>
+              <option value="HEIFER_YOUNG">Jeune Génisse / Veau en Croissance</option>
+              <option value="MALE_BULL">Mâle / Taureau Reproducteur</option>
+            </select>
+          </div>
         </div>
 
         <!-- Row 4 -->
-        <div class="form-group-item">
-          <label>Poids Actuel (kg)</label>
-          <input type="number" [(ngModel)]="editAnimalForm.weight" name="editWeight" required />
-        </div>
-        <div class="form-group-item">
-          <label>Température (°C)</label>
-          <input type="number" step="0.1" [(ngModel)]="editAnimalForm.temperature" name="editTemp" />
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Statut Sanitaire & Repro</label>
+            <select [(ngModel)]="editAnimalForm.status" name="editStatus">
+              <option value="EXCELLENT">Excellente Santé (A+)</option>
+              <option value="HEALTHY">Sain</option>
+              <option value="GROWTH">En Croissance</option>
+              <option value="PREGNANT">Gestante</option>
+              <option value="IN_HEAT">En Chaleur</option>
+              <option value="FEVER_TREATMENT">En Soin / Traitement</option>
+              <option value="BREEDER_BULL">Taureau Reproducteur Actif</option>
+            </select>
+          </div>
+          <div class="form-group-item">
+            <label>Poids Actuel (kg)</label>
+            <input type="number" [(ngModel)]="editAnimalForm.weight" name="editWeight" required />
+          </div>
         </div>
 
         <!-- Row 5 -->
-        <div class="form-group-item">
-          <label>Marque Auriculaire de la Mère</label>
-          <input type="text" [(ngModel)]="editAnimalMotherEarTag" name="editMotherTag" />
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Température (°C)</label>
+            <input type="number" step="0.1" [(ngModel)]="editAnimalForm.temperature" name="editTemp" />
+          </div>
+          <div class="form-group-item">
+            <label>Date de Naissance</label>
+            <input type="date" [(ngModel)]="editAnimalForm.birthDate" name="editBirth" />
+          </div>
         </div>
-        <div class="form-group-item">
-          <label>Marque Auriculaire du Père (Taureau)</label>
-          <input type="text" [(ngModel)]="editAnimalFatherEarTag" name="editFatherTag" />
+
+        <!-- Row 6: Filiation Mère -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Nom de la Mère</label>
+            <input type="text" [(ngModel)]="editAnimalMother" name="editMotherName" placeholder="Ex: Montbeliarde 2713..." />
+          </div>
+          <div class="form-group-item">
+            <label>Boucle Auriculaire de la Mère</label>
+            <input type="text" [(ngModel)]="editAnimalMotherEarTag" name="editMotherTag" placeholder="Ex: M-2713..." />
+          </div>
+        </div>
+
+        <!-- Row 7: Filiation Père -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Nom du Père (Taureau / IA)</label>
+            <input type="text" [(ngModel)]="editAnimalFather" name="editFatherName" placeholder="Ex: Montbeliard 022, Holstein 023..." />
+          </div>
+          <div class="form-group-item">
+            <label>Boucle Auriculaire du Père</label>
+            <input type="text" [(ngModel)]="editAnimalFatherEarTag" name="editFatherTag" placeholder="Ex: M-0022..." />
+          </div>
+        </div>
+
+        <!-- Row 8: Notes -->
+        <div class="form-group-item full-width">
+          <label>Notes / Remarques Zootechniques</label>
+          <textarea rows="2" [(ngModel)]="editAnimalForm.notes" name="editNotes" placeholder="Observations cliniques, historique..."></textarea>
         </div>
 
         <!-- Submit Button Row -->
@@ -3164,7 +3440,7 @@
     </div>
 
     <form (ngSubmit)="submitEditHealthEntry()" style="padding:24px 28px">
-      <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;flex-direction:column;gap:16px">
         
         <!-- Animal concerné & Date -->
         <div class="form-grid-layout">
@@ -3175,17 +3451,12 @@
             </select>
           </div>
           <div class="form-group-item">
-            <label>Statut de l'Acte</label>
-            <select [(ngModel)]="editingHealthRecord.status" name="editStatus">
-              <option value="En cours">En cours</option>
-              <option value="Terminé">Terminé</option>
-              <option value="Apte IA">Apte IA</option>
-              <option value="Qualité A+">Qualité A+</option>
-            </select>
+            <label>Date de l'Acte</label>
+            <input type="date" [(ngModel)]="editingHealthRecord.recordDate" name="editRecordDate" />
           </div>
         </div>
 
-        <!-- Type d'acte + Coût Médical -->
+        <!-- Type d'acte + Praticien -->
         <div class="form-grid-layout">
           <div class="form-group-item">
             <label>Type d'Acte</label>
@@ -3195,18 +3466,47 @@
               <option value="Échographie Gestation">Échographie Gestation</option>
               <option value="Visite de Routine">Visite de Routine</option>
               <option value="Bilan Reproductif">Bilan Reproductif</option>
+              <option value="Soins des Onglons / Aplombs">Soins des Onglons / Aplombs</option>
+              <option value="Traitement Mastite">Traitement Mastite</option>
             </select>
           </div>
+          <div class="form-group-item">
+            <label>Vétérinaire / Praticien</label>
+            <input type="text" [(ngModel)]="editingHealthRecord.practitionerName" name="editPractitioner" placeholder="Dr. Fall" />
+          </div>
+        </div>
+
+        <!-- Diagnostic -->
+        <div class="form-group-item">
+          <label>Diagnostic Clinique / Symptômes</label>
+          <input type="text" [(ngModel)]="editingHealthRecord.diagnosis" name="editDiagnosis" placeholder="Diagnostic posé..." />
+        </div>
+
+        <!-- Prescription & Traitement Médical -->
+        <div class="form-group-item">
+          <label>Prescription & Traitement Médical (Ordonnance / Posologie)</label>
+          <textarea rows="3" [(ngModel)]="editingHealthRecord.treatmentPrescription" name="editPrescription" placeholder="Médicaments prescrits, doses, recommandations..."></textarea>
+        </div>
+
+        <!-- Coût Médical, Délai Lait & Statut -->
+        <div class="form-grid-layout" style="grid-template-columns: 1fr 1fr 1fr">
           <div class="form-group-item">
             <label>Coût Médical (FCFA)</label>
             <input type="number" [(ngModel)]="editingHealthRecord.costFcfa" name="editCost" />
           </div>
-        </div>
-
-        <!-- Observations & Prescription -->
-        <div class="form-group-item">
-          <label>Diagnostic / Observations & Prescription</label>
-          <textarea rows="3" [(ngModel)]="editingHealthRecord.diagnosis" name="editDiagnosis" placeholder="Diagnostic, médicaments injectés..."></textarea>
+          <div class="form-group-item">
+            <label>Délai Attente Lait (Jours)</label>
+            <input type="number" [(ngModel)]="editingHealthRecord.milkWithdrawalDays" name="editMilkWithdrawal" min="0" />
+          </div>
+          <div class="form-group-item">
+            <label>Statut de l'Acte</label>
+            <select [(ngModel)]="editingHealthRecord.status" name="editStatus">
+              <option value="En cours">En cours</option>
+              <option value="Terminé">Terminé</option>
+              <option value="Sous surveillance">Sous surveillance</option>
+              <option value="Apte IA">Apte IA</option>
+            </select>
+          </div>
         </div>
 
         <!-- Boutons d'action -->
@@ -3329,10 +3629,17 @@
           <div class="form-group-item" *ngIf="reproForm.eventType === 'ARTIFICIAL_INSEMINATION' || reproForm.eventType === 'NATURAL_MATING' || reproForm.eventType === 'PREGNANCY_DIAGNOSIS'">
             <label>Taureau / Semence Utilisée</label>
             <select [(ngModel)]="reproForm.bullOrSemenUsed" name="reproBull">
-              <option value="KADER (FL-010) — Semence A+ (Holstein Pure)">KADER (FL-010) — Holstein USA Pure (Semence A+)</option>
-              <option value="SAMBA (FL-011) — Montbéliard Pure Race">SAMBA (FL-011) — Montbéliard France (Index Fromager)</option>
-              <option value="SULTAN (USA-42891) — Semence Importée">SULTAN (USA-42891) — Champion USA Laitier</option>
-              <option value="BRAHMA (IND-7712) — Gir Laitier Pur">BRAHMA (IND-7712) — Gir Pur Tropical</option>
+              <optgroup label="Taureaux Géniteurs de la Ferme">
+                <option *ngFor="let b of bullsList" [value]="b.name + ' (' + b.internalId + ')'">
+                  {{ b.name }} ({{ b.internalId }}) — {{ b.breed }}
+                </option>
+              </optgroup>
+              <optgroup label="Doses IA & Semences Certifiées">
+                <option value="Semence IA Montbéliarde Pure (Fallou)">Semence IA Montbéliarde Pure (Fallou)</option>
+                <option value="Semence IA Holstein Pure USA">Semence IA Holstein Pure USA</option>
+                <option value="Semence IA Jersiaise Pure">Semence IA Jersiaise Pure</option>
+                <option value="Semence IA Croisement Viande (Bleu Blanc Belge)">Semence IA Croisement Viande (Bleu Blanc Belge)</option>
+              </optgroup>
             </select>
           </div>
 
@@ -3507,22 +3814,48 @@
           </div>
         </div>
 
-        <!-- Dynamic Yield Calculation Preview Banner -->
-        <div class="projections-calc-box">
-          <div class="calc-box-title">
-            <span>⚙️ <strong>Calculateur Dynamique de Rendement Théorique</strong></span>
+        <!-- Dynamic Tank Decrement & Yield Preview Banner -->
+        <div class="projections-calc-box" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px">
+          <div class="calc-box-title" style="margin-bottom:8px">
+            <span style="color:#166534">🥛 <strong>Impact Prélèvement Cuve & Rendement Théorique</strong></span>
           </div>
-          <div class="calc-grid-preview">
-            <div class="calc-item">
-              <span class="lbl">Lait Brut Prévu :</span>
-              <strong class="val" style="color:#0369a1">🥛 {{ newBatchForm.milkLitersConsumed || 0 }} Litres</strong>
+          
+          <div class="calc-grid-preview" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">
+            <!-- Tank Decrement Box -->
+            <div style="background:#ffffff;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0">
+              <span class="lbl" style="font-size:0.75rem;color:#64748b;display:block">Cuve : {{ newBatchForm.sourceTank }}</span>
+              <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.85rem">
+                <span>Stock Actuel : <strong>{{ getTankAvailableMilk(newBatchForm.sourceTank) }} L</strong></span>
+                <span style="color:#dc2626;font-weight:700">-{{ newBatchForm.milkLitersConsumed || 0 }} L</span>
+              </div>
+              <div style="margin-top:4px;font-size:0.85rem;color:#0284c7;font-weight:700">
+                ➔ Reste en Cuve : {{ getTankAvailableMilk(newBatchForm.sourceTank) - (newBatchForm.milkLitersConsumed || 0) }} L
+              </div>
             </div>
-            <div class="calc-item">
-              <span class="lbl">Production Théorique Attendue :</span>
-              <strong class="val" style="color:#15803d">
+
+            <!-- Expected Yield Box -->
+            <div style="background:#ffffff;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0">
+              <span class="lbl" style="font-size:0.75rem;color:#64748b;display:block">Rendement Théorique Estimé :</span>
+              <strong class="val" style="color:#15803d;font-size:1.05rem;display:block;margin-top:4px">
                 📦 {{ getCalculatedExpectedYield(newBatchForm.recipeId, newBatchForm.milkLitersConsumed) }} Unités
               </strong>
+              <span style="font-size:0.75rem;color:#64748b">Prêt pour conditionnement & mise en vente</span>
             </div>
+          </div>
+
+          <!-- Process & Estimated Ready Date -->
+          <div style="background:#ffffff;padding:10px 12px;border-radius:8px;border:1px solid #fed7aa;display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem">
+              <span style="color:#9a3412;font-weight:700">⏱️ Durée du Cycle :</span>
+              <strong style="color:#b45309">{{ getEstimatedDurationForRecipe(newBatchForm.recipeId) }}</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.82rem">
+              <span style="color:#166534;font-weight:700">📅 Fin Estimée & Mise en Vente :</span>
+              <strong style="color:#15803d">{{ getEstimatedCompletionDate(newBatchForm.recipeId, newBatchForm.productionDate) }}</strong>
+            </div>
+            <p style="font-size:0.72rem;color:#64748b;margin:4px 0 0 0">
+              💡 Le lot restera « ⚙️ En cours ». Dès la fin du cycle, cliquez sur « ✅ Clôturer » dans le tableau pour créer automatiquement le stock de produits finis.
+            </p>
           </div>
         </div>
 

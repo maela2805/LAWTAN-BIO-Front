@@ -22,7 +22,7 @@ Chart.register(...registerables);
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit, AfterViewInit {
-  private apiService = inject(ApiService);
+  public apiService = inject(ApiService);
 
   // Active navigation page
   activePage = signal<string>('dashboard');
@@ -78,29 +78,39 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   // Forms
   milkForm = {
-    cowId: 'FL-001',
+    cowId: 'H-1043',
     session: 'Matin',
     litres: 11.5,
     temp: 34.2,
-    tank: 'Cuve Réfrigérée N°1 (Bio)'
+    fatPercentage: 3.9,
+    tank: 'Cuve Réfrigérée N°1 (Bio)',
+    productionDate: new Date().toISOString().split('T')[0],
+    isOrganicCompliant: true
   };
 
   healthForm = {
-    cowId: 'FL-003',
+    cowId: 'H-1043',
     actType: 'Traitement Pathologie',
+    diagnosis: '',
+    treatmentPrescription: '',
+    practitionerName: 'Dr. Fall',
     cost: 12500,
-    prescription: ''
+    milkWithdrawalDays: 0,
+    status: 'En cours',
+    recordDate: new Date().toISOString().split('T')[0]
   };
 
   editingHealthRecord: HealthRecord = {
     id: 1,
-    animalInternalId: 'FL-003',
+    animalInternalId: 'H-1043',
     actType: 'Traitement Pathologie',
     costFcfa: 12500,
     diagnosis: '',
+    treatmentPrescription: '',
     practitionerName: 'Dr. Fall',
     status: 'En cours',
-    recordDate: '13/08/2026'
+    milkWithdrawalDays: 0,
+    recordDate: new Date().toISOString().split('T')[0]
   };
 
   orderForm = {
@@ -464,37 +474,49 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   loadInitialData(): void {
     // 1. Fetch Animals from API
-    this.apiService.getAllAnimals().subscribe(data => {
-      if (data && data.length > 0) {
-        this.animals.set(data);
-      } else {
-        this.loadFallbackAnimals();
+    this.apiService.getAllAnimals().subscribe({
+      next: (data) => {
+        this.isOffline.set(false);
+        this.animals.set(data || []);
+      },
+      error: () => {
+        this.isOffline.set(true);
+        if (this.animals().length === 0) {
+          this.loadFallbackAnimals();
+        }
       }
     });
 
     // 2. Fetch Health Records
-    this.apiService.getAllHealthRecords().subscribe(data => {
-      if (data && data.length > 0) {
-        this.healthRecords.set(data);
-      } else {
-        this.loadFallbackHealth();
+    this.apiService.getAllHealthRecords().subscribe({
+      next: (data) => {
+        this.healthRecords.set(data || []);
+      },
+      error: () => {
+        if (this.healthRecords().length === 0) {
+          this.loadFallbackHealth();
+        }
       }
     });
 
     // 3. Fetch Vaccines
-    this.apiService.getAllVaccines().subscribe(data => {
-      if (data && data.length > 0) {
-        this.vaccineSchedules.set(data);
-      } else {
-        this.loadFallbackVaccines();
+    this.apiService.getAllVaccines().subscribe({
+      next: (data) => {
+        this.vaccineSchedules.set(data || []);
+      },
+      error: () => {
+        if (this.vaccineSchedules().length === 0) {
+          this.loadFallbackVaccines();
+        }
       }
     });
 
     // 4. Fetch Dashboard Stats
-    this.apiService.getDashboardStats().subscribe(stats => {
-      if (stats) {
-        this.dashboardStats.set(stats);
-      }
+    this.apiService.getDashboardStats().subscribe({
+      next: (stats) => {
+        if (stats) this.dashboardStats.set(stats);
+      },
+      error: () => {}
     });
 
     // 5. Sprint 2: Reproduction Data & Alerts
@@ -513,49 +535,74 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.loadFeedAndSolarData();
   }
 
-  loadReproductionData(): void {
-    this.apiService.getAllReproEvents().subscribe(events => {
-      if (events && events.length > 0) {
-        this.reproductionEvents.set(events);
+  // Action utilisateur pour synchroniser manuellement avec PostgreSQL
+  refreshAndSyncAllData(): void {
+    this.showToast('Synchronisation avec la base de données PostgreSQL en cours...');
+    this.apiService.checkBackendHealth().subscribe(online => {
+      if (online) {
+        this.isOffline.set(false);
+        this.loadInitialData();
+        this.showToast('✅ Données synchronisées avec succès depuis PostgreSQL !');
       } else {
-        this.loadFallbackRepro();
+        this.isOffline.set(true);
+        this.showToast('⚠️ Impossible de joindre le serveur Spring Boot (port 8080).');
+      }
+    });
+  }
+
+  loadReproductionData(): void {
+    this.apiService.getAllReproEvents().subscribe({
+      next: (events) => {
+        this.reproductionEvents.set(events || []);
+      },
+      error: () => {
+        if (this.reproductionEvents().length === 0) {
+          this.loadFallbackRepro();
+        }
       }
     });
 
-    this.apiService.getReproAlerts().subscribe(alerts => {
-      if (alerts && alerts.length > 0) {
-        this.reproductionAlerts.set(alerts);
-      } else {
-        this.loadFallbackReproAlerts();
+    this.apiService.getReproAlerts().subscribe({
+      next: (alerts) => {
+        this.reproductionAlerts.set(alerts || []);
+      },
+      error: () => {
+        if (this.reproductionAlerts().length === 0) {
+          this.loadFallbackReproAlerts();
+        }
       }
     });
   }
 
   loadMilkData(): void {
-    this.apiService.getTankStatus().subscribe(status => {
-      if (status) {
-        this.tankStatus.set(status);
-      } else {
-        this.tankStatus.set({
-          tankName: 'Cuve Réfrigérée N°1 (Bio)',
-          currentVolume: 124.0,
-          maxCapacity: 500.0,
-          fillPercentage: 24.8,
-          temperature: 3.9,
-          phLevel: 6.68,
-          qualityStatus: 'CONFORME BIO & PASTEURISATION',
-          targetBatch: 'LOT-TR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-01',
-          morningVolume: 68.0,
-          eveningVolume: 56.0,
-          collectionDate: new Date().toISOString().slice(0, 10)
-        });
+    this.apiService.getTankStatus().subscribe({
+      next: (status) => {
+        if (status) this.tankStatus.set(status);
+      },
+      error: () => {
+        if (!this.tankStatus()) {
+          this.tankStatus.set({
+            tankName: 'Cuve Réfrigérée N°1 (Bio)',
+            currentVolume: 155.0,
+            maxCapacity: 500.0,
+            fillPercentage: 31.0,
+            temperature: 3.9,
+            phLevel: 6.68,
+            qualityStatus: 'CONFORME BIO & PASTEURISATION',
+            targetBatch: 'LOT-TR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-01',
+            morningVolume: 95.0,
+            eveningVolume: 60.0,
+            collectionDate: new Date().toISOString().slice(0, 10)
+          });
+        }
       }
     });
 
-    this.apiService.getMilkHistory(7).subscribe(hist => {
-      if (hist && hist.length > 0) {
-        this.milkHistory.set(hist);
-      }
+    this.apiService.getMilkHistory(7).subscribe({
+      next: (hist) => {
+        if (hist) this.milkHistory.set(hist);
+      },
+      error: () => {}
     });
   }
 
@@ -682,37 +729,49 @@ export class AppComponent implements OnInit, AfterViewInit {
   // ==========================================
   loadTransformationData(): void {
     // 1. Recipes
-    this.apiService.getAllRecipes().subscribe(recs => {
-      if (recs && recs.length > 0) {
-        this.recipes.set(recs);
-      } else {
-        this.loadFallbackRecipes();
+    this.apiService.getAllRecipes().subscribe({
+      next: (recs) => {
+        this.recipes.set(recs || []);
+      },
+      error: () => {
+        if (this.recipes().length === 0) {
+          this.loadFallbackRecipes();
+        }
       }
     });
 
     // 2. Batches
-    this.apiService.getAllBatches().subscribe(b => {
-      if (b && b.length > 0) {
-        this.transformationBatches.set(b);
-      } else {
-        this.loadFallbackBatches();
+    this.apiService.getAllBatches().subscribe({
+      next: (b) => {
+        this.transformationBatches.set(b || []);
+        this.updateLocalTransformationSummary();
+      },
+      error: () => {
+        if (this.transformationBatches().length === 0) {
+          this.loadFallbackBatches();
+        }
       }
     });
 
     // 3. Stocks
-    this.apiService.getAllStocks().subscribe(s => {
-      if (s && s.length > 0) {
-        this.productStocks.set(s);
-      } else {
-        this.loadFallbackStocks();
+    this.apiService.getAllStocks().subscribe({
+      next: (s) => {
+        this.productStocks.set(s || []);
+      },
+      error: () => {
+        if (this.productStocks().length === 0) {
+          this.loadFallbackStocks();
+        }
       }
     });
 
     // 4. Summary
-    this.apiService.getTransformationSummary().subscribe(sum => {
-      if (sum) {
-        this.transformationSummary.set(sum);
-      } else {
+    this.apiService.getTransformationSummary().subscribe({
+      next: (sum) => {
+        if (sum) this.transformationSummary.set(sum);
+        else this.updateLocalTransformationSummary();
+      },
+      error: () => {
         this.updateLocalTransformationSummary();
       }
     });
@@ -1160,6 +1219,66 @@ export class AppComponent implements OnInit, AfterViewInit {
     return Math.round((milkLiters / recipe.milkLitersPerUnit) * 10) / 10;
   }
 
+  // --- Tank Volume & Decrement Calculations ---
+  getTankCurrentVolume(tankName: string): number {
+    if (this.tankStatus() && (tankName.includes('N°1') || tankName.includes('Bio'))) {
+      return this.tankStatus()!.currentVolume;
+    }
+    if (tankName.includes('N°1') || tankName.includes('Bio')) return 155.0;
+    if (tankName.includes('N°2') && !tankName.includes('Sow')) return 50.0;
+    if (tankName.includes('Sow') || tankName.includes('Caillage')) return 40.0;
+    return 100.0;
+  }
+
+  getTankAvailableMilk(tankName: string): number {
+    const base = this.getTankCurrentVolume(tankName);
+    const consumedInBatches = this.transformationBatches()
+      .filter(b => b.status === 'IN_PROGRESS' && b.sourceTank === tankName)
+      .reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
+    return Math.max(0, Math.round((base - consumedInBatches) * 10) / 10);
+  }
+
+  getEstimatedDurationForRecipe(recipeId: number): string {
+    const rec = this.recipes().find(r => r.id === Number(recipeId));
+    if (!rec) return '2 à 24 heures';
+    if (rec.productType === 'PASTEURIZED_MILK') return '~2 heures (Pasteurisation & Refroidissement)';
+    if (rec.productType === 'CURDLED_MILK') return '18 à 24 heures (Fermentation naturelle en cuve)';
+    if (rec.productType === 'YOGURT') return '12 heures (Étuve 43°C & Prise au froid)';
+    if (rec.productType === 'CHEESE') return '24 à 48 heures (Caillage, Moulage & Égouttage)';
+    if (rec.productType === 'BUTTER') return '4 heures (Écrémage & Barattage)';
+    return '12 à 24 heures';
+  }
+
+  getEstimatedCompletionDate(recipeId: number, launchDateStr?: string): string {
+    const rec = this.recipes().find(r => r.id === Number(recipeId));
+    const launch = launchDateStr ? new Date(launchDateStr) : new Date();
+    if (!rec) return 'Aujourd\'hui / Demain';
+    if (rec.productType === 'PASTEURIZED_MILK' || rec.productType === 'BUTTER') {
+      return `Aujourd'hui (${launch.toLocaleDateString('fr-FR')}) en fin de journée`;
+    }
+    if (rec.productType === 'CURDLED_MILK' || rec.productType === 'YOGURT') {
+      const nextDay = new Date(launch);
+      nextDay.setDate(nextDay.getDate() + 1);
+      return `Demain matin (${nextDay.toLocaleDateString('fr-FR')})`;
+    }
+    if (rec.productType === 'CHEESE') {
+      const cheeseDate = new Date(launch);
+      cheeseDate.setDate(cheeseDate.getDate() + 2);
+      return `J+2 (${cheeseDate.toLocaleDateString('fr-FR')}) après égouttage`;
+    }
+    return `Dans 24h`;
+  }
+
+  getBatchDurationLabel(batch: TransformationBatch): string {
+    if (batch.status === 'COMPLETED') return '✅ Conditionné & En Stock';
+    if (batch.productType === 'PASTEURIZED_MILK') return '⏱️ Prêt aujourd\'hui (~2h)';
+    if (batch.productType === 'CURDLED_MILK') return '⏱️ Prêt demain (24h)';
+    if (batch.productType === 'YOGURT') return '⏱️ Prêt demain (12h)';
+    if (batch.productType === 'CHEESE') return '⏱️ Égouttage J+2';
+    if (batch.productType === 'BUTTER') return '⏱️ Prêt aujourd\'hui (~4h)';
+    return '⏱️ En fabrication (24h)';
+  }
+
   // --- Modals & Actions for Transformation ---
   openNewBatchModal(preselectedRecipeId?: number): void {
     this.newBatchForm.isCustomProduct = false;
@@ -1212,14 +1331,11 @@ export class AppComponent implements OnInit, AfterViewInit {
             this.proceedLaunchBatchWithRecipe(savedRec);
           },
           error: () => {
-            customRec.id = Date.now();
-            this.recipes.update(list => [...list, customRec]);
-            this.proceedLaunchBatchWithRecipe(customRec);
+            this.showToast('⚠️ Erreur création recette personnalisée dans PostgreSQL.');
           }
         });
         return;
       } else {
-        customRec.id = Date.now();
         this.proceedLaunchBatchWithRecipe(customRec);
         return;
       }
@@ -1261,15 +1377,12 @@ export class AppComponent implements OnInit, AfterViewInit {
       next: (created) => {
         this.transformationBatches.update(list => [created, ...list]);
         this.updateLocalTransformationSummary();
-        this.showToast(`✅ Lot ${created.batchNumber} lancé avec succès (${created.milkLitersConsumed}L prélevés) !`);
+        this.loadMilkData();
+        this.showToast(`✅ Lot ${created.batchNumber} enregistré dans PostgreSQL (${created.milkLitersConsumed}L prélevés) !`);
         this.closeNewBatchModal();
       },
       error: () => {
-        newBatch.id = Date.now();
-        this.transformationBatches.update(list => [newBatch, ...list]);
-        this.updateLocalTransformationSummary();
-        this.showToast(`✅ Lot ${newBatch.batchNumber} lancé (${newBatch.milkLitersConsumed}L prélevés) !`);
-        this.closeNewBatchModal();
+        this.showToast(`⚠️ Erreur : Impossible de lancer le lot dans PostgreSQL.`);
       }
     });
   }
@@ -1294,12 +1407,6 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     const actualQty = Number(this.completeBatchForm.actualQuantityProduced);
     const waste = Number(this.completeBatchForm.wasteLossQuantity) || 0;
-    const efficiency = batch.expectedQuantity > 0 
-      ? Math.round((actualQty / batch.expectedQuantity) * 1000) / 10 
-      : 100;
-
-    const rec = this.recipes().find(r => r.id === batch.recipeId);
-    const unitPrice = (rec && rec.standardSellingPriceFcfa) ? rec.standardSellingPriceFcfa : 1500;
 
     this.apiService.completeBatch(batch.id, {
       actualQuantityProduced: actualQty,
@@ -1310,48 +1417,12 @@ export class AppComponent implements OnInit, AfterViewInit {
       next: (completed) => {
         this.transformationBatches.update(list => list.map(b => b.id === completed.id ? completed : b));
         this.loadTransformationData();
-        this.showToast(`🎉 Lot ${completed.batchNumber} finalisé ! Rendement: ${completed.yieldEfficiencyPercentage}%`);
+        this.loadMilkData();
+        this.showToast(`🎉 Lot ${completed.batchNumber} finalisé dans PostgreSQL ! Rendement: ${completed.yieldEfficiencyPercentage}%`);
         this.closeCompleteBatchModal();
       },
       error: () => {
-        // Fallback local update
-        const updated: TransformationBatch = {
-          ...batch,
-          status: 'COMPLETED',
-          actualQuantityProduced: actualQty,
-          wasteLossQuantity: waste,
-          yieldEfficiencyPercentage: efficiency,
-          phLevel: this.completeBatchForm.phLevel,
-          qualityNotes: this.completeBatchForm.qualityNotes
-        };
-
-        this.transformationBatches.update(list => list.map(b => b.id === batch.id ? updated : b));
-
-        // Create stock entry locally
-        const newStock: ProductStock = {
-          id: Date.now(),
-          recipeId: batch.recipeId,
-          recipeName: batch.recipeName,
-          productType: batch.productType,
-          emoji: batch.emoji,
-          batchId: batch.id,
-          batchNumber: batch.batchNumber,
-          productName: batch.recipeName || 'Produit Transformé',
-          quantityAvailable: actualQty,
-          unit: batch.unit,
-          unitPriceFcfa: unitPrice,
-          totalValueFcfa: actualQty * unitPrice,
-          mfgDate: batch.productionDate,
-          dlcExpiryDate: batch.dlcExpiryDate,
-          storageLocation: 'Chambre Froide Fromagerie (+4°C)',
-          isOrganicCertified: true,
-          daysRemainingDlc: 30
-        };
-
-        this.productStocks.update(stocks => [newStock, ...stocks]);
-        this.updateLocalTransformationSummary();
-        this.showToast(`🎉 Lot ${batch.batchNumber} finalisé ! Rendement: ${efficiency}% (${actualQty} ${batch.unit} ajoutés au stock)`);
-        this.closeCompleteBatchModal();
+        this.showToast(`⚠️ Erreur lors de la finalisation du lot dans PostgreSQL.`);
       }
     });
   }
@@ -1394,27 +1465,22 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.apiService.updateRecipe(sel.id, this.recipeForm).subscribe({
         next: (updated) => {
           this.recipes.update(list => list.map(r => r.id === updated.id ? updated : r));
-          this.showToast(`✅ Recette "${updated.name}" mise à jour avec succès !`);
+          this.showToast(`✅ Recette "${updated.name}" mise à jour dans PostgreSQL !`);
           this.closeRecipeModal();
         },
         error: () => {
-          this.recipes.update(list => list.map(r => r.id === sel.id ? { ...this.recipeForm, id: sel.id } : r));
-          this.showToast(`✅ Recette "${this.recipeForm.name}" mise à jour !`);
-          this.closeRecipeModal();
+          this.showToast(`⚠️ Erreur de mise à jour de la recette dans PostgreSQL.`);
         }
       });
     } else {
       this.apiService.createRecipe(this.recipeForm).subscribe({
         next: (created) => {
           this.recipes.update(list => [...list, created]);
-          this.showToast(`✅ Nouvelle recette "${created.name}" créée !`);
+          this.showToast(`✅ Nouvelle recette "${created.name}" enregistrée dans PostgreSQL !`);
           this.closeRecipeModal();
         },
         error: () => {
-          const created = { ...this.recipeForm, id: Date.now() };
-          this.recipes.update(list => [...list, created]);
-          this.showToast(`✅ Nouvelle recette "${this.recipeForm.name}" créée !`);
-          this.closeRecipeModal();
+          this.showToast(`⚠️ Erreur de création de la recette dans PostgreSQL.`);
         }
       });
     }
@@ -1428,12 +1494,10 @@ export class AppComponent implements OnInit, AfterViewInit {
       next: () => {
         this.transformationBatches.update(list => list.filter(b => b.id !== id));
         this.updateLocalTransformationSummary();
-        this.showToast('Lot de transformation supprimé.');
+        this.showToast('✅ Lot de transformation supprimé de PostgreSQL.');
       },
       error: () => {
-        this.transformationBatches.update(list => list.filter(b => b.id !== id));
-        this.updateLocalTransformationSummary();
-        this.showToast('Lot de transformation supprimé.');
+        this.showToast('⚠️ Erreur de suppression du lot dans PostgreSQL.');
       }
     });
   }
@@ -1445,11 +1509,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.deleteRecipe(id).subscribe({
       next: () => {
         this.recipes.update(list => list.filter(r => r.id !== id));
-        this.showToast('Recette supprimée.');
+        this.showToast('✅ Recette supprimée de PostgreSQL.');
       },
       error: () => {
-        this.recipes.update(list => list.filter(r => r.id !== id));
-        this.showToast('Recette supprimée.');
+        this.showToast('⚠️ Erreur de suppression de la recette.');
       }
     });
   }
@@ -1815,19 +1878,20 @@ export class AppComponent implements OnInit, AfterViewInit {
       session: this.milkForm.session.includes('Matin') ? 'MORNING' : 'EVENING',
       volumeLiters: this.milkForm.litres,
       milkTemperature: this.milkForm.temp,
+      fatPercentage: this.milkForm.fatPercentage,
       destinationTank: this.milkForm.tank,
-      productionDate: new Date().toISOString().split('T')[0]
+      isOrganicCompliant: this.milkForm.isOrganicCompliant,
+      productionDate: this.milkForm.productionDate || new Date().toISOString().split('T')[0]
     };
 
     this.apiService.recordMilk(prod).subscribe({
-      next: () => {
-        this.showToast(`Collecte de ${this.milkForm.litres}L enregistrée pour ${this.milkForm.cowId} !`);
+      next: (created) => {
+        this.showToast(`✅ Traite de ${created.volumeLiters || this.milkForm.litres}L enregistrée dans PostgreSQL pour ${this.milkForm.cowId} !`);
         this.isMilkModalOpen.set(false);
-        this.loadInitialData();
+        this.loadMilkData();
       },
       error: () => {
-        this.showToast(`Collecte de ${this.milkForm.litres}L enregistrée en local !`);
-        this.isMilkModalOpen.set(false);
+        this.showToast(`⚠️ Erreur : Impossible d'enregistrer la traite dans PostgreSQL (port 8080 non joignable).`);
       }
     });
   }
@@ -1836,23 +1900,24 @@ export class AppComponent implements OnInit, AfterViewInit {
     const record: HealthRecord = {
       animalInternalId: this.healthForm.cowId.split(' ')[0],
       actType: this.healthForm.actType,
-      diagnosis: this.healthForm.prescription || 'Intervention de routine',
-      practitionerName: 'Dr. Fall',
-      costFcfa: this.healthForm.cost,
-      status: 'En cours',
-      recordDate: new Date().toLocaleDateString('fr-FR')
+      diagnosis: this.healthForm.diagnosis || 'Intervention clinique',
+      treatmentPrescription: this.healthForm.treatmentPrescription || 'Aucune prescription spécifique',
+      practitionerName: this.healthForm.practitionerName || 'Dr. Fall',
+      costFcfa: this.healthForm.cost || 0,
+      status: this.healthForm.status || 'En cours',
+      milkWithdrawalDays: this.healthForm.milkWithdrawalDays || 0,
+      recordDate: this.healthForm.recordDate || new Date().toISOString().split('T')[0]
     };
 
     this.apiService.createHealthRecord(record).subscribe({
-      next: () => {
-        this.showToast('Intervention vétérinaire enregistrée au dossier !');
+      next: (created) => {
+        this.healthRecords.update(records => [created, ...records]);
+        this.showToast('✅ Acte vétérinaire avec ordonnance enregistré dans PostgreSQL !');
         this.isHealthModalOpen.set(false);
-        this.loadInitialData();
       },
-      error: () => {
-        this.healthRecords.update(records => [record, ...records]);
-        this.showToast('Intervention enregistrée en local !');
-        this.isHealthModalOpen.set(false);
+      error: (err) => {
+        console.error('Erreur santé:', err);
+        this.showToast(`⚠️ Erreur : Impossible d'enregistrer l'acte dans PostgreSQL.`);
       }
     });
   }
@@ -1880,13 +1945,12 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.createAnimal(animal).subscribe({
       next: (created) => {
         this.animals.update(list => [...list, created]);
-        this.showToast(`Animal ${animal.name} (${animal.internalId}) ajouté au registre !`);
+        this.showToast(`✅ Animal ${animal.name} (${animal.internalId}) enregistré dans PostgreSQL !`);
         this.isNewAnimalModalOpen.set(false);
       },
-      error: () => {
-        this.animals.update(list => [...list, animal]);
-        this.showToast(`Animal ${animal.name} (${animal.internalId}) ajouté en local !`);
-        this.isNewAnimalModalOpen.set(false);
+      error: (err) => {
+        console.error('Erreur ajout animal:', err);
+        this.showToast(`⚠️ Erreur : Impossible d'enregistrer l'animal dans PostgreSQL (port 8080).`);
       }
     });
   }
@@ -1978,24 +2042,21 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
     };
 
-    this.apiService.updateAnimal(updated.internalId, updated).subscribe({
-      next: (res) => {
-        this.animals.update(list => list.map(a => a.internalId === updated.internalId ? res : a));
-        if (this.selectedAnimal()?.internalId === updated.internalId) {
-          this.selectedAnimal.set(res);
+    if (updated.internalId) {
+      this.apiService.updateAnimal(updated.internalId, updated).subscribe({
+        next: (res) => {
+          this.animals.update(list => list.map(a => a.internalId === updated.internalId ? res : a));
+          if (this.selectedAnimal()?.internalId === updated.internalId) {
+            this.selectedAnimal.set(res);
+          }
+          this.showToast(`✅ Fiche de ${updated.name} mise à jour dans PostgreSQL !`);
+          this.isEditAnimalModalOpen.set(false);
+        },
+        error: () => {
+          this.showToast(`⚠️ Erreur : Impossible de mettre à jour l'animal dans PostgreSQL.`);
         }
-        this.showToast(`Fiche de ${updated.name} mise à jour avec succès !`);
-        this.isEditAnimalModalOpen.set(false);
-      },
-      error: () => {
-        this.animals.update(list => list.map(a => a.internalId === updated.internalId ? updated : a));
-        if (this.selectedAnimal()?.internalId === updated.internalId) {
-          this.selectedAnimal.set(updated);
-        }
-        this.showToast(`Fiche de ${updated.name} mise à jour en local !`);
-        this.isEditAnimalModalOpen.set(false);
-      }
-    });
+      });
+    }
   }
 
   // Edit Health Record Handlers
@@ -2011,13 +2072,11 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.updateHealthRecord(rec.id, rec).subscribe({
       next: (res) => {
         this.healthRecords.update(list => list.map(r => r.id === rec.id ? res : r));
-        this.showToast('Acte médical mis à jour avec succès !');
+        this.showToast('✅ Acte médical mis à jour dans PostgreSQL !');
         this.isEditHealthModalOpen.set(false);
       },
       error: () => {
-        this.healthRecords.update(list => list.map(r => r.id === rec.id ? rec : r));
-        this.showToast('Acte médical mis à jour en local !');
-        this.isEditHealthModalOpen.set(false);
+        this.showToast('⚠️ Erreur de mise à jour dans PostgreSQL.');
       }
     });
   }
@@ -2026,7 +2085,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     const v: VaccineSchedule = {
       vaccineType: this.vaccineForm.type,
       targetHerd: this.vaccineForm.target,
-      scheduledDate: this.vaccineForm.date,
+      scheduledDate: this.vaccineForm.date || new Date().toISOString().split('T')[0],
       practitioner: this.vaccineForm.vet,
       estimatedCost: this.vaccineForm.cost,
       status: 'Planifié',
@@ -2034,15 +2093,13 @@ export class AppComponent implements OnInit, AfterViewInit {
     };
 
     this.apiService.createVaccine(v).subscribe({
-      next: () => {
-        this.vaccineSchedules.update(list => [...list, v]);
-        this.showToast('Planification vaccinale enregistrée !');
+      next: (created) => {
+        this.vaccineSchedules.update(list => [...list, created]);
+        this.showToast('✅ Planification vaccinale enregistrée dans PostgreSQL !');
         this.isVaccineModalOpen.set(false);
       },
       error: () => {
-        this.vaccineSchedules.update(list => [...list, v]);
-        this.showToast('Planification enregistrée en local !');
-        this.isVaccineModalOpen.set(false);
+        this.showToast(`⚠️ Erreur d'enregistrement du vaccin dans PostgreSQL.`);
       }
     });
   }
@@ -2193,15 +2250,11 @@ export class AppComponent implements OnInit, AfterViewInit {
       next: (created) => {
         this.reproductionEvents.update(list => [created, ...list]);
         this.dismissAlertForCow(event);
-        this.showToast(`Événement de reproduction enregistré pour ${cowName} (${event.animalInternalId}) !`);
+        this.showToast(`✅ Événement de reproduction enregistré dans PostgreSQL pour ${cowName} (${event.animalInternalId}) !`);
         this.isReproModalOpen.set(false);
-        this.loadInitialData();
       },
       error: () => {
-        this.reproductionEvents.update(list => [{ ...event, id: Date.now() }, ...list]);
-        this.dismissAlertForCow(event);
-        this.showToast(`Événement enregistré en local pour ${cowName} !`);
-        this.isReproModalOpen.set(false);
+        this.showToast(`⚠️ Erreur d'enregistrement dans PostgreSQL : impossible de joindre le backend.`);
       }
     });
   }
@@ -2251,11 +2304,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.deleteReproEvent(id).subscribe({
       next: () => {
         this.reproductionEvents.update(list => list.filter(e => e.id !== id));
-        this.showToast('Acte de reproduction supprimé.');
+        this.showToast('✅ Acte de reproduction supprimé de PostgreSQL.');
       },
       error: () => {
-        this.reproductionEvents.update(list => list.filter(e => e.id !== id));
-        this.showToast('Acte supprimé en local.');
+        this.showToast('⚠️ Erreur de suppression dans la base de données.');
       }
     });
   }
@@ -2282,11 +2334,11 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     this.apiService.recordMilk(prod).subscribe({
       next: () => {
-        this.showToast(`Traite ${session === 'MORNING' ? 'Matin' : 'Soir'} : +${volume}L pour ${cow.name} ajoutés à la Cuve Bio !`);
+        this.showToast(`✅ Traite ${session === 'MORNING' ? 'Matin' : 'Soir'} : +${volume}L pour ${cow.name} enregistrée dans PostgreSQL !`);
         this.loadMilkData();
       },
       error: () => {
-        this.showToast(`Traite : +${volume}L enregistrée pour ${cow.name} !`);
+        this.showToast(`⚠️ Erreur d'enregistrement de la traite dans PostgreSQL.`);
       }
     });
   }
@@ -2418,37 +2470,48 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   loadCommercialData(): void {
     // 1. Fetch Customers
-    this.apiService.getAllCustomers().subscribe(custs => {
-      if (custs && custs.length > 0) {
-        this.customers.set(custs);
-      } else {
-        this.loadFallbackCustomers();
+    this.apiService.getAllCustomers().subscribe({
+      next: (custs) => {
+        this.customers.set(custs || []);
+      },
+      error: () => {
+        if (this.customers().length === 0) {
+          this.loadFallbackCustomers();
+        }
       }
     });
 
     // 2. Fetch Invoices
-    this.apiService.getAllInvoices().subscribe(invs => {
-      if (invs && invs.length > 0) {
-        this.invoices.set(invs);
-      } else {
-        this.loadFallbackInvoices();
+    this.apiService.getAllInvoices().subscribe({
+      next: (invs) => {
+        this.invoices.set(invs || []);
+      },
+      error: () => {
+        if (this.invoices().length === 0) {
+          this.loadFallbackInvoices();
+        }
       }
     });
 
     // 3. Fetch Payments
-    this.apiService.getAllPayments().subscribe(pays => {
-      if (pays && pays.length > 0) {
-        this.payments.set(pays);
-      } else {
-        this.loadFallbackPayments();
+    this.apiService.getAllPayments().subscribe({
+      next: (pays) => {
+        this.payments.set(pays || []);
+      },
+      error: () => {
+        if (this.payments().length === 0) {
+          this.loadFallbackPayments();
+        }
       }
     });
 
     // 4. Fetch Summary
-    this.apiService.getCommercialSummary().subscribe(sum => {
-      if (sum) {
-        this.commercialSummary.set(sum);
-      } else {
+    this.apiService.getCommercialSummary().subscribe({
+      next: (sum) => {
+        if (sum) this.commercialSummary.set(sum);
+        else this.updateLocalCommercialSummary();
+      },
+      error: () => {
         this.updateLocalCommercialSummary();
       }
     });
@@ -3048,16 +3111,11 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.invoices.update(list => [created, ...list]);
         this.decrementStockFromInvoice(created);
         this.updateLocalCommercialSummary();
-        this.showToast(`✅ Facture ${created.invoiceNumber} créée avec succès (${created.totalAmountFcfa.toLocaleString()} FCFA) !`);
+        this.showToast(`✅ Facture ${created.invoiceNumber} enregistrée dans PostgreSQL (${created.totalAmountFcfa.toLocaleString()} FCFA) !`);
         this.closeNewInvoiceModal();
       },
       error: () => {
-        invoicePayload.id = Date.now();
-        this.invoices.update(list => [invoicePayload, ...list]);
-        this.decrementStockFromInvoice(invoicePayload);
-        this.updateLocalCommercialSummary();
-        this.showToast(`✅ Facture ${invoicePayload.invoiceNumber} enregistrée (${invoicePayload.totalAmountFcfa.toLocaleString()} FCFA) !`);
-        this.closeNewInvoiceModal();
+        this.showToast(`⚠️ Erreur : Impossible d'enregistrer la facture dans PostgreSQL (serveur indisponible).`);
       }
     });
   }
@@ -3116,15 +3174,11 @@ export class AppComponent implements OnInit, AfterViewInit {
       next: (created) => {
         this.customers.update(list => [...list, created]);
         this.updateLocalCommercialSummary();
-        this.showToast(`✅ Client "${created.name}" enregistré avec succès !`);
+        this.showToast(`✅ Client "${created.name}" enregistré dans PostgreSQL !`);
         this.closeNewCustomerModal();
       },
       error: () => {
-        payload.id = Date.now();
-        this.customers.update(list => [...list, payload]);
-        this.updateLocalCommercialSummary();
-        this.showToast(`✅ Client "${payload.name}" enregistré !`);
-        this.closeNewCustomerModal();
+        this.showToast(`⚠️ Erreur : Impossible d'enregistrer le client dans PostgreSQL.`);
       }
     });
   }
@@ -3179,7 +3233,7 @@ export class AppComponent implements OnInit, AfterViewInit {
       invoiceNumber: inv.invoiceNumber,
       customerId: inv.customerId,
       customerName: inv.customerName,
-      paymentDate: new Date().toISOString().replace('T', ' ').slice(0, 16),
+      paymentDate: new Date().toISOString(),
       amountPaidFcfa: amount,
       paymentMethod: this.paymentForm.paymentMethod,
       transactionReference: this.paymentForm.transactionReference,
@@ -3193,29 +3247,11 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.invoices.update(list => list.map(i => i.id === updatedInvoice.id ? updatedInvoice : i));
         this.payments.update(list => [paymentPayload, ...list]);
         this.updateLocalCommercialSummary();
-        this.showToast(`✅ Règlement de ${amount.toLocaleString()} FCFA enregistré (${paymentPayload.paymentMethod}) !`);
+        this.showToast(`✅ Règlement de ${amount.toLocaleString()} FCFA enregistré dans PostgreSQL (${paymentPayload.paymentMethod}) !`);
         this.closePaymentModal();
       },
       error: () => {
-        const newPaid = (inv.paidAmountFcfa || 0) + amount;
-        const newRemaining = Math.max(0, (inv.totalAmountFcfa || 0) - newPaid);
-        const newStatus: InvoiceStatus = newRemaining <= 0 ? 'PAID' : 'PARTIALLY_PAID';
-
-        const localUpdated: SaleInvoice = {
-          ...inv,
-          paidAmountFcfa: newPaid,
-          remainingAmountFcfa: newRemaining,
-          status: newStatus,
-          paymentMethod: this.paymentForm.paymentMethod,
-          paymentReference: this.paymentForm.transactionReference
-        };
-
-        this.invoices.update(list => list.map(i => i.id === inv.id ? localUpdated : i));
-        paymentPayload.id = Date.now();
-        this.payments.update(list => [paymentPayload, ...list]);
-        this.updateLocalCommercialSummary();
-        this.showToast(`✅ Règlement de ${amount.toLocaleString()} FCFA enregistré !`);
-        this.closePaymentModal();
+        this.showToast(`⚠️ Erreur : Impossible d'enregistrer le paiement dans PostgreSQL.`);
       }
     });
   }
@@ -3318,40 +3354,49 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   loadFeedAndSolarData(): void {
     // 1. Feed Stocks
-    this.apiService.getAllFeedStocks().subscribe(stocks => {
-      if (stocks && stocks.length > 0) {
-        this.feedStocks.set(stocks);
-      } else {
-        this.loadFallbackFeedStocks();
+    this.apiService.getAllFeedStocks().subscribe({
+      next: (stocks) => {
+        this.feedStocks.set(stocks || []);
+      },
+      error: () => {
+        if (this.feedStocks().length === 0) {
+          this.loadFallbackFeedStocks();
+        }
       }
     });
 
     // 2. Feed Rations
-    this.apiService.getAllFeedRations().subscribe(rations => {
-      if (rations && rations.length > 0) {
-        this.feedRations.set(rations);
-      } else {
-        this.loadFallbackFeedRations();
+    this.apiService.getAllFeedRations().subscribe({
+      next: (rations) => {
+        this.feedRations.set(rations || []);
+      },
+      error: () => {
+        if (this.feedRations().length === 0) {
+          this.loadFallbackFeedRations();
+        }
       }
     });
 
     // 3. Solar Telemetry
-    this.apiService.getSolarTelemetry().subscribe(solar => {
-      if (solar) {
-        this.solarTelemetry.set(solar);
-      } else {
-        this.solarTelemetry.set({
-          currentSolarPowerKw: 38.4,
-          batterySocPercent: 94.0,
-          dailySolarYieldKwh: 215.0,
-          totalSolarYieldMwh: 68.4,
-          gridStatus: 'SOLAR_OPTIMAL',
-          coldRoomTempCelsius: 3.8,
-          secondColdRoomTempCelsius: 4.1,
-          waterPumpFlowM3h: 14.5,
-          waterTankLevelPercent: 92.0,
-          co2SavedKg: 182.5
-        });
+    this.apiService.getSolarTelemetry().subscribe({
+      next: (solar) => {
+        if (solar) this.solarTelemetry.set(solar);
+      },
+      error: () => {
+        if (!this.solarTelemetry()) {
+          this.solarTelemetry.set({
+            currentSolarPowerKw: 38.4,
+            batterySocPercent: 94.0,
+            dailySolarYieldKwh: 215.0,
+            totalSolarYieldMwh: 68.4,
+            gridStatus: 'SOLAR_OPTIMAL',
+            coldRoomTempCelsius: 3.8,
+            secondColdRoomTempCelsius: 4.1,
+            waterPumpFlowM3h: 14.5,
+            waterTankLevelPercent: 92.0,
+            co2SavedKg: 182.5
+          });
+        }
       }
     });
 
@@ -3360,11 +3405,14 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   loadSuppliersData(): void {
-    this.apiService.getAllSuppliers().subscribe(sups => {
-      if (sups && sups.length > 0) {
-        this.suppliers.set(sups);
-      } else {
-        this.loadFallbackSuppliers();
+    this.apiService.getAllSuppliers().subscribe({
+      next: (sups) => {
+        this.suppliers.set(sups || []);
+      },
+      error: () => {
+        if (this.suppliers().length === 0) {
+          this.loadFallbackSuppliers();
+        }
       }
     });
   }
@@ -3587,11 +3635,10 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.apiService.deleteFeedStock(id).subscribe({
         next: () => {
           this.feedStocks.update(list => list.filter(s => s.id !== id));
-          this.showToast('Aliment supprimé avec succès');
+          this.showToast('✅ Aliment supprimé de PostgreSQL.');
         },
         error: () => {
-          this.feedStocks.update(list => list.filter(s => s.id !== id));
-          this.showToast('Aliment supprimé (mode local)');
+          this.showToast('⚠️ Erreur de suppression de l\'aliment dans PostgreSQL.');
         }
       });
     }
@@ -3624,13 +3671,10 @@ export class AppComponent implements OnInit, AfterViewInit {
       next: (created) => {
         this.feedRations.update(rations => [created, ...rations]);
         this.closeFeedRationModal();
-        this.showToast(`Fiche Ration "${created.rationName}" créée !`);
+        this.showToast(`✅ Fiche Ration "${created.rationName}" enregistrée dans PostgreSQL !`);
       },
       error: () => {
-        const fallback: FeedRation = { ...this.feedRationForm, id: Date.now() };
-        this.feedRations.update(rations => [fallback, ...rations]);
-        this.closeFeedRationModal();
-        this.showToast(`Fiche Ration "${fallback.rationName}" enregistrée (mode local)`);
+        this.showToast(`⚠️ Erreur d'enregistrement de la ration dans PostgreSQL.`);
       }
     });
   }
@@ -3641,11 +3685,10 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.apiService.deleteFeedRation(id).subscribe({
         next: () => {
           this.feedRations.update(list => list.filter(r => r.id !== id));
-          this.showToast('Ration supprimée');
+          this.showToast('✅ Ration supprimée de PostgreSQL.');
         },
         error: () => {
-          this.feedRations.update(list => list.filter(r => r.id !== id));
-          this.showToast('Ration supprimée (mode local)');
+          this.showToast('⚠️ Erreur de suppression de la ration.');
         }
       });
     }
@@ -3774,12 +3817,10 @@ export class AppComponent implements OnInit, AfterViewInit {
         next: (updated) => {
           this.suppliers.update(list => list.map(s => s.id === updated.id ? updated : s));
           this.closeSupplierModal();
-          this.showToast(`Fournisseur "${updated.name}" mis à jour !`);
+          this.showToast(`✅ Fournisseur "${updated.name}" mis à jour dans PostgreSQL !`);
         },
         error: () => {
-          this.suppliers.update(list => list.map(s => s.id === this.supplierForm.id ? { ...this.supplierForm } : s));
-          this.closeSupplierModal();
-          this.showToast(`Fournisseur mis à jour (mode local)`);
+          this.showToast(`⚠️ Erreur de mise à jour du fournisseur dans PostgreSQL.`);
         }
       });
     } else {
@@ -3787,13 +3828,10 @@ export class AppComponent implements OnInit, AfterViewInit {
         next: (created) => {
           this.suppliers.update(list => [created, ...list]);
           this.closeSupplierModal();
-          this.showToast(`Fournisseur "${created.name}" ajouté avec succès !`);
+          this.showToast(`✅ Fournisseur "${created.name}" enregistré dans PostgreSQL !`);
         },
         error: () => {
-          const fallback: Supplier = { ...this.supplierForm, id: Date.now(), totalOrdersCount: 0, totalSpentFcfa: 0, active: true };
-          this.suppliers.update(list => [fallback, ...list]);
-          this.closeSupplierModal();
-          this.showToast(`Fournisseur "${fallback.name}" ajouté (mode local)`);
+          this.showToast(`⚠️ Erreur de création du fournisseur dans PostgreSQL.`);
         }
       });
     }
@@ -3805,11 +3843,10 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.apiService.deleteSupplier(id).subscribe({
         next: () => {
           this.suppliers.update(list => list.filter(s => s.id !== id));
-          this.showToast('Fournisseur retiré avec succès');
+          this.showToast('✅ Fournisseur retiré de PostgreSQL.');
         },
         error: () => {
-          this.suppliers.update(list => list.filter(s => s.id !== id));
-          this.showToast('Fournisseur retiré (mode local)');
+          this.showToast('⚠️ Erreur de suppression du fournisseur.');
         }
       });
     }
@@ -3844,14 +3881,10 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.suppliers.update(list => [created, ...list]);
         this.feedStockForm.supplierName = created.name;
         this.closeQuickSupplierModal();
-        this.showToast(`Fournisseur "${created.name}" créé et sélectionné !`);
+        this.showToast(`✅ Fournisseur "${created.name}" enregistré dans PostgreSQL et sélectionné !`);
       },
       error: () => {
-        const fallback: Supplier = { ...this.quickSupplierForm, id: Date.now(), totalOrdersCount: 0, totalSpentFcfa: 0, active: true };
-        this.suppliers.update(list => [fallback, ...list]);
-        this.feedStockForm.supplierName = fallback.name;
-        this.closeQuickSupplierModal();
-        this.showToast(`Fournisseur "${fallback.name}" créé et sélectionné !`);
+        this.showToast(`⚠️ Erreur d'enregistrement du fournisseur dans PostgreSQL.`);
       }
     });
   }

@@ -21,6 +21,8 @@ export interface MilkProduction {
 export interface TankStatus {
   tankName: string;
   currentVolume: number;
+  grossVolumeCollected?: number;
+  transformedVolume?: number;
   maxCapacity: number;
   fillPercentage: number;
   temperature: number;
