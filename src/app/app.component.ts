@@ -1488,7 +1488,19 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   private proceedLaunchBatchWithRecipe(rec: Recipe): void {
-    const expected = this.getCalculatedExpectedYield(rec.id || 1, this.newBatchForm.milkLitersConsumed);
+    const available = this.getTankAvailableMilk(this.newBatchForm.sourceTank);
+    const requested = Number(this.newBatchForm.milkLitersConsumed) || 0;
+
+    if (available <= 0) {
+      this.showToast(`🚫 Stock de lait épuisé (0 L disponible). Effectuez une collecte avant de lancer un lot.`);
+      return;
+    }
+    if (requested > available) {
+      this.showToast(`🚫 Stock insuffisant : ${requested} L demandés mais seulement ${available} L disponibles en cuve.`);
+      return;
+    }
+
+    const expected = this.getCalculatedExpectedYield(rec.id || 1, requested);
     const dateStr = this.newBatchForm.productionDate;
     const batchNum = 'LOT-TR-' + dateStr.replace(/-/g, '') + '-' + String(this.transformationBatches().length + 1).padStart(2, '0');
 

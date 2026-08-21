@@ -1069,7 +1069,9 @@
               </div>
             </div>
             <div class="tank-badge-status">
-              <span class="badge-pill badge-green">✅ {{ tankStatus()?.qualityStatus || 'CONFORME BIO' }}</span>
+              <span class="badge-pill" [style.background]="(tankStatus()?.currentVolume || 0) > 0 ? '#dcfce7' : '#fee2e2'" [style.color]="(tankStatus()?.currentVolume || 0) > 0 ? '#166534' : '#991b1b'">
+                {{ (tankStatus()?.currentVolume || 0) > 0 ? ('✅ ' + (tankStatus()?.qualityStatus || 'CONFORME BIO')) : '⚠️ CUVE ÉPUISÉE (0 L RESTANT)' }}
+              </span>
               <span class="badge-pedigree-tag">Lot : {{ tankStatus()?.targetBatch || 'LOT-TR-20260818-01' }}</span>
             </div>
           </div>
@@ -1088,6 +1090,9 @@
               </div>
               <div class="tank-fill-info">
                 <span>Solde Net Cuve : <strong>{{ tankStatus()?.fillPercentage || 0 }}%</strong></span>
+              </div>
+              <div *ngIf="(tankStatus()?.currentVolume || 0) <= 0" style="margin-top:8px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:6px 10px;border-radius:6px;font-size:0.78rem;font-weight:700;text-align:center">
+                ⚠️ Tout le lait a été transformé (Cuve vide). Saisissez une collecte pour la remplir.
               </div>
             </div>
 
@@ -1656,7 +1661,9 @@
               <div style="display:flex;align-items:center;gap:14px">
                 <div style="text-align:right">
                   <span style="font-size:0.72rem;color:#64748b;display:block">Solde Net Disponible en Cuve</span>
-                  <strong style="font-size:1.3rem;color:#16a34a">{{ tankStatus()?.currentVolume || 0 }} L</strong>
+                  <strong style="font-size:1.3rem" [style.color]="(tankStatus()?.currentVolume || 0) > 0 ? '#16a34a' : '#dc2626'">
+                    {{ (tankStatus()?.currentVolume || 0) > 0 ? ((tankStatus()?.currentVolume || 0) + ' L') : '⚠️ Épuisé (0 L)' }}
+                  </strong>
                 </div>
                 <button class="btn-primary" style="font-size:0.85rem;padding:7px 14px" (click)="openNewBatchModal()">
                   ⚙️ + Lancer un Lot
@@ -3850,8 +3857,14 @@
                 <span>Stock Actuel : <strong>{{ getTankAvailableMilk(newBatchForm.sourceTank) }} L</strong></span>
                 <span style="color:#dc2626;font-weight:700">-{{ newBatchForm.milkLitersConsumed || 0 }} L</span>
               </div>
-              <div style="margin-top:4px;font-size:0.85rem;color:#0284c7;font-weight:700">
+              <div *ngIf="getTankAvailableMilk(newBatchForm.sourceTank) >= (newBatchForm.milkLitersConsumed || 0) && getTankAvailableMilk(newBatchForm.sourceTank) > 0" style="margin-top:4px;font-size:0.85rem;color:#0284c7;font-weight:700">
                 ➔ Reste en Cuve : {{ getTankAvailableMilk(newBatchForm.sourceTank) - (newBatchForm.milkLitersConsumed || 0) }} L
+              </div>
+              <div *ngIf="getTankAvailableMilk(newBatchForm.sourceTank) <= 0" style="margin-top:6px;font-size:0.8rem;color:#b91c1c;background:#fef2f2;padding:6px 8px;border-radius:6px;border:1px solid #fecaca;font-weight:700">
+                🚫 CUVE ÉPUISÉE (0 L) ! Tout le lait a été transformé.
+              </div>
+              <div *ngIf="getTankAvailableMilk(newBatchForm.sourceTank) > 0 && getTankAvailableMilk(newBatchForm.sourceTank) < (newBatchForm.milkLitersConsumed || 0)" style="margin-top:6px;font-size:0.8rem;color:#b91c1c;background:#fef2f2;padding:6px 8px;border-radius:6px;border:1px solid #fecaca;font-weight:700">
+                🚫 STOCK INSUFFISANT ! Demandé: {{ newBatchForm.milkLitersConsumed }} L • Disponible: {{ getTankAvailableMilk(newBatchForm.sourceTank) }} L
               </div>
             </div>
 
@@ -3910,8 +3923,8 @@
           <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeNewBatchModal()">
             Annuler
           </button>
-          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
-            Lancer la Fabrication & Décrémenter Cuve
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0" [disabled]="getTankAvailableMilk(newBatchForm.sourceTank) < (newBatchForm.milkLitersConsumed || 1) || getTankAvailableMilk(newBatchForm.sourceTank) <= 0">
+            {{ getTankAvailableMilk(newBatchForm.sourceTank) <= 0 ? '🚫 Cuve Épuisée (0 L Disponible)' : (getTankAvailableMilk(newBatchForm.sourceTank) < (newBatchForm.milkLitersConsumed || 1) ? '🚫 Stock Lait Insuffisant' : 'Lancer la Fabrication & Décrémenter Cuve') }}
           </button>
         </div>
       </div>
