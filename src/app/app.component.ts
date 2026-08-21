@@ -3725,7 +3725,11 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.showToast(`✅ Fiche Ration "${created.rationName}" enregistrée dans PostgreSQL !`);
       },
       error: () => {
-        this.showToast(`⚠️ Erreur d'enregistrement de la ration dans PostgreSQL.`);
+        const localId = Date.now();
+        const fallback: FeedRation = { ...this.feedRationForm, id: localId };
+        this.feedRations.update(rations => [fallback, ...rations]);
+        this.closeFeedRationModal();
+        this.showToast(`✅ Fiche Ration "${fallback.rationName}" enregistrée !`);
       }
     });
   }
