@@ -372,9 +372,9 @@
               <span class="kpi-title">Collecte Lait / Jour</span>
               <span class="kpi-icon-wrap">🥛</span>
             </div>
-            <div class="kpi-value">{{ (tankStatus()?.currentVolume || 155.0) | number:'1.1-1' }} <span class="unit">L</span></div>
+            <div class="kpi-value">{{ (tankStatus()?.currentVolume || 0) | number:'1.1-1' }} <span class="unit">L</span></div>
             <div class="kpi-footer trend-up">
-              <span>▲ +12.4% vs semaine passée ➔</span>
+              <span>▲ Traite en direct ➔</span>
             </div>
           </div>
 
@@ -442,7 +442,7 @@
                 <h3>Production Laitière des 7 Derniers Jours</h3>
                 <p>Comparaison de la collecte traite du matin (06h00) vs traite du soir (17h00)</p>
               </div>
-              <span class="badge-pill badge-green">Collecte : {{ (tankStatus()?.currentVolume || 155.0) | number:'1.1-1' }} L/jour</span>
+              <span class="badge-pill badge-green">Collecte : {{ (tankStatus()?.currentVolume || 0) | number:'1.1-1' }} L/jour</span>
             </div>
             <div class="chart-canvas-wrap">
               <canvas id="dashMilkChart"></canvas>
@@ -1078,16 +1078,16 @@
             <!-- Left: Animated Liquid Gauge -->
             <div class="tank-gauge-col">
               <div class="tank-cylinder">
-                <div class="tank-liquid" [style.height]="(tankStatus()?.fillPercentage || 31.0) + '%'">
+                <div class="tank-liquid" [style.height]="(tankStatus()?.fillPercentage || 0) + '%'">
                   <div class="liquid-wave"></div>
                 </div>
                 <div class="tank-gauge-label">
-                  <strong>{{ tankStatus()?.currentVolume || 155.0 }} L</strong>
+                  <strong>{{ tankStatus()?.currentVolume || 0 }} L</strong>
                   <span>/ {{ tankStatus()?.maxCapacity || 500.0 }} L</span>
                 </div>
               </div>
               <div class="tank-fill-info">
-                <span>Solde Net Cuve : <strong>{{ tankStatus()?.fillPercentage || 31.0 }}%</strong></span>
+                <span>Solde Net Cuve : <strong>{{ tankStatus()?.fillPercentage || 0 }}%</strong></span>
               </div>
             </div>
 
@@ -1096,8 +1096,8 @@
               <div class="tank-stat-quad" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
                 <div class="tank-kpi-box">
                   <span class="lbl">Collecte Brute (Jour)</span>
-                  <strong class="val" style="color:#16a34a">{{ tankStatus()?.grossVolumeCollected || 155.0 }} L</strong>
-                  <span class="sub-lbl">Matin 95L • Soir 60L</span>
+                  <strong class="val" style="color:#16a34a">{{ tankStatus()?.grossVolumeCollected || 0 }} L</strong>
+                  <span class="sub-lbl">Matin {{ tankStatus()?.morningVolume || 0 }}L • Soir {{ tankStatus()?.eveningVolume || 0 }}L</span>
                 </div>
                 <div class="tank-kpi-box">
                   <span class="lbl">Prélevé Transformation</span>
@@ -1648,7 +1648,7 @@
                 <div>
                   <strong style="color:#0d381e;font-size:0.95rem">Disponibilité du Lait Brut en Cuve (Cuve Bio N°1)</strong>
                   <div style="font-size:0.8rem;color:#526658;margin-top:2px">
-                    Collecte Brute : <strong>{{ tankStatus()?.grossVolumeCollected || 155 }} L</strong> • 
+                    Collecte Brute : <strong>{{ tankStatus()?.grossVolumeCollected || 0 }} L</strong> • 
                     Prélevé Transformation : <span style="color:#dc2626;font-weight:700">-{{ tankStatus()?.transformedVolume || 0 }} L</span>
                   </div>
                 </div>
@@ -1656,7 +1656,7 @@
               <div style="display:flex;align-items:center;gap:14px">
                 <div style="text-align:right">
                   <span style="font-size:0.72rem;color:#64748b;display:block">Solde Net Disponible en Cuve</span>
-                  <strong style="font-size:1.3rem;color:#16a34a">{{ tankStatus()?.currentVolume || 155 }} L</strong>
+                  <strong style="font-size:1.3rem;color:#16a34a">{{ tankStatus()?.currentVolume || 0 }} L</strong>
                 </div>
                 <button class="btn-primary" style="font-size:0.85rem;padding:7px 14px" (click)="openNewBatchModal()">
                   ⚙️ + Lancer un Lot

@@ -576,19 +576,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.getTankStatus().subscribe({
       next: (status) => {
         if (status) {
-          const consumed = this.transformationBatches().reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
-          const gross = status.grossVolumeCollected || 155.0;
-          const transformed = status.transformedVolume !== undefined ? status.transformedVolume : consumed;
-          const net = Math.max(0, Math.round((gross - transformed) * 10) / 10);
-          const fill = Math.round((net / (status.maxCapacity || 500.0)) * 1000) / 10;
-
-          this.tankStatus.set({
-            ...status,
-            grossVolumeCollected: gross,
-            transformedVolume: transformed,
-            currentVolume: net,
-            fillPercentage: fill
-          });
+          this.tankStatus.set(status);
         }
       },
       error: () => {
@@ -605,24 +593,26 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   recalculateLocalTankVolume(): void {
-    const consumed = this.transformationBatches().reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
-    const gross = 155.0;
-    const net = Math.max(0, Math.round((gross - consumed) * 10) / 10);
+    const currentGross = this.tankStatus()?.grossVolumeCollected ?? 0.0;
+    const consumed = this.transformationBatches()
+      .filter(b => b.status === 'IN_PROGRESS' || b.status === 'COMPLETED')
+      .reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
+    const net = Math.max(0, Math.round((currentGross - consumed) * 10) / 10);
     const fill = Math.round((net / 500.0) * 1000) / 10;
 
     this.tankStatus.set({
       tankName: 'Cuve Réfrigérée N°1 (Bio)',
-      grossVolumeCollected: gross,
+      grossVolumeCollected: currentGross,
       transformedVolume: consumed,
       currentVolume: net,
       maxCapacity: 500.0,
       fillPercentage: fill,
       temperature: 3.9,
       phLevel: 6.68,
-      qualityStatus: net > 0 ? 'CONFORME BIO & PASTEURISATION' : 'CUVE VIDE / RECOLTE ATTENDUE',
+      qualityStatus: net > 0 ? 'CONFORME BIO & PASTEURISATION' : (currentGross > 0 ? 'TRANSFORMÉ EN TOTALITÉ' : 'EN ATTENTE COLLECTE'),
       targetBatch: 'LOT-TR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-01',
-      morningVolume: 95.0,
-      eveningVolume: 60.0,
+      morningVolume: this.tankStatus()?.morningVolume ?? 0.0,
+      eveningVolume: this.tankStatus()?.eveningVolume ?? 0.0,
       collectionDate: new Date().toISOString().slice(0, 10)
     });
   }
@@ -653,23 +643,33 @@ export class AppComponent implements OnInit, AfterViewInit {
       },
       error: () => {
         this.tankStatus.update(st => {
-          if (!st) return st;
-          const newGross = Math.round(((st.grossVolumeCollected || 155.0) + vol) * 10) / 10;
-          const newMorn = session === 'MORNING' ? Math.round(((st.morningVolume || 95.0) + vol) * 10) / 10 : st.morningVolume;
-          const newEve = session === 'EVENING' ? Math.round(((st.eveningVolume || 60.0) + vol) * 10) / 10 : st.eveningVolume;
-          const transformed = st.transformedVolume || 0;
+          const currentGross = st?.grossVolumeCollected ?? 0.0;
+          const newGross = Math.round((currentGross + vol) * 10) / 10;
+          const currentMorn = st?.morningVolume ?? 0.0;
+          const currentEve = st?.eveningVolume ?? 0.0;
+          const newMorn = session === 'MORNING' ? Math.round((currentMorn + vol) * 10) / 10 : currentMorn;
+          const newEve = session === 'EVENING' ? Math.round((currentEve + vol) * 10) / 10 : currentEve;
+          const transformed = st?.transformedVolume ?? 0.0;
           const newNet = Math.max(0, Math.round((newGross - transformed) * 10) / 10);
-          const newFill = Math.round((newNet / (st.maxCapacity || 500.0)) * 1000) / 10;
+          const maxCap = st?.maxCapacity ?? 500.0;
+          const newFill = Math.round((newNet / maxCap) * 1000) / 10;
           return {
-            ...st,
+            tankName: st?.tankName ?? 'Cuve Réfrigérée N°1 (Bio)',
             grossVolumeCollected: newGross,
             morningVolume: newMorn,
             eveningVolume: newEve,
+            transformedVolume: transformed,
             currentVolume: newNet,
-            fillPercentage: newFill
+            maxCapacity: maxCap,
+            fillPercentage: newFill,
+            temperature: 3.9,
+            phLevel: 6.68,
+            qualityStatus: newNet > 0 ? 'CONFORME BIO & PASTEURISATION' : 'EN ATTENTE COLLECTE',
+            targetBatch: 'LOT-TR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-01',
+            collectionDate: new Date().toISOString().slice(0, 10)
           };
         });
-        this.showToast(`🥛 Traite ${session === 'MORNING' ? 'Matin ☀️' : 'Soir 🌙'} validée (+${vol}L) ! Nouveau brut : ${this.tankStatus()?.grossVolumeCollected}L`);
+        this.showToast(`🥛 Traite ${session === 'MORNING' ? 'Matin ☀️' : 'Soir 🌙'} validée (+${vol}L) ! Total brut : ${this.tankStatus()?.grossVolumeCollected}L`);
       }
     });
   }
@@ -719,20 +719,30 @@ export class AppComponent implements OnInit, AfterViewInit {
       },
       error: () => {
         this.tankStatus.update(st => {
-          if (!st) return st;
-          const newGross = Math.round(((st.grossVolumeCollected || 155.0) + vol) * 10) / 10;
-          const transformed = st.transformedVolume || 0;
+          const currentGross = st?.grossVolumeCollected ?? 0.0;
+          const newGross = Math.round((currentGross + vol) * 10) / 10;
+          const transformed = st?.transformedVolume ?? 0.0;
           const newNet = Math.max(0, Math.round((newGross - transformed) * 10) / 10);
-          const newFill = Math.round((newNet / (st.maxCapacity || 500.0)) * 1000) / 10;
+          const maxCap = st?.maxCapacity ?? 500.0;
+          const newFill = Math.round((newNet / maxCap) * 1000) / 10;
           return {
-            ...st,
+            tankName: st?.tankName ?? 'Cuve Réfrigérée N°1 (Bio)',
             grossVolumeCollected: newGross,
+            morningVolume: st?.morningVolume ?? (this.milkForm.session.includes('Matin') ? vol : 0),
+            eveningVolume: st?.eveningVolume ?? (!this.milkForm.session.includes('Matin') ? vol : 0),
+            transformedVolume: transformed,
             currentVolume: newNet,
-            fillPercentage: newFill
+            maxCapacity: maxCap,
+            fillPercentage: newFill,
+            temperature: 3.9,
+            phLevel: 6.68,
+            qualityStatus: newNet > 0 ? 'CONFORME BIO & PASTEURISATION' : 'EN ATTENTE COLLECTE',
+            targetBatch: 'LOT-TR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-01',
+            collectionDate: new Date().toISOString().slice(0, 10)
           };
         });
         this.closeMilkModal();
-        this.showToast(`✅ Traite manuelle de ${vol}L validée ! Volume brut actualisé.`);
+        this.showToast(`✅ Traite manuelle de ${vol}L validée ! Total brut : ${this.tankStatus()?.grossVolumeCollected}L`);
       }
     });
   }
@@ -1352,13 +1362,10 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   // --- Tank Volume & Decrement Calculations ---
   getTankCurrentVolume(tankName: string): number {
-    if (this.tankStatus() && (tankName.includes('N°1') || tankName.includes('Bio'))) {
-      return this.tankStatus()!.currentVolume;
+    if (this.tankStatus()) {
+      return this.tankStatus()!.currentVolume ?? 0;
     }
-    if (tankName.includes('N°1') || tankName.includes('Bio')) return 155.0;
-    if (tankName.includes('N°2') && !tankName.includes('Sow')) return 50.0;
-    if (tankName.includes('Sow') || tankName.includes('Caillage')) return 40.0;
-    return 100.0;
+    return 0;
   }
 
   getTankAvailableMilk(tankName: string): number {
