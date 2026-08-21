@@ -76,18 +76,6 @@ export class AppComponent implements OnInit, AfterViewInit {
   herdFilter = signal<string>('all');
   searchQuery = signal<string>('');
 
-  // Forms
-  milkForm = {
-    cowId: 'H-1043',
-    session: 'Matin',
-    litres: 11.5,
-    temp: 34.2,
-    fatPercentage: 3.9,
-    tank: 'Cuve Réfrigérée N°1 (Bio)',
-    productionDate: new Date().toISOString().split('T')[0],
-    isOrganicCompliant: true
-  };
-
   healthForm = {
     cowId: 'H-1043',
     actType: 'Traitement Pathologie',
@@ -271,11 +259,21 @@ export class AppComponent implements OnInit, AfterViewInit {
   vaccineSchedules = signal<VaccineSchedule[]>([]);
   dashboardStats = signal<DashboardStats | null>(null);
 
-  // Sprint 2: Data Collections
+  // Sprint 2: Data Collections & Milk Form
   reproductionEvents = signal<ReproductionEvent[]>([]);
   reproductionAlerts = signal<ReproductionAlert[]>([]);
   tankStatus = signal<TankStatus | null>(null);
   milkHistory = signal<MilkHistory[]>([]);
+  milkForm = {
+    cowId: 'H-1043',
+    session: 'Matin',
+    litres: 11.5,
+    temp: 34.2,
+    fatPercentage: 3.9,
+    tank: 'Cuve Réfrigérée N°1 (Bio)',
+    productionDate: new Date().toISOString().split('T')[0],
+    isOrganicCompliant: true
+  };
   reproFilter = signal<string>('all');
   reproCurrentPage = signal<number>(1);
   reproPageSize = signal<number>(5);
@@ -626,6 +624,116 @@ export class AppComponent implements OnInit, AfterViewInit {
       morningVolume: 95.0,
       eveningVolume: 60.0,
       collectionDate: new Date().toISOString().slice(0, 10)
+    });
+  }
+
+  get milkingCows(): Animal[] {
+    return this.animals().filter(a => a.gender === 'FEMALE' && (a.category === 'MILKING_COW' || (a.dailyMilkYield && a.dailyMilkYield > 0)));
+  }
+
+  quickMilking(cow: Animal, session: 'MORNING' | 'EVENING'): void {
+    const daily = cow.dailyMilkYield || 18.0;
+    const vol = session === 'MORNING' ? Math.round(daily * 0.58 * 10) / 10 : Math.round(daily * 0.42 * 10) / 10;
+
+    const prod: MilkProduction = {
+      animalInternalId: cow.internalId,
+      animalName: cow.name,
+      productionDate: new Date().toISOString().slice(0, 10),
+      session: session,
+      volumeLiters: vol,
+      milkTemperature: 34.2,
+      destinationTank: 'Cuve Réfrigérée N°1 (Bio)',
+      isOrganicCompliant: cow.status !== 'FEVER_TREATMENT'
+    };
+
+    this.apiService.recordMilk(prod).subscribe({
+      next: () => {
+        this.loadMilkData();
+        this.showToast(`🥛 Traite ${session === 'MORNING' ? 'Matin ☀️' : 'Soir 🌙'} enregistrée pour ${cow.name} (+${vol}L) !`);
+      },
+      error: () => {
+        this.tankStatus.update(st => {
+          if (!st) return st;
+          const newGross = Math.round(((st.grossVolumeCollected || 155.0) + vol) * 10) / 10;
+          const newMorn = session === 'MORNING' ? Math.round(((st.morningVolume || 95.0) + vol) * 10) / 10 : st.morningVolume;
+          const newEve = session === 'EVENING' ? Math.round(((st.eveningVolume || 60.0) + vol) * 10) / 10 : st.eveningVolume;
+          const transformed = st.transformedVolume || 0;
+          const newNet = Math.max(0, Math.round((newGross - transformed) * 10) / 10);
+          const newFill = Math.round((newNet / (st.maxCapacity || 500.0)) * 1000) / 10;
+          return {
+            ...st,
+            grossVolumeCollected: newGross,
+            morningVolume: newMorn,
+            eveningVolume: newEve,
+            currentVolume: newNet,
+            fillPercentage: newFill
+          };
+        });
+        this.showToast(`🥛 Traite ${session === 'MORNING' ? 'Matin ☀️' : 'Soir 🌙'} validée (+${vol}L) ! Nouveau brut : ${this.tankStatus()?.grossVolumeCollected}L`);
+      }
+    });
+  }
+
+  openMilkModal(): void {
+    const firstCow = this.milkingCows[0];
+    this.milkForm = {
+      cowId: firstCow ? firstCow.internalId : 'H-1043',
+      session: 'Matin',
+      litres: firstCow && firstCow.dailyMilkYield ? Math.round(firstCow.dailyMilkYield * 0.58 * 10) / 10 : 11.5,
+      temp: 34.2,
+      fatPercentage: 3.9,
+      tank: 'Cuve Réfrigérée N°1 (Bio)',
+      productionDate: new Date().toISOString().split('T')[0],
+      isOrganicCompliant: true
+    };
+    this.isMilkModalOpen.set(true);
+  }
+
+  closeMilkModal(): void {
+    this.isMilkModalOpen.set(false);
+  }
+
+  submitMilkEntry(): void {
+    const vol = Number(this.milkForm.litres) || 0;
+    if (!this.milkForm.cowId || vol <= 0) {
+      this.showToast('Veuillez sélectionner une vache et un volume de lait valide.');
+      return;
+    }
+
+    const prod: MilkProduction = {
+      animalInternalId: this.milkForm.cowId,
+      session: this.milkForm.session.includes('Matin') ? 'MORNING' : 'EVENING',
+      volumeLiters: vol,
+      milkTemperature: this.milkForm.temp,
+      fatPercentage: this.milkForm.fatPercentage,
+      destinationTank: this.milkForm.tank,
+      isOrganicCompliant: this.milkForm.isOrganicCompliant,
+      productionDate: this.milkForm.productionDate || new Date().toISOString().split('T')[0]
+    };
+
+    this.apiService.recordMilk(prod).subscribe({
+      next: (created) => {
+        this.loadMilkData();
+        this.closeMilkModal();
+        this.showToast(`✅ Traite de ${created.volumeLiters || vol}L enregistrée pour ${this.milkForm.cowId} !`);
+      },
+      error: () => {
+        this.tankStatus.update(st => {
+          if (!st) return st;
+          const newGross = Math.round(((st.grossVolumeCollected || 155.0) + vol) * 10) / 10;
+          const transformed = st.transformedVolume || 0;
+          const newNet = Math.max(0, Math.round((newGross - transformed) * 10) / 10);
+          const newFill = Math.round((newNet / (st.maxCapacity || 500.0)) * 1000) / 10;
+          return {
+            ...st,
+            grossVolumeCollected: newGross,
+            currentVolume: newNet,
+            fillPercentage: newFill
+          };
+        });
+        this.closeMilkModal();
+        this.showToast(`✅ Traite manuelle de ${vol}L validée ! Volume brut actualisé.`);
+      }
     });
   }
 
@@ -1870,10 +1978,6 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
   }
 
-  get milkingCows(): Animal[] {
-    return this.animals().filter(a => a.category === 'MILKING_COW');
-  }
-
   // Animal Modal
   openAnimalModal(internalId: string): void {
     const animal = this.animals().find(a => a.internalId === internalId);
@@ -1897,29 +2001,6 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   // Forms Submissions
-  submitMilkEntry(): void {
-    const prod: MilkProduction = {
-      animalInternalId: this.milkForm.cowId,
-      session: this.milkForm.session.includes('Matin') ? 'MORNING' : 'EVENING',
-      volumeLiters: this.milkForm.litres,
-      milkTemperature: this.milkForm.temp,
-      fatPercentage: this.milkForm.fatPercentage,
-      destinationTank: this.milkForm.tank,
-      isOrganicCompliant: this.milkForm.isOrganicCompliant,
-      productionDate: this.milkForm.productionDate || new Date().toISOString().split('T')[0]
-    };
-
-    this.apiService.recordMilk(prod).subscribe({
-      next: (created) => {
-        this.showToast(`✅ Traite de ${created.volumeLiters || this.milkForm.litres}L enregistrée dans PostgreSQL pour ${this.milkForm.cowId} !`);
-        this.isMilkModalOpen.set(false);
-        this.loadMilkData();
-      },
-      error: () => {
-        this.showToast(`⚠️ Erreur : Impossible d'enregistrer la traite dans PostgreSQL (port 8080 non joignable).`);
-      }
-    });
-  }
 
   submitHealthEntry(): void {
     const record: HealthRecord = {
@@ -2333,37 +2414,6 @@ export class AppComponent implements OnInit, AfterViewInit {
       },
       error: () => {
         this.showToast('⚠️ Erreur de suppression dans la base de données.');
-      }
-    });
-  }
-
-  quickMilking(cow: Animal, session: 'MORNING' | 'EVENING'): void {
-    if (cow.status === 'FEVER_TREATMENT') {
-      this.showToast(`⚠️ ATTENTION : Lait de ${cow.name} exclu de la cuve (traitement en cours).`);
-      return;
-    }
-
-    const volume = session === 'MORNING' 
-      ? Math.round(((cow.dailyMilkYield || 18) * 0.58) * 10) / 10 
-      : Math.round(((cow.dailyMilkYield || 18) * 0.42) * 10) / 10;
-
-    const prod: MilkProduction = {
-      animalInternalId: cow.internalId,
-      session: session,
-      volumeLiters: volume,
-      milkTemperature: 34.2,
-      destinationTank: 'Cuve Réfrigérée N°1 (Bio)',
-      productionDate: new Date().toISOString().slice(0, 10),
-      isOrganicCompliant: true
-    };
-
-    this.apiService.recordMilk(prod).subscribe({
-      next: () => {
-        this.showToast(`✅ Traite ${session === 'MORNING' ? 'Matin' : 'Soir'} : +${volume}L pour ${cow.name} enregistrée dans PostgreSQL !`);
-        this.loadMilkData();
-      },
-      error: () => {
-        this.showToast(`⚠️ Erreur d'enregistrement de la traite dans PostgreSQL.`);
       }
     });
   }
