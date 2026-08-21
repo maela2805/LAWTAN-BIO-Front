@@ -292,20 +292,6 @@
       </div>
     </header>
 
-    <!-- Disconnected Backend Warning Banner -->
-    <div *ngIf="!apiService.isBackendConnected()" class="offline-warning-banner">
-      <div class="offline-warning-content">
-        <span class="offline-warning-icon">⚠️</span>
-        <div class="offline-warning-text">
-          <strong>Serveur Backend Spring Boot / Base de données PostgreSQL non joignable sur le port 8080.</strong>
-          <span>L'application tourne en mode mémoire locale. Pour enregistrer de façon permanente dans la base Neon PostgreSQL, lancez le backend avec <code>mvn spring-boot:run</code>.</span>
-        </div>
-      </div>
-      <div class="offline-warning-actions">
-        <button type="button" class="btn-sync-now" (click)="refreshAndSyncAllData()">🔄 Tester la connexion</button>
-      </div>
-    </div>
-
     <!-- Dropdown Notifications Panel -->
     <div class="notif-dropdown-box" *ngIf="isNotifOpen()">
       <div class="notif-dropdown-header">
