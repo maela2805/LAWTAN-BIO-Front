@@ -588,9 +588,9 @@ export class AppComponent implements OnInit, AfterViewInit {
             .filter(b => (!b.productionDate || b.productionDate === todayStr) && (b.status === 'IN_PROGRESS' || b.status === 'COMPLETED'))
             .reduce((sum, b) => sum + (b.milkLitersConsumed || 0), 0);
 
-          const transformed = (status.transformedVolume !== undefined && status.transformedVolume > 0)
-            ? status.transformedVolume
-            : localConsumedToday;
+          const transformed = localConsumedToday > 0 
+            ? localConsumedToday 
+            : (status.transformedVolume || 0);
 
           const net = Math.max(0, Math.round((gross - transformed) * 10) / 10);
           const maxCap = status.maxCapacity || 500.0;
@@ -1594,13 +1594,17 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.deleteBatch(id).subscribe({
       next: () => {
         this.transformationBatches.update(list => list.filter(b => b.id !== id));
+        this.updateLocalTransformationSummary();
+        this.recalculateLocalTankVolume();
         this.loadMilkData();
         this.showToast('✅ Lot de transformation supprimé. Le lait a été restitué à la cuve.');
       },
       error: () => {
         this.transformationBatches.update(list => list.filter(b => b.id !== id));
+        this.updateLocalTransformationSummary();
         this.recalculateLocalTankVolume();
-        this.showToast('🗑️ Lot supprimé localement.');
+        this.loadMilkData();
+        this.showToast('🗑️ Lot supprimé localement. Le lait a été restitué à la cuve.');
       }
     });
   }
