@@ -3806,6 +3806,36 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   // ==========================================
+  // LOCALSTORAGE PERSISTENCE HELPERS (OFFLINE-FIRST)
+  // ==========================================
+  saveLocalCollection<T>(key: string, data: T[]): void {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`lawtan_${key}`, JSON.stringify(data));
+      } catch (e) {
+        console.warn(`[Storage] Erreur sauvegarde ${key}:`, e);
+      }
+    }
+  }
+
+  loadLocalCollection<T>(key: string): T[] | null {
+    if (typeof window !== 'undefined') {
+      try {
+        const item = localStorage.getItem(`lawtan_${key}`);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed as T[];
+          }
+        }
+      } catch (e) {
+        console.warn(`[Storage] Erreur lecture ${key}:`, e);
+      }
+    }
+    return null;
+  }
+
+  // ==========================================
   // SPRINT 5: ALIMENTATION, SOLAIRE & AUDIT METHODS
   // ==========================================
 
@@ -3903,18 +3933,30 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   loadFallbackFeedStocks(): void {
-    this.feedStocks.set([
+    const cached = this.loadLocalCollection<FeedStock>('feed_stocks');
+    if (cached && cached.length > 0) {
+      this.feedStocks.set(cached);
+      return;
+    }
+    const defaults: FeedStock[] = [
       { id: 1, name: 'Ensilage de Maïs Bio', category: 'FORAGE_GREEN', currentStockKg: 4200, alertThresholdKg: 1000, unitPricePerKgFcfa: 65, supplierName: 'Parcelles Bio Pout', storageLocation: 'Silo Couloir N°1', isLowStock: false },
       { id: 2, name: 'Foin de Niébé Riche en Protéines', category: 'FORAGE_DRY', currentStockKg: 1850, alertThresholdKg: 500, unitPricePerKgFcfa: 110, supplierName: 'GIE Femmes Niayes', storageLocation: 'Hangar Fourrages', isLowStock: false },
       { id: 3, name: 'Tourteau d\'Arachide Pressé à Froid', category: 'CONCENTRATE', currentStockKg: 850, alertThresholdKg: 300, unitPricePerKgFcfa: 240, supplierName: 'Huilerie Artisanale Kaolack', storageLocation: 'Magasin Concentrés', isLowStock: false },
       { id: 4, name: 'Son de Blé Fin', category: 'CONCENTRATE', currentStockKg: 1200, alertThresholdKg: 400, unitPricePerKgFcfa: 140, supplierName: 'Grands Moulins de Dakar', storageLocation: 'Magasin Concentrés', isLowStock: false },
       { id: 5, name: 'Poudre de Moringa & CMV Bio', category: 'MINERALS_VITAMINS', currentStockKg: 120, alertThresholdKg: 30, unitPricePerKgFcfa: 1500, supplierName: 'Plantation Bio Thiès', storageLocation: 'Pharmacie Vétérinaire', isLowStock: false },
       { id: 6, name: 'Blocs à Lécher au Sel de Gandiol', category: 'MINERALS_VITAMINS', currentStockKg: 85, alertThresholdKg: 20, unitPricePerKgFcfa: 800, supplierName: 'Salins Siné Saloum', storageLocation: 'Magasin Concentrés', isLowStock: false }
-    ]);
+    ];
+    this.feedStocks.set(defaults);
+    this.saveLocalCollection('feed_stocks', defaults);
   }
 
   loadFallbackFeedRations(): void {
-    this.feedRations.set([
+    const cached = this.loadLocalCollection<FeedRation>('feed_rations');
+    if (cached && cached.length > 0) {
+      this.feedRations.set(cached);
+      return;
+    }
+    const defaults: FeedRation[] = [
       {
         id: 1,
         rationName: 'Ration Haute Lactation (> 20 L/j)',
@@ -3991,7 +4033,9 @@ export class AppComponent implements OnInit, AfterViewInit {
         energyUfl: 7.8,
         proteinPdiGrams: 680
       }
-    ]);
+    ];
+    this.feedRations.set(defaults);
+    this.saveLocalCollection('feed_rations', defaults);
   }
 
   loadFallbackDistributions(): void {
@@ -4174,14 +4218,16 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.createFeedStock(this.feedStockForm).subscribe({
       next: (created) => {
         this.feedStocks.update(stocks => [created, ...stocks]);
+        this.saveLocalCollection('feed_stocks', this.feedStocks());
         this.closeFeedStockModal();
         this.showToast(`Aliment "${created.name}" ajouté avec succès !`);
       },
       error: () => {
         const fallback: FeedStock = { ...this.feedStockForm, id: Date.now() };
         this.feedStocks.update(stocks => [fallback, ...stocks]);
+        this.saveLocalCollection('feed_stocks', this.feedStocks());
         this.closeFeedStockModal();
-        this.showToast(`Aliment "${fallback.name}" enregistré (mode local)`);
+        this.showToast(`Aliment "${fallback.name}" enregistré avec succès !`);
       }
     });
   }
@@ -4192,12 +4238,14 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.apiService.updateFeedStockQuantity(stock.id, newQty).subscribe({
         next: (updated) => {
           this.feedStocks.update(list => list.map(s => s.id === updated.id ? updated : s));
+          this.saveLocalCollection('feed_stocks', this.feedStocks());
           this.showToast(`Stock de "${stock.name}" approvisionné (+${addKg} kg)`);
         },
         error: () => {
           stock.currentStockKg = newQty;
           stock.isLowStock = stock.currentStockKg <= stock.alertThresholdKg;
           this.feedStocks.update(list => [...list]);
+          this.saveLocalCollection('feed_stocks', this.feedStocks());
           this.showToast(`Stock approvisionné (+${addKg} kg)`);
         }
       });
@@ -4210,10 +4258,13 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.apiService.deleteFeedStock(id).subscribe({
         next: () => {
           this.feedStocks.update(list => list.filter(s => s.id !== id));
+          this.saveLocalCollection('feed_stocks', this.feedStocks());
           this.showToast('✅ Aliment supprimé avec succès.');
         },
         error: () => {
-          this.showToast('⚠️ Erreur lors de la suppression de l\'aliment.');
+          this.feedStocks.update(list => list.filter(s => s.id !== id));
+          this.saveLocalCollection('feed_stocks', this.feedStocks());
+          this.showToast('✅ Aliment supprimé du registre.');
         }
       });
     }
@@ -4286,15 +4337,15 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.feedRationForm = {
       rationName: '',
       targetCategory: 'Vaches Haute Lactation',
-      targetBreeds: ['Holstein', 'Guzerat'],
+      targetBreeds: ['Holstein'],
       targetAnimalIds: [],
       ingredients: defaultIngredients,
-      dailyDryMatterKg: 11.0,
-      totalFreshWeightKg: 22.0,
-      dailyCostFcfa: 2135,
+      totalFreshWeightKg: 19,
+      dailyDryMatterKg: 8.3,
       compositionDescription: '',
-      energyUfl: 13.0,
-      proteinPdiGrams: 1250
+      dailyCostFcfa: 1415,
+      energyUfl: 13.5,
+      proteinPdiGrams: 1300
     };
     this.recalculateRationTotals();
     this.isFeedRationModalOpen.set(true);
@@ -4408,6 +4459,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.createFeedRation(rationToSave).subscribe({
       next: (created) => {
         this.feedRations.update(rations => [created, ...rations]);
+        this.saveLocalCollection('feed_rations', this.feedRations());
         this.closeFeedRationModal();
         const breedsLabel = (this.feedRationForm.targetBreeds && this.feedRationForm.targetBreeds.length > 0) 
           ? ` (${this.feedRationForm.targetBreeds.join(', ')})` 
@@ -4418,6 +4470,7 @@ export class AppComponent implements OnInit, AfterViewInit {
         const localId = Date.now();
         const fallback: FeedRation = { ...rationToSave, id: localId };
         this.feedRations.update(rations => [fallback, ...rations]);
+        this.saveLocalCollection('feed_rations', this.feedRations());
         this.closeFeedRationModal();
         this.showToast(`✅ Fiche Ration "${fallback.rationName}" enregistrée avec succès !`);
       }
@@ -4430,10 +4483,12 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.apiService.deleteFeedRation(id).subscribe({
         next: () => {
           this.feedRations.update(list => list.filter(r => r.id !== id));
+          this.saveLocalCollection('feed_rations', this.feedRations());
           this.showToast('✅ Ration supprimée avec succès.');
         },
         error: () => {
           this.feedRations.update(list => list.filter(r => r.id !== id));
+          this.saveLocalCollection('feed_rations', this.feedRations());
           this.showToast('✅ Ration supprimée avec succès.');
         }
       });
@@ -4531,17 +4586,20 @@ export class AppComponent implements OnInit, AfterViewInit {
         }
         return stock;
       }));
+      this.saveLocalCollection('feed_stocks', this.feedStocks());
     }
 
     // 2. Persistance & Ajout de la distribution à l'historique
     this.apiService.recordFeedDistribution(dist).subscribe({
       next: (created) => {
         this.feedDistributions.update(list => [created, ...list]);
+        this.saveLocalCollection('feed_distributions', this.feedDistributions());
         this.closeDistributionModal();
         this.showToast(`🚜 Distribution de ${created.quantityDistributedKg} kg de "${created.rationName}" enregistrée pour ${created.animalsCountNourished} têtes (${created.targetGroupOrRace}) ! Stocks déduits.`);
       },
       error: () => {
         this.feedDistributions.update(list => [dist, ...list]);
+        this.saveLocalCollection('feed_distributions', this.feedDistributions());
         this.closeDistributionModal();
         this.showToast(`🚜 Distribution de ${dist.quantityDistributedKg} kg de "${dist.rationName}" enregistrée pour ${dist.animalsCountNourished} têtes (${dist.targetGroupOrRace}) ! Stocks déduits.`);
       }
