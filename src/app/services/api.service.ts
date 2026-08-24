@@ -7,7 +7,7 @@ import { MilkProduction, DashboardStats, TankStatus, MilkHistory } from '../mode
 import { ReproductionEvent, ReproductionAlert } from '../models/reproduction.model';
 import { Recipe, TransformationBatch, ProductStock, TransformationSummary } from '../models/transformation.model';
 import { Customer, SaleInvoice, PaymentTransaction, CommercialSummary, CustomerType, InvoiceStatus } from '../models/commercial.model';
-import { FeedStock, FeedRation, SolarTelemetry } from '../models/feed-solar.model';
+import { FeedStock, FeedRation, FeedDistribution, SolarTelemetry } from '../models/feed-solar.model';
 import { Supplier } from '../models/supplier.model';
 
 @Injectable({
@@ -218,6 +218,13 @@ export class ApiService {
 
   getTankStatus(): Observable<TankStatus> {
     return this.http.get<TankStatus>(`${this.baseUrl}/milk/tank-status`).pipe(
+      this.trackSuccess(),
+      this.trackError()
+    );
+  }
+
+  getAllMilkProductions(): Observable<MilkProduction[]> {
+    return this.http.get<MilkProduction[]>(`${this.baseUrl}/milk`).pipe(
       this.trackSuccess(),
       this.trackError()
     );
@@ -497,6 +504,21 @@ export class ApiService {
 
   deleteFeedRation(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/feed/rations/${id}`).pipe(
+      this.trackSuccess(),
+      this.trackError()
+    );
+  }
+
+  // --- Feed Distributions ---
+  getAllFeedDistributions(): Observable<FeedDistribution[]> {
+    return this.http.get<FeedDistribution[]>(`${this.baseUrl}/feed/distributions`).pipe(
+      this.trackSuccess(),
+      this.trackError()
+    );
+  }
+
+  recordFeedDistribution(distribution: FeedDistribution): Observable<FeedDistribution> {
+    return this.http.post<FeedDistribution>(`${this.baseUrl}/feed/distributions`, distribution).pipe(
       this.trackSuccess(),
       this.trackError()
     );

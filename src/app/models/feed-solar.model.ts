@@ -11,15 +11,46 @@ export interface FeedStock {
   isLowStock?: boolean;
 }
 
+export interface FeedRationIngredient {
+  feedStockId: number;
+  feedStockName: string;
+  quantityKg: number;
+  dryMatterPercentage: number;
+  calculatedDryMatterKg?: number;
+  unitPriceFcfa?: number;
+  calculatedCostFcfa?: number;
+}
+
 export interface FeedRation {
   id?: number;
   rationName: string;
   targetCategory: string;
+  targetBreeds?: string[];
+  targetAnimalIds?: string[];
+  ingredients?: FeedRationIngredient[];
+  totalFreshWeightKg?: number;
   dailyDryMatterKg: number;
   compositionDescription: string;
   dailyCostFcfa: number;
   energyUfl?: number;
   proteinPdiGrams?: number;
+  createdDate?: string;
+}
+
+export interface FeedDistribution {
+  id?: number;
+  rationId?: number;
+  rationName: string;
+  distributionDate: string;
+  distributionTime: string;
+  session: 'MATIN' | 'MIDI' | 'SOIR' | string;
+  quantityDistributedKg: number;
+  animalsCountNourished: number;
+  targetGroupOrRace: string;
+  specificAnimalIds?: string[];
+  distributorName: string;
+  totalCostFcfa: number;
+  notes?: string;
 }
 
 export interface SolarTelemetry {

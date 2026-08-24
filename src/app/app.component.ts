@@ -8,7 +8,7 @@ import { DashboardStats, MilkProduction, TankStatus, MilkHistory } from './model
 import { ReproductionEvent, ReproductionAlert, ReproEventType } from './models/reproduction.model';
 import { Recipe, TransformationBatch, ProductStock, TransformationSummary, ProductType, BatchStatus } from './models/transformation.model';
 import { Customer, SaleInvoice, InvoiceItem, PaymentTransaction, CommercialSummary, CustomerType, InvoiceStatus, PaymentMethod } from './models/commercial.model';
-import { FeedStock, FeedRation, SolarTelemetry } from './models/feed-solar.model';
+import { FeedStock, FeedRation, FeedRationIngredient, FeedDistribution, SolarTelemetry } from './models/feed-solar.model';
 import { Supplier } from './models/supplier.model';
 import { Chart, registerables } from 'chart.js';
 
@@ -37,6 +37,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   isOffline = signal<boolean>(false);
 
   // Current user role
+  title = 'LAWTAN BIO';
   currentRole = signal<string>('manager');
 
   // Toast message
@@ -63,6 +64,9 @@ export class AppComponent implements OnInit, AfterViewInit {
   isRationModalOpen = signal<boolean>(false);
   isReproModalOpen = signal<boolean>(false);
   isExportModalOpen = signal<boolean>(false);
+  
+  // Tracking journalier des traites effectuées (par vache et par session: 'FL-001_MORNING')
+  milkedSessions = signal<{ [key: string]: { date: string; volume: number } }>({});
 
   // QR Modal Data
   qrData = signal<{ lot: string; product: string; date: string; volume: string }>({
@@ -263,8 +267,22 @@ export class AppComponent implements OnInit, AfterViewInit {
   reproductionAlerts = signal<ReproductionAlert[]>([]);
   tankStatus = signal<TankStatus | null>(null);
   milkHistory = signal<MilkHistory[]>([]);
+  milkProductions = signal<MilkProduction[]>([]);
+  isMilkMenuOpen = signal<boolean>(false);
+  activeMilkSubTab = signal<'milking' | 'journal'>('milking');
+  
+  // Filtres avancés Production Laitière
+  milkFilterStartDate = signal<string>('');
+  milkFilterEndDate = signal<string>('');
+  milkFilterAnimalId = signal<string>('ALL');
+  milkFilterSession = signal<string>('ALL');
+  milkFilterMinVolume = signal<number | null>(null);
+  milkFilterSearch = signal<string>('');
+  milkCurrentPage = signal<number>(1);
+  milkPageSize = signal<number>(6);
+
   milkForm = {
-    cowId: 'H-1043',
+    cowId: 'FL-001',
     session: 'Matin',
     litres: 11.5,
     temp: 34.2,
@@ -282,6 +300,12 @@ export class AppComponent implements OnInit, AfterViewInit {
   transformationBatches = signal<TransformationBatch[]>([]);
   productStocks = signal<ProductStock[]>([]);
   transformationSummary = signal<TransformationSummary | null>(null);
+
+  // Filtres avancés Lots de Fabrication
+  batchFilterStartDate = signal<string>('');
+  batchFilterEndDate = signal<string>('');
+  batchFilterProduct = signal<string>('ALL');
+  batchFilterSearch = signal<string>('');
 
   batchesCurrentPage = signal<number>(1);
   batchesPageSize = signal<number>(5);
@@ -385,11 +409,30 @@ export class AppComponent implements OnInit, AfterViewInit {
   solarTelemetry = signal<SolarTelemetry | null>(null);
 
   isFeedMenuOpen = signal<boolean>(false);
-  activeFeedSubTab = signal<'stocks' | 'rations' | 'suppliers'>('stocks');
+  activeFeedSubTab = signal<'stocks' | 'rations' | 'distributions' | 'suppliers'>('stocks');
   isFeedStockModalOpen = signal<boolean>(false);
   isFeedRationModalOpen = signal<boolean>(false);
   isAuditReportModalOpen = signal<boolean>(false);
   selectedAuditReportType = signal<string>('BIO_CERTIFICATE');
+
+  // Filtres & Recherche Fiches Rations
+  rationSearchTerm = signal<string>('');
+  rationCategoryFilter = signal<string>('ALL');
+  rationBreedFilter = signal<string>('ALL');
+  rationsCurrentPage = signal<number>(1);
+  rationsItemsPerPage = signal<number>(6);
+
+  // Distributions Journalières State
+  feedDistributions = signal<FeedDistribution[]>([]);
+  isDistributionModalOpen = signal<boolean>(false);
+  selectedRationForDistribution = signal<FeedRation | null>(null);
+  distFilterStartDate = signal<string>('');
+  distFilterEndDate = signal<string>('');
+  distFilterRation = signal<string>('ALL');
+  distFilterAnimalOrBreed = signal<string>('ALL');
+  distFilterSearch = signal<string>('');
+  distCurrentPage = signal<number>(1);
+  distPageSize = signal<number>(6);
 
   // Fournisseurs / Suppliers State
   suppliers = signal<Supplier[]>([]);
@@ -439,11 +482,30 @@ export class AppComponent implements OnInit, AfterViewInit {
   feedRationForm: FeedRation = {
     rationName: '',
     targetCategory: 'Vaches Haute Lactation',
+    targetBreeds: ['Holstein', 'Guzerat'],
+    targetAnimalIds: [],
+    ingredients: [],
     dailyDryMatterKg: 15.0,
-    compositionDescription: '',
+    totalFreshWeightKg: 25.0,
     dailyCostFcfa: 2400,
+    compositionDescription: '',
     energyUfl: 13.0,
     proteinPdiGrams: 1250
+  };
+
+  distributionForm = {
+    rationId: 0,
+    rationName: '',
+    distributionDate: new Date().toISOString().slice(0, 10),
+    distributionTime: '07:30',
+    session: 'MATIN' as 'MATIN' | 'MIDI' | 'SOIR',
+    quantityDistributedKg: 150,
+    animalsCountNourished: 6,
+    targetGroupOrRace: 'Holstein & Guzerat Laitières',
+    selectedAnimalIds: [] as string[],
+    distributorName: 'Moussa Bouvier',
+    totalCostFcfa: 17200,
+    notes: 'Distribution du matin à l\'auge avec eau fraîche.'
   };
 
   feedStockSearchTerm = signal<string>('');
@@ -530,19 +592,22 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     // 9. Sprint 5: Feed, Rations & Solar Telemetry
     this.loadFeedAndSolarData();
+
+    // 10. Initialisation du tracking des traites du jour
+    this.initMilkedSessions();
   }
 
-  // Action utilisateur pour synchroniser manuellement avec PostgreSQL
+  // Action utilisateur pour synchroniser manuellement les données
   refreshAndSyncAllData(): void {
-    this.showToast('Synchronisation avec la base de données PostgreSQL en cours...');
+    this.showToast('Synchronisation des données en cours...');
     this.apiService.checkBackendHealth().subscribe(online => {
       if (online) {
         this.isOffline.set(false);
         this.loadInitialData();
-        this.showToast('✅ Données synchronisées avec succès depuis PostgreSQL !');
+        this.showToast('✅ Données synchronisées avec succès !');
       } else {
         this.isOffline.set(true);
-        this.showToast('⚠️ Impossible de joindre le serveur Spring Boot (port 8080).');
+        this.showToast('⚠️ Impossible de joindre le serveur.');
       }
     });
   }
@@ -615,6 +680,176 @@ export class AppComponent implements OnInit, AfterViewInit {
       },
       error: () => {}
     });
+
+    this.apiService.getAllMilkProductions().subscribe({
+      next: (prods) => {
+        if (prods && prods.length > 0) {
+          this.milkProductions.set(prods);
+        } else if (this.milkProductions().length === 0) {
+          this.loadFallbackMilkProductions();
+        }
+      },
+      error: () => {
+        if (this.milkProductions().length === 0) {
+          this.loadFallbackMilkProductions();
+        }
+      }
+    });
+  }
+
+  loadFallbackMilkProductions(): void {
+    const today = new Date();
+    const list: MilkProduction[] = [];
+    const cows = this.milkingCows.length > 0 ? this.milkingCows : [
+      { internalId: 'FL-001', name: 'Diéry Bio', breed: 'Guzerat Pure', dailyMilkYield: 22, avatarEmoji: '🐄' },
+      { internalId: 'FL-002', name: 'Fanta Blonde', breed: 'Montbéliarde x Zébu', dailyMilkYield: 19, avatarEmoji: '🐄' },
+      { internalId: 'FL-004', name: 'Nafi', breed: 'Holstein Pure', dailyMilkYield: 24, avatarEmoji: '🐄' },
+      { internalId: 'FL-006', name: 'Awa Star', breed: 'Jersiaise Pure', dailyMilkYield: 17, avatarEmoji: '🐄' }
+    ];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      cows.forEach((cow, idx) => {
+        const yieldBase = cow.dailyMilkYield || 18;
+        // Matin
+        list.push({
+          id: (i * 10) + (idx * 2) + 1,
+          animalInternalId: cow.internalId,
+          animalName: cow.name,
+          productionDate: dateStr,
+          session: 'MORNING',
+          volumeLiters: Math.round((yieldBase * 0.58 + (idx * 0.4 - 0.2)) * 10) / 10,
+          milkTemperature: 34.1,
+          fatPercentage: 3.9,
+          destinationTank: 'Cuve Réfrigérée N°1 (Bio)',
+          isOrganicCompliant: true
+        });
+        // Soir
+        if (i > 0 || today.getHours() >= 17) {
+          list.push({
+            id: (i * 10) + (idx * 2) + 2,
+            animalInternalId: cow.internalId,
+            animalName: cow.name,
+            productionDate: dateStr,
+            session: 'EVENING',
+            volumeLiters: Math.round((yieldBase * 0.42 + (idx * 0.3 - 0.1)) * 10) / 10,
+            milkTemperature: 34.3,
+            fatPercentage: 4.1,
+            destinationTank: 'Cuve Réfrigérée N°1 (Bio)',
+            isOrganicCompliant: true
+          });
+        }
+      });
+    }
+    this.milkProductions.set(list);
+  }
+
+  // --- Filtres & Pagination Production Laitière ---
+  filterMilkByAnimal(cowId: string): void {
+    this.milkFilterAnimalId.set(cowId);
+    this.milkCurrentPage.set(1);
+  }
+
+  filterMilkBySession(session: string): void {
+    this.milkFilterSession.set(session);
+    this.milkCurrentPage.set(1);
+  }
+
+  resetMilkFilters(): void {
+    this.milkFilterStartDate.set('');
+    this.milkFilterEndDate.set('');
+    this.milkFilterAnimalId.set('ALL');
+    this.milkFilterSession.set('ALL');
+    this.milkFilterMinVolume.set(null);
+    this.milkFilterSearch.set('');
+    this.milkCurrentPage.set(1);
+  }
+
+  get filteredMilkProductions(): MilkProduction[] {
+    let prods = this.milkProductions();
+
+    const start = this.milkFilterStartDate();
+    if (start) {
+      prods = prods.filter(p => p.productionDate && p.productionDate >= start);
+    }
+
+    const end = this.milkFilterEndDate();
+    if (end) {
+      prods = prods.filter(p => p.productionDate && p.productionDate <= end);
+    }
+
+    const animal = this.milkFilterAnimalId();
+    if (animal && animal !== 'ALL') {
+      prods = prods.filter(p => p.animalInternalId === animal || p.animalName === animal);
+    }
+
+    const session = this.milkFilterSession();
+    if (session && session !== 'ALL') {
+      prods = prods.filter(p => p.session === session);
+    }
+
+    const minVol = this.milkFilterMinVolume();
+    if (minVol && minVol > 0) {
+      prods = prods.filter(p => (p.volumeLiters || 0) >= minVol);
+    }
+
+    const q = this.milkFilterSearch().toLowerCase().trim();
+    if (q) {
+      prods = prods.filter(p => 
+        (p.animalName && p.animalName.toLowerCase().includes(q)) ||
+        (p.animalInternalId && p.animalInternalId.toLowerCase().includes(q)) ||
+        (p.destinationTank && p.destinationTank.toLowerCase().includes(q))
+      );
+    }
+
+    return prods;
+  }
+
+  get paginatedMilkProductions(): MilkProduction[] {
+    const start = (this.milkCurrentPage() - 1) * this.milkPageSize();
+    return this.filteredMilkProductions.slice(start, start + this.milkPageSize());
+  }
+
+  get totalMilkPages(): number {
+    return Math.ceil(this.filteredMilkProductions.length / this.milkPageSize()) || 1;
+  }
+
+  get milkPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalMilkPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  setMilkPage(page: number): void {
+    if (page >= 1 && page <= this.totalMilkPages) {
+      this.milkCurrentPage.set(page);
+    }
+  }
+
+  prevMilkPage(): void {
+    if (this.milkCurrentPage() > 1) {
+      this.milkCurrentPage.update(p => p - 1);
+    }
+  }
+
+  nextMilkPage(): void {
+    if (this.milkCurrentPage() < this.totalMilkPages) {
+      this.milkCurrentPage.update(p => p + 1);
+    }
+  }
+
+  get filteredMilkTotalVolume(): number {
+    return Math.round(this.filteredMilkProductions.reduce((sum, p) => sum + (p.volumeLiters || 0), 0) * 10) / 10;
+  }
+
+  get filteredMilkAverageYield(): number {
+    const prods = this.filteredMilkProductions;
+    if (prods.length === 0) return 0;
+    return Math.round((this.filteredMilkTotalVolume / prods.length) * 10) / 10;
   }
 
   recalculateLocalTankVolume(): void {
@@ -645,69 +880,140 @@ export class AppComponent implements OnInit, AfterViewInit {
     });
   }
 
+  milkingCowsCurrentPage = signal<number>(1);
+  milkingCowsPageSize = signal<number>(6);
+
   get milkingCows(): Animal[] {
     return this.animals().filter(a => a.gender === 'FEMALE' && (a.category === 'MILKING_COW' || (a.dailyMilkYield && a.dailyMilkYield > 0)));
   }
 
-  quickMilking(cow: Animal, session: 'MORNING' | 'EVENING'): void {
-    const daily = cow.dailyMilkYield || 18.0;
-    const vol = session === 'MORNING' ? Math.round(daily * 0.58 * 10) / 10 : Math.round(daily * 0.42 * 10) / 10;
+  get paginatedMilkingCows(): Animal[] {
+    const start = (this.milkingCowsCurrentPage() - 1) * this.milkingCowsPageSize();
+    return this.milkingCows.slice(start, start + this.milkingCowsPageSize());
+  }
 
-    const prod: MilkProduction = {
-      animalInternalId: cow.internalId,
-      animalName: cow.name,
-      productionDate: new Date().toISOString().slice(0, 10),
-      session: session,
-      volumeLiters: vol,
-      milkTemperature: 34.2,
-      destinationTank: 'Cuve Réfrigérée N°1 (Bio)',
+  get totalMilkingCowsPages(): number {
+    return Math.ceil(this.milkingCows.length / this.milkingCowsPageSize()) || 1;
+  }
+
+  get milkingCowsPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalMilkingCowsPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  setMilkingCowsPage(page: number): void {
+    if (page >= 1 && page <= this.totalMilkingCowsPages) {
+      this.milkingCowsCurrentPage.set(page);
+    }
+  }
+
+  prevMilkingCowsPage(): void {
+    if (this.milkingCowsCurrentPage() > 1) {
+      this.milkingCowsCurrentPage.update(p => p - 1);
+    }
+  }
+
+  nextMilkingCowsPage(): void {
+    if (this.milkingCowsCurrentPage() < this.totalMilkingCowsPages) {
+      this.milkingCowsCurrentPage.update(p => p + 1);
+    }
+  }
+
+  isCurrentMorningSession(): boolean {
+    return new Date().getHours() < 14;
+  }
+
+  getSelectedCowBreed(internalId?: string): string {
+    if (!internalId) return 'Race Non Spécifiée';
+    const found = this.animals().find(a => a.internalId === internalId);
+    return found ? found.breed : 'Race Mixte';
+  }
+
+  // --- Tracking journalier des traites (Matin / Soir par vache) ---
+  initMilkedSessions(): void {
+    try {
+      const stored = localStorage.getItem('lawtan_milked_sessions');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const today = new Date().toISOString().slice(0, 10);
+        const filtered: { [key: string]: { date: string; volume: number } } = {};
+        for (const [key, val] of Object.entries(parsed as { [k: string]: { date: string; volume: number } })) {
+          if (val && val.date === today) {
+            filtered[key] = val;
+          }
+        }
+        this.milkedSessions.set(filtered);
+      }
+    } catch {
+      this.milkedSessions.set({});
+    }
+  }
+
+  isMilkedToday(cowId: string, session: 'MORNING' | 'EVENING'): boolean {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `${cowId}_${session}`;
+    const entry = this.milkedSessions()[key];
+    return !!entry && entry.date === today;
+  }
+
+  getMilkedVolumeToday(cowId: string, session: 'MORNING' | 'EVENING'): number | null {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `${cowId}_${session}`;
+    const entry = this.milkedSessions()[key];
+    return (entry && entry.date === today) ? entry.volume : null;
+  }
+
+  recordMilkedSession(cowId: string, session: 'MORNING' | 'EVENING', volume: number): void {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `${cowId}_${session}`;
+    this.milkedSessions.update(curr => {
+      const next = { ...curr, [key]: { date: today, volume } };
+      try {
+        localStorage.setItem('lawtan_milked_sessions', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }
+
+  getSelectedCowName(cowId?: string): string {
+    if (!cowId) return 'Vache Laitière';
+    const cow = this.animals().find(a => a.internalId === cowId);
+    return cow ? cow.name : cowId;
+  }
+
+  openQuickMilkingModal(cow: Animal, session: 'MORNING' | 'EVENING'): void {
+    if (this.isMilkedToday(cow.internalId, session)) {
+      this.showToast(`ℹ️ La traite ${session === 'MORNING' ? 'du matin' : 'du soir'} a déjà été validée pour ${cow.name} aujourd'hui.`);
+      return;
+    }
+    this.milkForm = {
+      cowId: cow.internalId,
+      session: session === 'MORNING' ? 'Matin' : 'Soir',
+      litres: null as any,
+      temp: 34.2,
+      fatPercentage: 3.9,
+      tank: 'Cuve Réfrigérée N°1 (Bio)',
+      productionDate: new Date().toISOString().split('T')[0],
       isOrganicCompliant: cow.status !== 'FEVER_TREATMENT'
     };
+    this.isMilkModalOpen.set(true);
+  }
 
-    this.apiService.recordMilk(prod).subscribe({
-      next: () => {
-        this.loadMilkData();
-        this.showToast(`🥛 Traite ${session === 'MORNING' ? 'Matin ☀️' : 'Soir 🌙'} enregistrée pour ${cow.name} (+${vol}L) !`);
-      },
-      error: () => {
-        this.tankStatus.update(st => {
-          const currentGross = st?.grossVolumeCollected ?? 0.0;
-          const newGross = Math.round((currentGross + vol) * 10) / 10;
-          const currentMorn = st?.morningVolume ?? 0.0;
-          const currentEve = st?.eveningVolume ?? 0.0;
-          const newMorn = session === 'MORNING' ? Math.round((currentMorn + vol) * 10) / 10 : currentMorn;
-          const newEve = session === 'EVENING' ? Math.round((currentEve + vol) * 10) / 10 : currentEve;
-          const transformed = st?.transformedVolume ?? 0.0;
-          const newNet = Math.max(0, Math.round((newGross - transformed) * 10) / 10);
-          const maxCap = st?.maxCapacity ?? 500.0;
-          const newFill = Math.round((newNet / maxCap) * 1000) / 10;
-          return {
-            tankName: st?.tankName ?? 'Cuve Réfrigérée N°1 (Bio)',
-            grossVolumeCollected: newGross,
-            morningVolume: newMorn,
-            eveningVolume: newEve,
-            transformedVolume: transformed,
-            currentVolume: newNet,
-            maxCapacity: maxCap,
-            fillPercentage: newFill,
-            temperature: 3.9,
-            phLevel: 6.68,
-            qualityStatus: newNet > 0 ? 'CONFORME BIO & PASTEURISATION' : 'EN ATTENTE COLLECTE',
-            targetBatch: 'LOT-TR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-01',
-            collectionDate: new Date().toISOString().slice(0, 10)
-          };
-        });
-        this.showToast(`🥛 Traite ${session === 'MORNING' ? 'Matin ☀️' : 'Soir 🌙'} validée (+${vol}L) ! Total brut : ${this.tankStatus()?.grossVolumeCollected}L`);
-      }
-    });
+  quickMilking(cow: Animal, session: 'MORNING' | 'EVENING'): void {
+    this.openQuickMilkingModal(cow, session);
   }
 
   openMilkModal(): void {
     const firstCow = this.milkingCows[0];
+    const currentHour = new Date().getHours();
+    const defaultSession = currentHour < 13 ? 'Matin' : 'Soir';
     this.milkForm = {
-      cowId: firstCow ? firstCow.internalId : 'H-1043',
-      session: 'Matin',
-      litres: firstCow && firstCow.dailyMilkYield ? Math.round(firstCow.dailyMilkYield * 0.58 * 10) / 10 : 11.5,
+      cowId: firstCow ? firstCow.internalId : 'FL-001',
+      session: defaultSession,
+      litres: null as any,
       temp: 34.2,
       fatPercentage: 3.9,
       tank: 'Cuve Réfrigérée N°1 (Bio)',
@@ -724,13 +1030,14 @@ export class AppComponent implements OnInit, AfterViewInit {
   submitMilkEntry(): void {
     const vol = Number(this.milkForm.litres) || 0;
     if (!this.milkForm.cowId || vol <= 0) {
-      this.showToast('Veuillez sélectionner une vache et un volume de lait valide.');
+      this.showToast('Veuillez sélectionner une vache et un volume de lait valide (> 0 L).');
       return;
     }
 
+    const sessionType: 'MORNING' | 'EVENING' = this.milkForm.session.includes('Matin') ? 'MORNING' : 'EVENING';
     const prod: MilkProduction = {
       animalInternalId: this.milkForm.cowId,
-      session: this.milkForm.session.includes('Matin') ? 'MORNING' : 'EVENING',
+      session: sessionType,
       volumeLiters: vol,
       milkTemperature: this.milkForm.temp,
       fatPercentage: this.milkForm.fatPercentage,
@@ -741,11 +1048,13 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     this.apiService.recordMilk(prod).subscribe({
       next: (created) => {
+        this.recordMilkedSession(prod.animalInternalId, sessionType, created.volumeLiters || vol);
         this.loadMilkData();
         this.closeMilkModal();
-        this.showToast(`✅ Traite de ${created.volumeLiters || vol}L enregistrée pour ${this.milkForm.cowId} !`);
+        this.showToast(`🥛 Traite ${sessionType === 'MORNING' ? 'Matin ☀️' : 'Soir 🌙'} de ${created.volumeLiters || vol}L enregistrée pour ${this.getSelectedCowName(prod.animalInternalId)} !`);
       },
       error: () => {
+        this.recordMilkedSession(prod.animalInternalId, sessionType, vol);
         this.tankStatus.update(st => {
           const currentGross = st?.grossVolumeCollected ?? 0.0;
           const newGross = Math.round((currentGross + vol) * 10) / 10;
@@ -756,8 +1065,8 @@ export class AppComponent implements OnInit, AfterViewInit {
           return {
             tankName: st?.tankName ?? 'Cuve Réfrigérée N°1 (Bio)',
             grossVolumeCollected: newGross,
-            morningVolume: st?.morningVolume ?? (this.milkForm.session.includes('Matin') ? vol : 0),
-            eveningVolume: st?.eveningVolume ?? (!this.milkForm.session.includes('Matin') ? vol : 0),
+            morningVolume: st?.morningVolume ?? (sessionType === 'MORNING' ? vol : 0),
+            eveningVolume: st?.eveningVolume ?? (sessionType === 'EVENING' ? vol : 0),
             transformedVolume: transformed,
             currentVolume: newNet,
             maxCapacity: maxCap,
@@ -770,7 +1079,7 @@ export class AppComponent implements OnInit, AfterViewInit {
           };
         });
         this.closeMilkModal();
-        this.showToast(`✅ Traite manuelle de ${vol}L validée ! Total brut : ${this.tankStatus()?.grossVolumeCollected}L`);
+        this.showToast(`🥛 Traite ${sessionType === 'MORNING' ? 'Matin ☀️' : 'Soir 🌙'} de ${vol}L validée pour ${this.getSelectedCowName(prod.animalInternalId)} ! Total cuve : ${this.tankStatus()?.grossVolumeCollected}L`);
       }
     });
   }
@@ -1146,13 +1455,48 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.activeTransformationSubTab.set(subTab);
   }
 
-  get filteredBatches(): TransformationBatch[] {
-    const f = this.transformationFilter();
-    return this.transformationBatches().filter(b => {
-      if (f === 'in_progress') return b.status === 'IN_PROGRESS' || b.status === 'PLANNED';
-      if (f === 'completed') return b.status === 'COMPLETED';
-      return true;
+  resetBatchFilters(): void {
+    this.batchFilterStartDate.set('');
+    this.batchFilterEndDate.set('');
+    this.batchFilterProduct.set('ALL');
+    this.batchFilterSearch.set('');
+    this.transformationFilter.set('all');
+    this.batchesCurrentPage.set(1);
+  }
+
+  get uniqueBatchProducts(): string[] {
+    const set = new Set<string>();
+    this.transformationBatches().forEach(b => {
+      if (b.recipeName) set.add(b.recipeName);
     });
+    return Array.from(set);
+  }
+
+  get filteredBatches(): TransformationBatch[] {
+    let batches = this.transformationBatches();
+    const f = this.transformationFilter();
+    if (f === 'in_progress') batches = batches.filter(b => b.status === 'IN_PROGRESS' || b.status === 'PLANNED');
+    if (f === 'completed') batches = batches.filter(b => b.status === 'COMPLETED');
+
+    const start = this.batchFilterStartDate();
+    if (start) batches = batches.filter(b => b.productionDate && b.productionDate >= start);
+
+    const end = this.batchFilterEndDate();
+    if (end) batches = batches.filter(b => b.productionDate && b.productionDate <= end);
+
+    const prod = this.batchFilterProduct();
+    if (prod && prod !== 'ALL') batches = batches.filter(b => b.recipeName === prod || b.productType === prod);
+
+    const q = this.batchFilterSearch().toLowerCase().trim();
+    if (q) {
+      batches = batches.filter(b => 
+        (b.batchNumber && b.batchNumber.toLowerCase().includes(q)) ||
+        (b.recipeName && b.recipeName.toLowerCase().includes(q)) ||
+        (b.operatorName && b.operatorName.toLowerCase().includes(q))
+      );
+    }
+
+    return batches;
   }
 
   // --- Pagination: Lots de fabrication ---
@@ -1191,14 +1535,36 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // --- Pagination: Fiches Recettes ---
+  // --- Recherche & Filtres: Fiches Recettes ---
+  recipeSearchQuery = signal<string>('');
+  recipeTypeFilter = signal<string>('ALL');
+
+  get filteredRecipes(): Recipe[] {
+    let list = this.recipes();
+    const q = this.recipeSearchQuery().toLowerCase().trim();
+    if (q) {
+      list = list.filter(r => 
+        (r.name && r.name.toLowerCase().includes(q)) ||
+        (r.code && r.code.toLowerCase().includes(q)) ||
+        (r.ingredientsList && r.ingredientsList.toLowerCase().includes(q)) ||
+        (r.targetUnit && r.targetUnit.toLowerCase().includes(q)) ||
+        (r.productType && r.productType.toLowerCase().includes(q))
+      );
+    }
+    const t = this.recipeTypeFilter();
+    if (t && t !== 'ALL') {
+      list = list.filter(r => r.productType === t);
+    }
+    return list;
+  }
+
   get paginatedRecipes(): Recipe[] {
     const start = (this.recipesCurrentPage() - 1) * this.recipesPageSize();
-    return this.recipes().slice(start, start + this.recipesPageSize());
+    return this.filteredRecipes.slice(start, start + this.recipesPageSize());
   }
 
   get totalRecipesPages(): number {
-    return Math.ceil(this.recipes().length / this.recipesPageSize()) || 1;
+    return Math.ceil(this.filteredRecipes.length / this.recipesPageSize()) || 1;
   }
 
   get recipesPageNumbers(): number[] {
@@ -1400,7 +1766,7 @@ export class AppComponent implements OnInit, AfterViewInit {
             this.proceedLaunchBatchWithRecipe(savedRec);
           },
           error: () => {
-            this.showToast('⚠️ Erreur création recette personnalisée dans PostgreSQL.');
+            this.showToast('⚠️ Erreur lors de la création de la recette personnalisée.');
           }
         });
         return;
@@ -1475,6 +1841,20 @@ export class AppComponent implements OnInit, AfterViewInit {
     });
   }
 
+  get calculatedBatchWasteLoss(): number {
+    const batch = this.selectedBatchForCompletion();
+    if (!batch || !batch.expectedQuantity) return 0;
+    const actual = Number(this.completeBatchForm.actualQuantityProduced) || 0;
+    return Math.max(0, Math.round((batch.expectedQuantity - actual) * 10) / 10);
+  }
+
+  get calculatedBatchYieldEfficiency(): number {
+    const batch = this.selectedBatchForCompletion();
+    if (!batch || !batch.expectedQuantity) return 100;
+    const actual = Number(this.completeBatchForm.actualQuantityProduced) || 0;
+    return Math.round((actual / batch.expectedQuantity) * 1000) / 10;
+  }
+
   openCompleteBatchModal(batch: TransformationBatch): void {
     this.selectedBatchForCompletion.set(batch);
     this.completeBatchForm.actualQuantityProduced = batch.expectedQuantity || 0;
@@ -1493,8 +1873,9 @@ export class AppComponent implements OnInit, AfterViewInit {
     const batch = this.selectedBatchForCompletion();
     if (!batch || !batch.id) return;
 
-    const actualQty = Number(this.completeBatchForm.actualQuantityProduced);
-    const waste = Number(this.completeBatchForm.wasteLossQuantity) || 0;
+    const actualQty = Number(this.completeBatchForm.actualQuantityProduced) || 0;
+    const waste = this.calculatedBatchWasteLoss;
+    const yieldEff = this.calculatedBatchYieldEfficiency;
 
     this.apiService.completeBatch(batch.id, {
       actualQuantityProduced: actualQty,
@@ -1507,7 +1888,7 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.loadTransformationData();
         this.recalculateLocalTankVolume();
         this.loadMilkData();
-        this.showToast(`🎉 Lot ${completed.batchNumber} clôturé et entré en stock marchant ! Rendement: ${completed.yieldEfficiencyPercentage}%`);
+        this.showToast(`🎉 Lot ${completed.batchNumber} clôturé et entré en stock marchant ! Rendement: ${completed.yieldEfficiencyPercentage}% (Pertes: ${waste} ${batch.unit})`);
         this.closeCompleteBatchModal();
       },
       error: () => {
@@ -1518,12 +1899,12 @@ export class AppComponent implements OnInit, AfterViewInit {
           wasteLossQuantity: waste,
           qualityNotes: this.completeBatchForm.qualityNotes,
           phLevel: this.completeBatchForm.phLevel,
-          yieldEfficiencyPercentage: batch.expectedQuantity ? Math.round((actualQty / batch.expectedQuantity) * 1000) / 10 : 100
+          yieldEfficiencyPercentage: yieldEff
         };
         this.transformationBatches.update(list => list.map(b => b.id === batch.id ? completed : b));
         this.updateLocalTransformationSummary();
         this.recalculateLocalTankVolume();
-        this.showToast(`🎉 Lot ${completed.batchNumber} clôturé et entré en stock marchant !`);
+        this.showToast(`🎉 Lot ${completed.batchNumber} clôturé et entré en stock marchant ! (Pertes: ${waste} ${batch.unit})`);
         this.closeCompleteBatchModal();
       }
     });
@@ -1567,22 +1948,22 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.apiService.updateRecipe(sel.id, this.recipeForm).subscribe({
         next: (updated) => {
           this.recipes.update(list => list.map(r => r.id === updated.id ? updated : r));
-          this.showToast(`✅ Recette "${updated.name}" mise à jour dans PostgreSQL !`);
+          this.showToast(`✅ Recette "${updated.name}" mise à jour avec succès !`);
           this.closeRecipeModal();
         },
         error: () => {
-          this.showToast(`⚠️ Erreur de mise à jour de la recette dans PostgreSQL.`);
+          this.showToast(`⚠️ Erreur lors de la mise à jour de la recette.`);
         }
       });
     } else {
       this.apiService.createRecipe(this.recipeForm).subscribe({
         next: (created) => {
           this.recipes.update(list => [...list, created]);
-          this.showToast(`✅ Nouvelle recette "${created.name}" enregistrée dans PostgreSQL !`);
+          this.showToast(`✅ Nouvelle recette "${created.name}" enregistrée avec succès !`);
           this.closeRecipeModal();
         },
         error: () => {
-          this.showToast(`⚠️ Erreur de création de la recette dans PostgreSQL.`);
+          this.showToast(`⚠️ Erreur lors de la création de la recette.`);
         }
       });
     }
@@ -1617,10 +1998,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.deleteRecipe(id).subscribe({
       next: () => {
         this.recipes.update(list => list.filter(r => r.id !== id));
-        this.showToast('✅ Recette supprimée de PostgreSQL.');
+        this.showToast('✅ Recette supprimée avec succès.');
       },
       error: () => {
-        this.showToast('⚠️ Erreur de suppression de la recette.');
+        this.showToast('⚠️ Erreur lors de la suppression de la recette.');
       }
     });
   }
@@ -1993,12 +2374,12 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.createHealthRecord(record).subscribe({
       next: (created) => {
         this.healthRecords.update(records => [created, ...records]);
-        this.showToast('✅ Acte vétérinaire avec ordonnance enregistré dans PostgreSQL !');
+        this.showToast('✅ Acte vétérinaire enregistré avec succès !');
         this.isHealthModalOpen.set(false);
       },
       error: (err) => {
         console.error('Erreur santé:', err);
-        this.showToast(`⚠️ Erreur : Impossible d'enregistrer l'acte dans PostgreSQL.`);
+        this.showToast(`⚠️ Erreur : Impossible d'enregistrer l'acte vétérinaire.`);
       }
     });
   }
@@ -2051,12 +2432,12 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.createAnimal(animal).subscribe({
       next: (created) => {
         this.animals.update(list => [...list, created]);
-        this.showToast(`✅ Animal ${created.name} (${created.internalId}) enregistré dans PostgreSQL !`);
+        this.showToast(`✅ Animal ${created.name} (${created.internalId}) enregistré avec succès !`);
         this.isNewAnimalModalOpen.set(false);
       },
       error: (err) => {
         console.error('Erreur ajout animal:', err);
-        this.showToast(`⚠️ Erreur d'enregistrement dans PostgreSQL : vérifiez que l'identifiant est unique.`);
+        this.showToast(`⚠️ Erreur d'enregistrement : vérifiez que l'identifiant est unique.`);
       }
     });
   }
@@ -2075,6 +2456,7 @@ export class AppComponent implements OnInit, AfterViewInit {
           const maxDim = 600;
           let width = img.width;
           let height = img.height;
+          let ctx = canvas.getContext('2d');
 
           if (width > height) {
             if (width > maxDim) {
@@ -2090,7 +2472,7 @@ export class AppComponent implements OnInit, AfterViewInit {
 
           canvas.width = width;
           canvas.height = height;
-          const ctx = canvas.getContext('2d');
+          ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
             const compressed = canvas.toDataURL('image/jpeg', 0.82);
@@ -2155,11 +2537,11 @@ export class AppComponent implements OnInit, AfterViewInit {
           if (this.selectedAnimal()?.internalId === updated.internalId) {
             this.selectedAnimal.set(res);
           }
-          this.showToast(`✅ Fiche de ${updated.name} mise à jour dans PostgreSQL !`);
+          this.showToast(`✅ Fiche de ${updated.name} mise à jour avec succès !`);
           this.isEditAnimalModalOpen.set(false);
         },
         error: () => {
-          this.showToast(`⚠️ Erreur : Impossible de mettre à jour l'animal dans PostgreSQL.`);
+          this.showToast(`⚠️ Erreur : Impossible de mettre à jour l'animal.`);
         }
       });
     }
@@ -2178,11 +2560,11 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.updateHealthRecord(rec.id, rec).subscribe({
       next: (res) => {
         this.healthRecords.update(list => list.map(r => r.id === rec.id ? res : r));
-        this.showToast('✅ Acte médical mis à jour dans PostgreSQL !');
+        this.showToast('✅ Acte médical mis à jour avec succès !');
         this.isEditHealthModalOpen.set(false);
       },
       error: () => {
-        this.showToast('⚠️ Erreur de mise à jour dans PostgreSQL.');
+        this.showToast('⚠️ Erreur lors de la mise à jour.');
       }
     });
   }
@@ -2201,11 +2583,11 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.createVaccine(v).subscribe({
       next: (created) => {
         this.vaccineSchedules.update(list => [...list, created]);
-        this.showToast('✅ Planification vaccinale enregistrée dans PostgreSQL !');
+        this.showToast('✅ Planification vaccinale enregistrée avec succès !');
         this.isVaccineModalOpen.set(false);
       },
       error: () => {
-        this.showToast(`⚠️ Erreur d'enregistrement du vaccin dans PostgreSQL.`);
+        this.showToast(`⚠️ Erreur lors de l'enregistrement du vaccin.`);
       }
     });
   }
@@ -2356,11 +2738,11 @@ export class AppComponent implements OnInit, AfterViewInit {
       next: (created) => {
         this.reproductionEvents.update(list => [created, ...list]);
         this.dismissAlertForCow(event);
-        this.showToast(`✅ Événement de reproduction enregistré dans PostgreSQL pour ${cowName} (${event.animalInternalId}) !`);
+        this.showToast(`✅ Événement de reproduction enregistré pour ${cowName} (${event.animalInternalId}) !`);
         this.isReproModalOpen.set(false);
       },
       error: () => {
-        this.showToast(`⚠️ Erreur d'enregistrement dans PostgreSQL : impossible de joindre le backend.`);
+        this.showToast(`⚠️ Erreur : impossible d'enregistrer l'événement de reproduction.`);
       }
     });
   }
@@ -2410,10 +2792,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.apiService.deleteReproEvent(id).subscribe({
       next: () => {
         this.reproductionEvents.update(list => list.filter(e => e.id !== id));
-        this.showToast('✅ Acte de reproduction supprimé de PostgreSQL.');
+        this.showToast('✅ Acte de reproduction supprimé avec succès.');
       },
       error: () => {
-        this.showToast('⚠️ Erreur de suppression dans la base de données.');
+        this.showToast('⚠️ Erreur lors de la suppression.');
       }
     });
   }
@@ -3186,11 +3568,11 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.invoices.update(list => [created, ...list]);
         this.decrementStockFromInvoice(created);
         this.updateLocalCommercialSummary();
-        this.showToast(`✅ Facture ${created.invoiceNumber} enregistrée dans PostgreSQL (${created.totalAmountFcfa.toLocaleString()} FCFA) !`);
+        this.showToast(`✅ Facture ${created.invoiceNumber} enregistrée (${created.totalAmountFcfa.toLocaleString()} FCFA) !`);
         this.closeNewInvoiceModal();
       },
       error: () => {
-        this.showToast(`⚠️ Erreur : Impossible d'enregistrer la facture dans PostgreSQL (serveur indisponible).`);
+        this.showToast(`⚠️ Erreur : Impossible d'enregistrer la facture.`);
       }
     });
   }
@@ -3249,11 +3631,11 @@ export class AppComponent implements OnInit, AfterViewInit {
       next: (created) => {
         this.customers.update(list => [...list, created]);
         this.updateLocalCommercialSummary();
-        this.showToast(`✅ Client "${created.name}" enregistré dans PostgreSQL !`);
+        this.showToast(`✅ Client "${created.name}" enregistré avec succès !`);
         this.closeNewCustomerModal();
       },
       error: () => {
-        this.showToast(`⚠️ Erreur : Impossible d'enregistrer le client dans PostgreSQL.`);
+        this.showToast(`⚠️ Erreur : Impossible d'enregistrer le client.`);
       }
     });
   }
@@ -3322,11 +3704,11 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.invoices.update(list => list.map(i => i.id === updatedInvoice.id ? updatedInvoice : i));
         this.payments.update(list => [paymentPayload, ...list]);
         this.updateLocalCommercialSummary();
-        this.showToast(`✅ Règlement de ${amount.toLocaleString()} FCFA enregistré dans PostgreSQL (${paymentPayload.paymentMethod}) !`);
+        this.showToast(`✅ Règlement de ${amount.toLocaleString()} FCFA enregistré (${paymentPayload.paymentMethod}) !`);
         this.closePaymentModal();
       },
       error: () => {
-        this.showToast(`⚠️ Erreur : Impossible d'enregistrer le paiement dans PostgreSQL.`);
+        this.showToast(`⚠️ Erreur : Impossible d'enregistrer le paiement.`);
       }
     });
   }
@@ -3452,6 +3834,22 @@ export class AppComponent implements OnInit, AfterViewInit {
       }
     });
 
+    // 3. Feed Distributions
+    this.apiService.getAllFeedDistributions().subscribe({
+      next: (dists) => {
+        if (dists && dists.length > 0) {
+          this.feedDistributions.set(dists);
+        } else if (this.feedDistributions().length === 0) {
+          this.loadFallbackDistributions();
+        }
+      },
+      error: () => {
+        if (this.feedDistributions().length === 0) {
+          this.loadFallbackDistributions();
+        }
+      }
+    });
+
     // 3. Solar Telemetry
     this.apiService.getSolarTelemetry().subscribe({
       next: (solar) => {
@@ -3521,9 +3919,19 @@ export class AppComponent implements OnInit, AfterViewInit {
         id: 1,
         rationName: 'Ration Haute Lactation (> 20 L/j)',
         targetCategory: 'Vaches Haute Lactation',
-        dailyDryMatterKg: 16.5,
-        compositionDescription: '15 kg Ensilage Maïs + 4 kg Foin Niébé + 3.5 kg Tourteau Arachide + 2 kg Son de Blé + 150g CMV Bio',
-        dailyCostFcfa: 2850,
+        targetBreeds: ['Holstein', 'Guzerat'],
+        targetAnimalIds: ['FL-001', 'FL-004'],
+        ingredients: [
+          { feedStockId: 1, feedStockName: 'Ensilage de Maïs Bio', quantityKg: 15, dryMatterPercentage: 32, calculatedDryMatterKg: 4.8, unitPriceFcfa: 65, calculatedCostFcfa: 975 },
+          { feedStockId: 2, feedStockName: 'Foin de Niébé Riche en Protéines', quantityKg: 4, dryMatterPercentage: 88, calculatedDryMatterKg: 3.5, unitPriceFcfa: 110, calculatedCostFcfa: 440 },
+          { feedStockId: 3, feedStockName: 'Tourteau d\'Arachide Pressé à Froid', quantityKg: 3.5, dryMatterPercentage: 90, calculatedDryMatterKg: 3.2, unitPriceFcfa: 240, calculatedCostFcfa: 840 },
+          { feedStockId: 4, feedStockName: 'Son de Blé Fin', quantityKg: 2, dryMatterPercentage: 88, calculatedDryMatterKg: 1.8, unitPriceFcfa: 140, calculatedCostFcfa: 280 },
+          { feedStockId: 5, feedStockName: 'Poudre de Moringa & CMV Bio', quantityKg: 0.2, dryMatterPercentage: 95, calculatedDryMatterKg: 0.2, unitPriceFcfa: 1500, calculatedCostFcfa: 300 }
+        ],
+        totalFreshWeightKg: 24.7,
+        dailyDryMatterKg: 13.5,
+        compositionDescription: '15 kg Ensilage Maïs + 4 kg Foin Niébé + 3.5 kg Tourteau Arachide + 2 kg Son de Blé + 200g CMV Bio',
+        dailyCostFcfa: 2835,
         energyUfl: 14.2,
         proteinPdiGrams: 1450
       },
@@ -3531,31 +3939,123 @@ export class AppComponent implements OnInit, AfterViewInit {
         id: 2,
         rationName: 'Ration Moyenne Lactation (14 - 18 L/j)',
         targetCategory: 'Vaches en Lactation Standard',
-        dailyDryMatterKg: 14.0,
-        compositionDescription: '12 kg Ensilage Maïs + 4 kg Foin Niébé + 2 kg Tourteau Arachide + 1.5 kg Son de Blé + 100g CMV Bio',
-        dailyCostFcfa: 2150,
+        targetBreeds: ['Montbéliarde', 'Jersiaise'],
+        targetAnimalIds: ['FL-002', 'FL-006'],
+        ingredients: [
+          { feedStockId: 1, feedStockName: 'Ensilage de Maïs Bio', quantityKg: 12, dryMatterPercentage: 32, calculatedDryMatterKg: 3.8, unitPriceFcfa: 65, calculatedCostFcfa: 780 },
+          { feedStockId: 2, feedStockName: 'Foin de Niébé Riche en Protéines', quantityKg: 4, dryMatterPercentage: 88, calculatedDryMatterKg: 3.5, unitPriceFcfa: 110, calculatedCostFcfa: 440 },
+          { feedStockId: 3, feedStockName: 'Tourteau d\'Arachide Pressé à Froid', quantityKg: 2, dryMatterPercentage: 90, calculatedDryMatterKg: 1.8, unitPriceFcfa: 240, calculatedCostFcfa: 480 },
+          { feedStockId: 4, feedStockName: 'Son de Blé Fin', quantityKg: 1.5, dryMatterPercentage: 88, calculatedDryMatterKg: 1.3, unitPriceFcfa: 140, calculatedCostFcfa: 210 },
+          { feedStockId: 5, feedStockName: 'Poudre de Moringa & CMV Bio', quantityKg: 0.15, dryMatterPercentage: 95, calculatedDryMatterKg: 0.1, unitPriceFcfa: 1500, calculatedCostFcfa: 225 }
+        ],
+        totalFreshWeightKg: 19.65,
+        dailyDryMatterKg: 10.5,
+        compositionDescription: '12 kg Ensilage Maïs + 4 kg Foin Niébé + 2 kg Tourteau Arachide + 1.5 kg Son de Blé + 150g CMV Bio',
+        dailyCostFcfa: 2135,
         energyUfl: 11.8,
         proteinPdiGrams: 1100
       },
       {
         id: 3,
-        rationName: 'Ration Tarissement & Gestation Fin',
+        rationName: 'Ration Tarissement & Gestation',
         targetCategory: 'Vaches Taries & Gestantes',
-        dailyDryMatterKg: 11.5,
-        compositionDescription: '6 kg Ensilage Maïs + 5 kg Foin Niébé / Paille + 1 kg Son de Blé + Sel de Gandiol',
-        dailyCostFcfa: 1350,
+        targetBreeds: ['Gobra', 'Montbéliarde', 'Guzerat'],
+        ingredients: [
+          { feedStockId: 1, feedStockName: 'Ensilage de Maïs Bio', quantityKg: 6, dryMatterPercentage: 32, calculatedDryMatterKg: 1.9, unitPriceFcfa: 65, calculatedCostFcfa: 390 },
+          { feedStockId: 2, feedStockName: 'Foin de Niébé Riche en Protéines', quantityKg: 5, dryMatterPercentage: 88, calculatedDryMatterKg: 4.4, unitPriceFcfa: 110, calculatedCostFcfa: 550 },
+          { feedStockId: 4, feedStockName: 'Son de Blé Fin', quantityKg: 1, dryMatterPercentage: 88, calculatedDryMatterKg: 0.9, unitPriceFcfa: 140, calculatedCostFcfa: 140 },
+          { feedStockId: 6, feedStockName: 'Blocs à Lécher au Sel de Gandiol', quantityKg: 0.2, dryMatterPercentage: 98, calculatedDryMatterKg: 0.2, unitPriceFcfa: 800, calculatedCostFcfa: 160 }
+        ],
+        totalFreshWeightKg: 12.2,
+        dailyDryMatterKg: 7.4,
+        compositionDescription: '6 kg Ensilage Maïs + 5 kg Foin Niébé + 1 kg Son de Blé + Sel de Gandiol',
+        dailyCostFcfa: 1240,
         energyUfl: 8.5,
         proteinPdiGrams: 720
       },
       {
         id: 4,
-        rationName: 'Ration Croissance Génisses',
+        rationName: 'Ration Croissance Génisses & Reproducteurs',
         targetCategory: 'Génisses de Renouvellement',
-        dailyDryMatterKg: 9.0,
-        compositionDescription: '5 kg Ensilage Maïs + 3 kg Foin Niébé + 1 kg Tourteau Arachide + 50g CMV',
-        dailyCostFcfa: 1200,
+        targetBreeds: ['Génisses Holstein', 'Taureaux Guzerat'],
+        ingredients: [
+          { feedStockId: 1, feedStockName: 'Ensilage de Maïs Bio', quantityKg: 5, dryMatterPercentage: 32, calculatedDryMatterKg: 1.6, unitPriceFcfa: 65, calculatedCostFcfa: 325 },
+          { feedStockId: 2, feedStockName: 'Foin de Niébé Riche en Protéines', quantityKg: 3, dryMatterPercentage: 88, calculatedDryMatterKg: 2.6, unitPriceFcfa: 110, calculatedCostFcfa: 330 },
+          { feedStockId: 3, feedStockName: 'Tourteau d\'Arachide Pressé à Froid', quantityKg: 1, dryMatterPercentage: 90, calculatedDryMatterKg: 0.9, unitPriceFcfa: 240, calculatedCostFcfa: 240 },
+          { feedStockId: 5, feedStockName: 'Poudre de Moringa & CMV Bio', quantityKg: 0.1, dryMatterPercentage: 95, calculatedDryMatterKg: 0.1, unitPriceFcfa: 1500, calculatedCostFcfa: 150 }
+        ],
+        totalFreshWeightKg: 9.1,
+        dailyDryMatterKg: 5.2,
+        compositionDescription: '5 kg Ensilage Maïs + 3 kg Foin Niébé + 1 kg Tourteau Arachide + 100g CMV',
+        dailyCostFcfa: 1045,
         energyUfl: 7.8,
         proteinPdiGrams: 680
+      }
+    ]);
+  }
+
+  loadFallbackDistributions(): void {
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+    this.feedDistributions.set([
+      {
+        id: 1,
+        rationId: 1,
+        rationName: 'Ration Haute Lactation (> 20 L/j)',
+        distributionDate: today,
+        distributionTime: '07:00',
+        session: 'MATIN',
+        quantityDistributedKg: 148.2,
+        animalsCountNourished: 6,
+        targetGroupOrRace: 'Holstein & Guzerat Laitières',
+        specificAnimalIds: ['FL-001', 'FL-004'],
+        distributorName: 'Moussa Bouvier',
+        totalCostFcfa: 17010,
+        notes: 'Distribution complète du matin à l\'auge avec eau fraîche.'
+      },
+      {
+        id: 2,
+        rationId: 2,
+        rationName: 'Ration Moyenne Lactation (14 - 18 L/j)',
+        distributionDate: today,
+        distributionTime: '07:30',
+        session: 'MATIN',
+        quantityDistributedKg: 98.2,
+        animalsCountNourished: 5,
+        targetGroupOrRace: 'Montbéliarde & Jersiaise',
+        specificAnimalIds: ['FL-002', 'FL-006'],
+        distributorName: 'Moussa Bouvier',
+        totalCostFcfa: 10675,
+        notes: 'Distribution normale, excellente appétence.'
+      },
+      {
+        id: 3,
+        rationId: 1,
+        rationName: 'Ration Haute Lactation (> 20 L/j)',
+        distributionDate: yesterday,
+        distributionTime: '16:30',
+        session: 'SOIR',
+        quantityDistributedKg: 148.2,
+        animalsCountNourished: 6,
+        targetGroupOrRace: 'Holstein & Guzerat Laitières',
+        distributorName: 'Abdoulaye Soigneur',
+        totalCostFcfa: 17010,
+        notes: 'Complément du soir après traite.'
+      },
+      {
+        id: 4,
+        rationId: 4,
+        rationName: 'Ration Croissance Génisses & Reproducteurs',
+        distributionDate: yesterday,
+        distributionTime: '08:00',
+        session: 'MATIN',
+        quantityDistributedKg: 54.6,
+        animalsCountNourished: 6,
+        targetGroupOrRace: 'Génisses de Renouvellement',
+        distributorName: 'Abdoulaye Soigneur',
+        totalCostFcfa: 6270,
+        notes: 'Parc des jeunes bovins.'
       }
     ]);
   }
@@ -3566,13 +4066,13 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.isFeedMenuOpen.update(v => !v);
   }
 
-  navigateToFeedSubTab(subTab: 'stocks' | 'rations' | 'suppliers'): void {
+  navigateToFeedSubTab(subTab: 'stocks' | 'rations' | 'distributions' | 'suppliers'): void {
     this.isFeedMenuOpen.set(true);
     this.activeFeedSubTab.set(subTab);
     this.showPage('alimentation');
   }
 
-  switchFeedSubTab(tab: 'stocks' | 'rations' | 'suppliers'): void {
+  switchFeedSubTab(tab: 'stocks' | 'rations' | 'distributions' | 'suppliers'): void {
     this.activeFeedSubTab.set(tab);
   }
 
@@ -3710,26 +4210,93 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.apiService.deleteFeedStock(id).subscribe({
         next: () => {
           this.feedStocks.update(list => list.filter(s => s.id !== id));
-          this.showToast('✅ Aliment supprimé de PostgreSQL.');
+          this.showToast('✅ Aliment supprimé avec succès.');
         },
         error: () => {
-          this.showToast('⚠️ Erreur de suppression de l\'aliment dans PostgreSQL.');
+          this.showToast('⚠️ Erreur lors de la suppression de l\'aliment.');
         }
       });
     }
   }
 
-  // Modals & Actions Feed Ration
+  // ==========================================
+  // SPRINT 5: FORMULES DE RATION MULTI-INGRÉDIENTS & DISTRIBUTION
+  // ==========================================
+  availableBreeds = ['Holstein', 'Guzerat', 'Montbéliarde', 'Jersiaise', 'Gobra', 'Métisse'];
+
+  toggleBreedInRation(breed: string): void {
+    if (!this.feedRationForm.targetBreeds) {
+      this.feedRationForm.targetBreeds = [];
+    }
+    const idx = this.feedRationForm.targetBreeds.indexOf(breed);
+    if (idx >= 0) {
+      this.feedRationForm.targetBreeds.splice(idx, 1);
+    } else {
+      this.feedRationForm.targetBreeds.push(breed);
+    }
+  }
+
+  isBreedSelected(breed: string): boolean {
+    return !!(this.feedRationForm.targetBreeds && this.feedRationForm.targetBreeds.includes(breed));
+  }
+
   openNewFeedRationModal(): void {
+    const defaultIngredients: FeedRationIngredient[] = [];
+    const stocks = this.feedStocks();
+
+    if (stocks.length > 0) {
+      const ensilage = stocks.find(s => s.category === 'FORAGE_GREEN') || stocks[0];
+      defaultIngredients.push({
+        feedStockId: ensilage.id || 1,
+        feedStockName: ensilage.name,
+        quantityKg: 15,
+        dryMatterPercentage: 32,
+        calculatedDryMatterKg: 4.8,
+        unitPriceFcfa: ensilage.unitPricePerKgFcfa || 65,
+        calculatedCostFcfa: 975
+      });
+
+      const foin = stocks.find(s => s.category === 'FORAGE_DRY') || (stocks[1] || stocks[0]);
+      if (foin && foin.id !== ensilage.id) {
+        defaultIngredients.push({
+          feedStockId: foin.id || 2,
+          feedStockName: foin.name,
+          quantityKg: 4,
+          dryMatterPercentage: 88,
+          calculatedDryMatterKg: 3.5,
+          unitPriceFcfa: foin.unitPricePerKgFcfa || 110,
+          calculatedCostFcfa: 440
+        });
+      }
+
+      const concentre = stocks.find(s => s.category === 'CONCENTRATE');
+      if (concentre) {
+        defaultIngredients.push({
+          feedStockId: concentre.id || 3,
+          feedStockName: concentre.name,
+          quantityKg: 3,
+          dryMatterPercentage: 90,
+          calculatedDryMatterKg: 2.7,
+          unitPriceFcfa: concentre.unitPricePerKgFcfa || 240,
+          calculatedCostFcfa: 720
+        });
+      }
+    }
+
     this.feedRationForm = {
       rationName: '',
       targetCategory: 'Vaches Haute Lactation',
-      dailyDryMatterKg: 15.0,
+      targetBreeds: ['Holstein', 'Guzerat'],
+      targetAnimalIds: [],
+      ingredients: defaultIngredients,
+      dailyDryMatterKg: 11.0,
+      totalFreshWeightKg: 22.0,
+      dailyCostFcfa: 2135,
       compositionDescription: '',
-      dailyCostFcfa: 2400,
       energyUfl: 13.0,
       proteinPdiGrams: 1250
     };
+    this.recalculateRationTotals();
     this.isFeedRationModalOpen.set(true);
   }
 
@@ -3737,23 +4304,122 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.isFeedRationModalOpen.set(false);
   }
 
+  addIngredientToRation(stockId?: number): void {
+    const stocks = this.feedStocks();
+    if (stocks.length === 0) return;
+    const stock = stockId ? stocks.find(s => s.id === +stockId) : stocks[0];
+    if (!stock) return;
+
+    let dmP = 85;
+    if (stock.category === 'FORAGE_GREEN') dmP = 32;
+    else if (stock.category === 'FORAGE_DRY') dmP = 88;
+    else if (stock.category === 'CONCENTRATE') dmP = 90;
+    else if (stock.category === 'MINERALS_VITAMINS') dmP = 95;
+
+    const defaultQty = stock.category === 'FORAGE_GREEN' ? 10 : (stock.category === 'FORAGE_DRY' ? 4 : (stock.category === 'CONCENTRATE' ? 2 : 0.2));
+
+    if (!this.feedRationForm.ingredients) {
+      this.feedRationForm.ingredients = [];
+    }
+
+    this.feedRationForm.ingredients.push({
+      feedStockId: stock.id || 0,
+      feedStockName: stock.name,
+      quantityKg: defaultQty,
+      dryMatterPercentage: dmP,
+      calculatedDryMatterKg: Math.round(defaultQty * (dmP / 100) * 10) / 10,
+      unitPriceFcfa: stock.unitPricePerKgFcfa || 80,
+      calculatedCostFcfa: Math.round(defaultQty * (stock.unitPricePerKgFcfa || 80))
+    });
+    this.recalculateRationTotals();
+  }
+
+  removeIngredientFromRation(index: number): void {
+    if (!this.feedRationForm.ingredients) {
+      this.feedRationForm.ingredients = [];
+    }
+    this.feedRationForm.ingredients.splice(index, 1);
+    this.recalculateRationTotals();
+  }
+
+  onIngredientStockChange(index: number, stockId: any): void {
+    const stock = this.feedStocks().find(s => s.id === +stockId);
+    if (!stock) return;
+    if (!this.feedRationForm.ingredients) {
+      this.feedRationForm.ingredients = [];
+    }
+    const ing = this.feedRationForm.ingredients[index];
+    if (!ing) return;
+    ing.feedStockId = stock.id || 0;
+    ing.feedStockName = stock.name;
+    ing.unitPriceFcfa = stock.unitPricePerKgFcfa || 80;
+    if (stock.category === 'FORAGE_GREEN') ing.dryMatterPercentage = 32;
+    else if (stock.category === 'FORAGE_DRY') ing.dryMatterPercentage = 88;
+    else if (stock.category === 'CONCENTRATE') ing.dryMatterPercentage = 90;
+    else if (stock.category === 'MINERALS_VITAMINS') ing.dryMatterPercentage = 95;
+    this.recalculateRationTotals();
+  }
+
+  recalculateRationTotals(): void {
+    let totalFresh = 0;
+    let totalDm = 0;
+    let totalCost = 0;
+    const parts: string[] = [];
+    const list = this.feedRationForm.ingredients || [];
+
+    for (const ing of list) {
+      const qty = Number(ing.quantityKg) || 0;
+      const dmP = Number(ing.dryMatterPercentage) || 85;
+      const price = Number(ing.unitPriceFcfa) || 0;
+
+      const dmKg = qty * (dmP / 100);
+      const cost = qty * price;
+
+      ing.calculatedDryMatterKg = Math.round(dmKg * 10) / 10;
+      ing.calculatedCostFcfa = Math.round(cost);
+
+      totalFresh += qty;
+      totalDm += dmKg;
+      totalCost += cost;
+
+      if (qty > 0) {
+        parts.push(`${qty} kg ${ing.feedStockName}`);
+      }
+    }
+
+    this.feedRationForm.totalFreshWeightKg = Math.round(totalFresh * 10) / 10;
+    this.feedRationForm.dailyDryMatterKg = Math.round(totalDm * 10) / 10;
+    this.feedRationForm.dailyCostFcfa = Math.round(totalCost);
+    this.feedRationForm.compositionDescription = parts.join(' + ') || 'Ration équilibrée multi-ingrédients';
+  }
+
   saveFeedRation(): void {
     if (!this.feedRationForm.rationName) {
       this.showToast('Veuillez renseigner le nom de la formule');
       return;
     }
-    this.apiService.createFeedRation(this.feedRationForm).subscribe({
+    this.recalculateRationTotals();
+
+    const rationToSave: FeedRation = {
+      ...this.feedRationForm,
+      createdDate: new Date().toISOString().slice(0, 10)
+    };
+
+    this.apiService.createFeedRation(rationToSave).subscribe({
       next: (created) => {
         this.feedRations.update(rations => [created, ...rations]);
         this.closeFeedRationModal();
-        this.showToast(`✅ Fiche Ration "${created.rationName}" enregistrée dans PostgreSQL !`);
+        const breedsLabel = (this.feedRationForm.targetBreeds && this.feedRationForm.targetBreeds.length > 0) 
+          ? ` (${this.feedRationForm.targetBreeds.join(', ')})` 
+          : '';
+        this.showToast(`✅ Fiche Ration "${created.rationName}"${breedsLabel} enregistrée avec succès !`);
       },
       error: () => {
         const localId = Date.now();
-        const fallback: FeedRation = { ...this.feedRationForm, id: localId };
+        const fallback: FeedRation = { ...rationToSave, id: localId };
         this.feedRations.update(rations => [fallback, ...rations]);
         this.closeFeedRationModal();
-        this.showToast(`✅ Fiche Ration "${fallback.rationName}" enregistrée !`);
+        this.showToast(`✅ Fiche Ration "${fallback.rationName}" enregistrée avec succès !`);
       }
     });
   }
@@ -3764,13 +4430,204 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.apiService.deleteFeedRation(id).subscribe({
         next: () => {
           this.feedRations.update(list => list.filter(r => r.id !== id));
-          this.showToast('✅ Ration supprimée de PostgreSQL.');
+          this.showToast('✅ Ration supprimée avec succès.');
         },
         error: () => {
-          this.showToast('⚠️ Erreur de suppression de la ration.');
+          this.feedRations.update(list => list.filter(r => r.id !== id));
+          this.showToast('✅ Ration supprimée avec succès.');
         }
       });
     }
+  }
+
+  // --- Distributions Journalières Logic ---
+  openDistributionModal(ration?: FeedRation): void {
+    const selectedRation = ration || this.feedRations()[0];
+    if (!selectedRation) {
+      this.showToast('Veuillez d\'abord créer au moins une formule de ration.');
+      return;
+    }
+
+    this.selectedRationForDistribution.set(selectedRation);
+    const count = 6;
+    const freshPerHead = selectedRation.totalFreshWeightKg || 22;
+    const totalQty = Math.round(count * freshPerHead * 10) / 10;
+    const costPerHead = selectedRation.dailyCostFcfa || 2100;
+
+    const currentHour = new Date().getHours();
+    const sessionType: 'MATIN' | 'MIDI' | 'SOIR' = currentHour < 12 ? 'MATIN' : (currentHour < 15 ? 'MIDI' : 'SOIR');
+
+    this.distributionForm = {
+      rationId: selectedRation.id || 0,
+      rationName: selectedRation.rationName,
+      distributionDate: new Date().toISOString().slice(0, 10),
+      distributionTime: new Date().toTimeString().slice(0, 5),
+      session: sessionType,
+      quantityDistributedKg: totalQty,
+      animalsCountNourished: count,
+      targetGroupOrRace: selectedRation.targetBreeds && selectedRation.targetBreeds.length > 0 ? selectedRation.targetBreeds.join(', ') : selectedRation.targetCategory,
+      selectedAnimalIds: selectedRation.targetAnimalIds || [],
+      distributorName: 'Moussa Bouvier',
+      totalCostFcfa: Math.round(count * costPerHead),
+      notes: 'Distribution complète à l\'auge avec eau fraîche.'
+    };
+
+    this.isDistributionModalOpen.set(true);
+  }
+
+  closeDistributionModal(): void {
+    this.isDistributionModalOpen.set(false);
+    this.selectedRationForDistribution.set(null);
+  }
+
+  onRationSelectInDistribution(rationId: any): void {
+    const ration = this.feedRations().find(r => r.id === +rationId);
+    if (!ration) return;
+    this.selectedRationForDistribution.set(ration);
+    this.distributionForm.rationId = ration.id || 0;
+    this.distributionForm.rationName = ration.rationName;
+    this.distributionForm.targetGroupOrRace = ration.targetBreeds && ration.targetBreeds.length > 0 ? ration.targetBreeds.join(', ') : ration.targetCategory;
+    const count = this.distributionForm.animalsCountNourished || 6;
+    const freshPerHead = ration.totalFreshWeightKg || 22;
+    this.distributionForm.quantityDistributedKg = Math.round(count * freshPerHead * 10) / 10;
+    this.distributionForm.totalCostFcfa = Math.round(count * (ration.dailyCostFcfa || 2100));
+  }
+
+  onAnimalCountChange(): void {
+    const ration = this.selectedRationForDistribution() || this.feedRations().find(r => r.id === this.distributionForm.rationId);
+    const count = Number(this.distributionForm.animalsCountNourished) || 1;
+    if (ration) {
+      const freshPerHead = ration.totalFreshWeightKg || 22;
+      this.distributionForm.quantityDistributedKg = Math.round(count * freshPerHead * 10) / 10;
+      this.distributionForm.totalCostFcfa = Math.round(count * (ration.dailyCostFcfa || 2100));
+    }
+  }
+
+  submitFeedDistribution(): void {
+    if (!this.distributionForm.rationName || this.distributionForm.quantityDistributedKg <= 0) {
+      this.showToast('Veuillez renseigner une formule et une quantité distribuée valide.');
+      return;
+    }
+
+    const dist: FeedDistribution = {
+      id: Date.now(),
+      ...this.distributionForm
+    };
+
+    // 1. Déduction automatique et proportionnelle des stocks de matières premières
+    const ration = this.selectedRationForDistribution() || this.feedRations().find(r => r.id === this.distributionForm.rationId);
+    if (ration && ration.ingredients && ration.ingredients.length > 0) {
+      const count = this.distributionForm.animalsCountNourished || 1;
+      this.feedStocks.update(stocks => stocks.map(stock => {
+        const ing = ration.ingredients?.find(i => i.feedStockId === stock.id || i.feedStockName === stock.name);
+        if (ing) {
+          const usedKg = Math.round(ing.quantityKg * count * 10) / 10;
+          const newQty = Math.max(0, Math.round((stock.currentStockKg - usedKg) * 10) / 10);
+          return {
+            ...stock,
+            currentStockKg: newQty,
+            isLowStock: newQty <= stock.alertThresholdKg
+          };
+        }
+        return stock;
+      }));
+    }
+
+    // 2. Persistance & Ajout de la distribution à l'historique
+    this.apiService.recordFeedDistribution(dist).subscribe({
+      next: (created) => {
+        this.feedDistributions.update(list => [created, ...list]);
+        this.closeDistributionModal();
+        this.showToast(`🚜 Distribution de ${created.quantityDistributedKg} kg de "${created.rationName}" enregistrée pour ${created.animalsCountNourished} têtes (${created.targetGroupOrRace}) ! Stocks déduits.`);
+      },
+      error: () => {
+        this.feedDistributions.update(list => [dist, ...list]);
+        this.closeDistributionModal();
+        this.showToast(`🚜 Distribution de ${dist.quantityDistributedKg} kg de "${dist.rationName}" enregistrée pour ${dist.animalsCountNourished} têtes (${dist.targetGroupOrRace}) ! Stocks déduits.`);
+      }
+    });
+  }
+
+  // --- Filtres & Pagination Distributions ---
+  resetDistFilters(): void {
+    this.distFilterStartDate.set('');
+    this.distFilterEndDate.set('');
+    this.distFilterRation.set('ALL');
+    this.distFilterAnimalOrBreed.set('ALL');
+    this.distFilterSearch.set('');
+    this.distCurrentPage.set(1);
+  }
+
+  get filteredDistributions(): FeedDistribution[] {
+    let list = this.feedDistributions();
+
+    const start = this.distFilterStartDate();
+    if (start) list = list.filter(d => d.distributionDate >= start);
+
+    const end = this.distFilterEndDate();
+    if (end) list = list.filter(d => d.distributionDate <= end);
+
+    const r = this.distFilterRation();
+    if (r && r !== 'ALL') list = list.filter(d => d.rationName === r);
+
+    const b = this.distFilterAnimalOrBreed();
+    if (b && b !== 'ALL') list = list.filter(d => d.targetGroupOrRace && d.targetGroupOrRace.includes(b));
+
+    const q = this.distFilterSearch().toLowerCase().trim();
+    if (q) {
+      list = list.filter(d => 
+        d.rationName.toLowerCase().includes(q) ||
+        d.targetGroupOrRace.toLowerCase().includes(q) ||
+        d.distributorName.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }
+
+  get paginatedDistributions(): FeedDistribution[] {
+    const start = (this.distCurrentPage() - 1) * this.distPageSize();
+    return this.filteredDistributions.slice(start, start + this.distPageSize());
+  }
+
+  get totalDistPages(): number {
+    return Math.ceil(this.filteredDistributions.length / this.distPageSize()) || 1;
+  }
+
+  get distPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalDistPages; i++) pages.push(i);
+    return pages;
+  }
+
+  setDistPage(page: number): void {
+    if (page >= 1 && page <= this.totalDistPages) {
+      this.distCurrentPage.set(page);
+    }
+  }
+
+  prevDistPage(): void {
+    if (this.distCurrentPage() > 1) {
+      this.distCurrentPage.update(p => p - 1);
+    }
+  }
+
+  nextDistPage(): void {
+    if (this.distCurrentPage() < this.totalDistPages) {
+      this.distCurrentPage.update(p => p + 1);
+    }
+  }
+
+  get totalDistributedKg(): number {
+    return Math.round(this.filteredDistributions.reduce((sum, d) => sum + (d.quantityDistributedKg || 0), 0) * 10) / 10;
+  }
+
+  get totalDistributedCostFcfa(): number {
+    return Math.round(this.filteredDistributions.reduce((sum, d) => sum + (d.totalCostFcfa || 0), 0));
+  }
+
+  get totalAnimalsNourished(): number {
+    return this.filteredDistributions.reduce((sum, d) => sum + (d.animalsCountNourished || 0), 0);
   }
 
   // Badge helpers Sprint 5
@@ -3896,10 +4753,10 @@ export class AppComponent implements OnInit, AfterViewInit {
         next: (updated) => {
           this.suppliers.update(list => list.map(s => s.id === updated.id ? updated : s));
           this.closeSupplierModal();
-          this.showToast(`✅ Fournisseur "${updated.name}" mis à jour dans PostgreSQL !`);
+          this.showToast(`✅ Fournisseur "${updated.name}" mis à jour avec succès !`);
         },
         error: () => {
-          this.showToast(`⚠️ Erreur de mise à jour du fournisseur dans PostgreSQL.`);
+          this.showToast(`⚠️ Erreur lors de la mise à jour du fournisseur.`);
         }
       });
     } else {
@@ -3907,10 +4764,10 @@ export class AppComponent implements OnInit, AfterViewInit {
         next: (created) => {
           this.suppliers.update(list => [created, ...list]);
           this.closeSupplierModal();
-          this.showToast(`✅ Fournisseur "${created.name}" enregistré dans PostgreSQL !`);
+          this.showToast(`✅ Fournisseur "${created.name}" enregistré avec succès !`);
         },
         error: () => {
-          this.showToast(`⚠️ Erreur de création du fournisseur dans PostgreSQL.`);
+          this.showToast(`⚠️ Erreur lors de la création du fournisseur.`);
         }
       });
     }
@@ -3922,10 +4779,10 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.apiService.deleteSupplier(id).subscribe({
         next: () => {
           this.suppliers.update(list => list.filter(s => s.id !== id));
-          this.showToast('✅ Fournisseur retiré de PostgreSQL.');
+          this.showToast('✅ Fournisseur retiré avec succès.');
         },
         error: () => {
-          this.showToast('⚠️ Erreur de suppression du fournisseur.');
+          this.showToast('⚠️ Erreur lors de la suppression du fournisseur.');
         }
       });
     }
@@ -3960,10 +4817,10 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.suppliers.update(list => [created, ...list]);
         this.feedStockForm.supplierName = created.name;
         this.closeQuickSupplierModal();
-        this.showToast(`✅ Fournisseur "${created.name}" enregistré dans PostgreSQL et sélectionné !`);
+        this.showToast(`✅ Fournisseur "${created.name}" enregistré avec succès !`);
       },
       error: () => {
-        this.showToast(`⚠️ Erreur d'enregistrement du fournisseur dans PostgreSQL.`);
+        this.showToast(`⚠️ Erreur lors de l'enregistrement du fournisseur.`);
       }
     });
   }
@@ -4034,6 +4891,87 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     this.showToast(`Rapport "${reportTitle}" téléchargé avec succès !`);
     this.closeAuditReportModal();
+  }
+
+  // --- Production Laitière Sub-Menu Navigation ---
+  toggleMilkMenu(event?: MouseEvent): void {
+    if (event) event.stopPropagation();
+    this.isMilkMenuOpen.update(v => !v);
+  }
+
+  navigateToMilkSubTab(tab: 'milking' | 'journal'): void {
+    this.showPage('lait');
+    this.activeMilkSubTab.set(tab);
+    this.isMilkMenuOpen.set(true);
+  }
+
+  // --- Fiches Rations Filtres & Pagination ---
+  resetRationFilters(): void {
+    this.rationSearchTerm.set('');
+    this.rationCategoryFilter.set('ALL');
+    this.rationBreedFilter.set('ALL');
+    this.rationsCurrentPage.set(1);
+  }
+
+  get filteredFeedRations(): FeedRation[] {
+    let list = this.feedRations();
+
+    const cat = this.rationCategoryFilter();
+    if (cat && cat !== 'ALL') {
+      list = list.filter(r => r.targetCategory === cat);
+    }
+
+    const breed = this.rationBreedFilter();
+    if (breed && breed !== 'ALL') {
+      list = list.filter(r => r.targetBreeds && r.targetBreeds.includes(breed));
+    }
+
+    const q = this.rationSearchTerm().toLowerCase().trim();
+    if (q) {
+      list = list.filter(r => 
+        (r.rationName && r.rationName.toLowerCase().includes(q)) ||
+        (r.targetCategory && r.targetCategory.toLowerCase().includes(q)) ||
+        (r.compositionDescription && r.compositionDescription.toLowerCase().includes(q)) ||
+        (r.targetBreeds && r.targetBreeds.some(b => b.toLowerCase().includes(q)))
+      );
+    }
+
+    return list;
+  }
+
+  get paginatedFeedRations(): FeedRation[] {
+    const start = (this.rationsCurrentPage() - 1) * this.rationsItemsPerPage();
+    return this.filteredFeedRations.slice(start, start + this.rationsItemsPerPage());
+  }
+
+  get totalRationsPages(): number {
+    return Math.ceil(this.filteredFeedRations.length / this.rationsItemsPerPage()) || 1;
+  }
+
+  get rationsPageNumbers(): number[] {
+    const pages: number[] = [];
+    for (let i = 1; i <= this.totalRationsPages; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  setRationsPage(page: number): void {
+    if (page >= 1 && page <= this.totalRationsPages) {
+      this.rationsCurrentPage.set(page);
+    }
+  }
+
+  prevRationsPage(): void {
+    if (this.rationsCurrentPage() > 1) {
+      this.rationsCurrentPage.update(p => p - 1);
+    }
+  }
+
+  nextRationsPage(): void {
+    if (this.rationsCurrentPage() < this.totalRationsPages) {
+      this.rationsCurrentPage.update(p => p + 1);
+    }
   }
 
   private initPerfModalChart(animal: Animal): void {

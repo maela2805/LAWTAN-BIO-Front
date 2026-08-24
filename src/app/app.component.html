@@ -80,11 +80,34 @@
       <div class="nav-group">
         <div class="nav-group-title">Production & Terroir</div>
         <ul>
-          <li>
-            <a href="javascript:void(0)" class="nav-link" [class.active]="activePage() === 'lait'" (click)="showPage('lait')">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 6H7L8 2z"/><path d="M7 8c0 10 2 12 5 12s5-2 5-12"/></svg>
-              <span>Production Laitière</span>
-            </a>
+          <!-- Accordion Menu: Production Laitière & Récoltes -->
+          <li class="nav-item-accordion">
+            <div class="nav-link-wrapper" [class.active]="activePage() === 'lait'">
+              <a href="javascript:void(0)" class="nav-link nav-link-parent" [class.active]="activePage() === 'lait'" (click)="navigateToMilkSubTab('milking')">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 6H7L8 2z"/><path d="M7 8c0 10 2 12 5 12s5-2 5-12"/></svg>
+                <span>Production Laitière</span>
+                <span class="nav-badge-count badge-success" *ngIf="milkProductions().length">{{ milkProductions().length }}</span>
+              </a>
+              <button type="button" class="nav-expand-btn nav-expand-btn-right" (click)="toggleMilkMenu($event)" title="Dérouler / Replier les sous-menus" aria-label="Dérouler">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" [style.transform]="isMilkMenuOpen() ? 'rotate(180deg)' : 'rotate(0deg)'" style="transition:transform 0.2s ease"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+
+            <!-- Sous-menus déroulants Production Laitière -->
+            <ul class="nav-sub-menu" *ngIf="isMilkMenuOpen()">
+              <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'lait' && activeMilkSubTab() === 'milking'" (click)="navigateToMilkSubTab('milking')">
+                  <span class="nav-sub-dot"></span>
+                  <span>Traite & Cuves</span>
+                </a>
+              </li>
+              <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'lait' && activeMilkSubTab() === 'journal'" (click)="navigateToMilkSubTab('journal')">
+                  <span class="nav-sub-dot"></span>
+                  <span>Journal des Récoltes ({{ milkProductions().length }})</span>
+                </a>
+              </li>
+            </ul>
           </li>
           <!-- Accordion Menu: Atelier Transformation & Produits Dérivés -->
           <li class="nav-item-accordion">
@@ -95,8 +118,7 @@
                 <span class="nav-badge-count badge-success" *ngIf="transformationBatches().length">{{ transformationBatches().length }}</span>
               </a>
               <button type="button" class="nav-expand-btn nav-expand-btn-right" (click)="toggleTransformationMenu($event)" title="Dérouler / Replier les sous-menus" aria-label="Dérouler">
-                <span *ngIf="!isTransformationMenuOpen()">➕</span>
-                <span *ngIf="isTransformationMenuOpen()">➖</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" [style.transform]="isTransformationMenuOpen() ? 'rotate(180deg)' : 'rotate(0deg)'" style="transition:transform 0.2s ease"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
             </div>
 
@@ -104,19 +126,19 @@
             <ul class="nav-sub-menu" *ngIf="isTransformationMenuOpen()">
               <li>
                 <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'transformation' && activeTransformationSubTab() === 'batches'" (click)="navigateToTransformationSubTab('batches')">
-                  <span class="nav-sub-bullet">🏷️</span>
+                  <span class="nav-sub-dot"></span>
                   <span>Lots de Fabrication ({{ transformationBatches().length }})</span>
                 </a>
               </li>
               <li>
                 <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'transformation' && activeTransformationSubTab() === 'recipes'" (click)="navigateToTransformationSubTab('recipes')">
-                  <span class="nav-sub-bullet">📖</span>
+                  <span class="nav-sub-dot"></span>
                   <span>Fiches Recettes ({{ recipes().length }})</span>
                 </a>
               </li>
               <li>
                 <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'transformation' && activeTransformationSubTab() === 'stocks'" (click)="navigateToTransformationSubTab('stocks')">
-                  <span class="nav-sub-bullet">📦</span>
+                  <span class="nav-sub-dot"></span>
                   <span>Stock Produits Finis ({{ productStocks().length }})</span>
                 </a>
               </li>
@@ -131,8 +153,7 @@
                 <span class="nav-badge-count badge-success" *ngIf="feedStocks().length">{{ feedStocks().length }}</span>
               </a>
               <button type="button" class="nav-expand-btn nav-expand-btn-right" (click)="toggleFeedMenu($event)" title="Dérouler / Replier les sous-menus" aria-label="Dérouler">
-                <span *ngIf="!isFeedMenuOpen()">➕</span>
-                <span *ngIf="isFeedMenuOpen()">➖</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" [style.transform]="isFeedMenuOpen() ? 'rotate(180deg)' : 'rotate(0deg)'" style="transition:transform 0.2s ease"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
             </div>
 
@@ -140,19 +161,25 @@
             <ul class="nav-sub-menu" *ngIf="isFeedMenuOpen()">
               <li>
                 <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'alimentation' && activeFeedSubTab() === 'stocks'" (click)="navigateToFeedSubTab('stocks')">
-                  <span class="nav-sub-bullet">🌾</span>
+                  <span class="nav-sub-dot"></span>
                   <span>Stocks Fourrages ({{ feedStocks().length }})</span>
                 </a>
               </li>
               <li>
                 <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'alimentation' && activeFeedSubTab() === 'rations'" (click)="navigateToFeedSubTab('rations')">
-                  <span class="nav-sub-bullet">📋</span>
+                  <span class="nav-sub-dot"></span>
                   <span>Fiches Rations ({{ feedRations().length }})</span>
                 </a>
               </li>
               <li>
+                <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'alimentation' && activeFeedSubTab() === 'distributions'" (click)="navigateToFeedSubTab('distributions')">
+                  <span class="nav-sub-dot"></span>
+                  <span>Journal des Distributions ({{ feedDistributions().length }})</span>
+                </a>
+              </li>
+              <li>
                 <a href="javascript:void(0)" class="nav-sub-link" [class.active]="activePage() === 'alimentation' && activeFeedSubTab() === 'suppliers'" (click)="navigateToFeedSubTab('suppliers')">
-                  <span class="nav-sub-bullet">🤝</span>
+                  <span class="nav-sub-dot"></span>
                   <span>Fournisseurs & Intrants ({{ suppliers().length }})</span>
                 </a>
               </li>
@@ -179,8 +206,7 @@
                 <span class="nav-badge-count badge-success" *ngIf="invoices().length">{{ invoices().length }}</span>
               </a>
               <button type="button" class="nav-expand-btn nav-expand-btn-right" (click)="toggleCommercialMenu($event)" title="Dérouler / Replier les sous-menus" aria-label="Dérouler">
-                <span *ngIf="!isCommercialMenuOpen()">➕</span>
-                <span *ngIf="isCommercialMenuOpen()">➖</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" [style.transform]="isCommercialMenuOpen() ? 'rotate(180deg)' : 'rotate(0deg)'" style="transition:transform 0.2s ease"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
             </div>
 
@@ -188,19 +214,19 @@
             <ul class="nav-sub-menu" *ngIf="isCommercialMenuOpen()">
               <li>
                 <a href="javascript:void(0)" class="nav-sub-link" [class.active]="(activePage() === 'commercial' || activePage() === 'ventes') && activeCommercialSubTab() === 'invoices'" (click)="navigateToCommercialSubTab('invoices')">
-                  <span class="nav-sub-bullet">🧾</span>
+                  <span class="nav-sub-dot"></span>
                   <span>Factures & Ventes ({{ invoices().length }})</span>
                 </a>
               </li>
               <li>
                 <a href="javascript:void(0)" class="nav-sub-link" [class.active]="(activePage() === 'commercial' || activePage() === 'ventes') && activeCommercialSubTab() === 'customers'" (click)="navigateToCommercialSubTab('customers')">
-                  <span class="nav-sub-bullet">👥</span>
+                  <span class="nav-sub-dot"></span>
                   <span>Répertoire Clients ({{ customers().length }})</span>
                 </a>
               </li>
               <li>
                 <a href="javascript:void(0)" class="nav-sub-link" [class.active]="(activePage() === 'commercial' || activePage() === 'ventes') && activeCommercialSubTab() === 'payments'" (click)="navigateToCommercialSubTab('payments')">
-                  <span class="nav-sub-bullet">💳</span>
+                  <span class="nav-sub-dot"></span>
                   <span>Encaissements & Caisse ({{ payments().length }})</span>
                 </a>
               </li>
@@ -260,15 +286,6 @@
       <div class="topbar-right">
         <!-- Infrastructure Status -->
         <div class="infra-tags-group">
-          <!-- PostgreSQL Live Database Indicator -->
-          <span *ngIf="apiService.isBackendConnected()" class="infra-tag tag-db-connected" (click)="refreshAndSyncAllData()" title="Base PostgreSQL Connectée (Neon DB) — Cliquer pour synchroniser">
-            🟢 BDD Connectée (PostgreSQL)
-          </span>
-          <span *ngIf="!apiService.isBackendConnected()" class="infra-tag tag-db-offline" (click)="refreshAndSyncAllData()" title="Backend non joignable — Cliquer pour retester">
-            🔴 BDD Déconnectée (Port 8080)
-          </span>
-
-          <span class="infra-tag tag-solar" title="Installation Solaire Autonome active">☀️ Solaire 12 kWc (94%)</span>
           <span class="infra-tag tag-network" (click)="toggleOffline()" style="cursor:pointer" title="Cliquez pour basculer le mode hors-ligne">
             <span *ngIf="!isOffline()">🌐 4G Connectée</span>
             <span *ngIf="isOffline()" style="color:#dc2626">📴 Mode Hors-ligne</span>
@@ -1030,142 +1047,462 @@
       <!-- ==========================================
            PAGE 5: PRODUCTION LAITIERE & TANK GLOBAL (SPRINT 2)
            ========================================== -->
+      <!-- ==========================================
+           PAGE 5: PRODUCTION LAITIERE & TANK GLOBAL (SPRINT 2)
+           ========================================== -->
       <div class="page" *ngIf="activePage() === 'lait'">
-        <div class="page-header-row">
-          <div class="page-header-text">
-            <h2>Production Laitière Bio & Supervision Tank</h2>
-            <p>Double niveau de suivi : Saisie individuelle rapide (Matin/Soir) & Cuve réfrigérée de collecte globale.</p>
+        
+        <!-- VUE 1: TRAITE & CUVES LAITIÈRES -->
+        <div *ngIf="activeMilkSubTab() === 'milking'">
+          <div class="page-header-row">
+            <div class="page-header-text">
+              <h2>Poste de Traite & Supervision Cuve Laitière</h2>
+              <p>Saisie individuelle instantanée par vache et surveillance en temps réel de la cuve réfrigérée de collecte bio.</p>
+            </div>
+            <div class="header-action-group">
+              <button class="btn-primary" (click)="isMilkModalOpen.set(true)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+                <span>+ Saisie Manuelle Traite</span>
+              </button>
+              <button class="btn-secondary" (click)="navigateToMilkSubTab('journal')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span>Journal des Récoltes</span>
+              </button>
+            </div>
           </div>
-          <div class="header-action-group">
-            <button class="btn-primary" (click)="isMilkModalOpen.set(true)">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
-              <span>+ Saisie Manuelle Traite</span>
-            </button>
-          </div>
-        </div>
 
-        <!-- 1. Cuve Réfrigérée Tank Global Supervision Card -->
-        <div class="tank-supervision-card">
-          <div class="tank-header-row">
-            <div class="tank-title-wrap">
-              <div class="tank-icon-shield">🥛</div>
+          <!-- 1. Cuve Réfrigérée Tank Global Supervision Card -->
+          <div class="tank-supervision-card">
+            <div class="tank-header-row">
+              <div class="tank-title-wrap">
+                <div class="tank-icon-shield">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 6H7L8 2z"/><path d="M7 8c0 10 2 12 5 12s5-2 5-12"/></svg>
+                </div>
+                <div>
+                  <h3>{{ tankStatus()?.tankName || 'Cuve Réfrigérée N°1 (Bio)' }}</h3>
+                  <p>Stockage isotherme connecté • Température sous consigne</p>
+                </div>
+              </div>
+              <div class="tank-badge-status">
+                <span class="badge-pill" [style.background]="(tankStatus()?.currentVolume || 0) > 0 ? '#dcfce7' : '#fee2e2'" [style.color]="(tankStatus()?.currentVolume || 0) > 0 ? '#166534' : '#991b1b'">
+                  {{ (tankStatus()?.currentVolume || 0) > 0 ? (tankStatus()?.qualityStatus || 'CONFORME BIO') : 'CUVE ÉPUISÉE (0 L)' }}
+                </span>
+                <span class="badge-pedigree-tag">Lot : {{ tankStatus()?.targetBatch || 'LOT-TR-20260818-01' }}</span>
+              </div>
+            </div>
+
+            <div class="tank-body-grid">
+              <!-- Left: Animated Liquid Gauge -->
+              <div class="tank-gauge-col">
+                <div class="tank-cylinder">
+                  <div class="tank-liquid" [style.height]="(tankStatus()?.fillPercentage || 0) + '%'">
+                    <div class="liquid-wave"></div>
+                  </div>
+                  <div class="tank-gauge-label">
+                    <strong>{{ tankStatus()?.currentVolume || 0 }} L</strong>
+                    <span>/ {{ tankStatus()?.maxCapacity || 500.0 }} L</span>
+                  </div>
+                </div>
+                <div class="tank-fill-info">
+                  <span>Solde Net Cuve : <strong>{{ tankStatus()?.fillPercentage || 0 }}%</strong></span>
+                </div>
+                <div *ngIf="(tankStatus()?.currentVolume || 0) <= 0" style="margin-top:8px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:6px 10px;border-radius:6px;font-size:0.78rem;font-weight:700;text-align:center">
+                  Tout le lait a été transformé (Cuve vide). Saisissez une collecte pour la remplir.
+                </div>
+              </div>
+
+              <!-- Right: Quality Indicators & Sessions -->
+              <div class="tank-metrics-col">
+                <div class="tank-stat-quad" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
+                  <div class="tank-kpi-box">
+                    <span class="lbl">Collecte Brute (Jour)</span>
+                    <strong class="val" style="color:#16a34a">{{ (tankStatus()?.grossVolumeCollected || ((tankStatus()?.morningVolume || 0) + (tankStatus()?.eveningVolume || 0)) || tankStatus()?.currentVolume || 0) }} L</strong>
+                    <span class="sub-lbl">Matin {{ tankStatus()?.morningVolume || 0 }}L • Soir {{ tankStatus()?.eveningVolume || 0 }}L</span>
+                  </div>
+                  <div class="tank-kpi-box">
+                    <span class="lbl">Prélevé Transformation</span>
+                    <strong class="val" style="color:#dc2626">-{{ tankStatus()?.transformedVolume || 0 }} L</strong>
+                    <span class="sub-lbl">Lots en fabrication & finis</span>
+                  </div>
+                  <div class="tank-kpi-box">
+                    <span class="lbl">Température Cuve</span>
+                    <strong class="val" style="color:#16a34a">{{ tankStatus()?.temperature || 3.9 }} °C</strong>
+                    <span class="sub-lbl">Consigne : 3.8 - 4.2 °C</span>
+                  </div>
+                  <div class="tank-kpi-box">
+                    <span class="lbl">Acidité / pH</span>
+                    <strong class="val" style="color:#15803d">{{ tankStatus()?.phLevel || 6.68 }} pH</strong>
+                    <span class="sub-lbl">Optimal (6.60 - 6.80)</span>
+                  </div>
+                </div>
+
+                <div class="tank-bottom-row" style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+                  <div class="tank-session-pill">
+                    <span>Session active : </span>
+                    <strong>{{ isCurrentMorningSession() ? 'Session Matin' : 'Session Soir' }}</strong>
+                  </div>
+                  <div class="tank-temp-check">
+                    <span>Alimentation groupe froid : Solaire 45 kWc (Autonome)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Saisie Rapide Directe par Vache (Boutons Matin & Soir avec Pagination) -->
+          <div class="content-card" style="margin-top:20px">
+            <div class="content-card-header" style="border-bottom:none;padding-bottom:12px">
               <div>
-                <h3>{{ tankStatus()?.tankName || 'Cuve Réfrigérée N°1 (Bio)' }}</h3>
-                <p>Stockage isotherme connecté • Traçabilité Sprint 3 prête</p>
+                <h3 style="margin:0;font-size:1.15rem;color:#0d381e">Enregistrement Rapide par Vache Laitière</h3>
+                <p style="margin:2px 0 0 0;font-size:0.8rem;color:#526658">Cliquez sur « Matin » ou « Soir » sous chaque vache pour saisir la traite</p>
+              </div>
+              <span class="badge-pill badge-green">{{ milkingCows.length }} Vaches en lactation</span>
+            </div>
+
+            <!-- Grille des Vaches Paginée -->
+            <div class="quick-milk-grid">
+              <div *ngFor="let cow of paginatedMilkingCows" class="quick-cow-card" [class.cow-fever]="cow.status === 'FEVER_TREATMENT'">
+                <div class="quick-cow-top">
+                  <div class="quick-cow-avatar">
+                    <img *ngIf="cow.imageUrl" [src]="cow.imageUrl" [alt]="cow.name" />
+                    <span *ngIf="!cow.imageUrl" style="font-weight:700;color:#15803d;font-size:0.9rem">{{ cow.name.slice(0, 2) }}</span>
+                  </div>
+                  <div class="quick-cow-info">
+                    <strong class="quick-cow-name">{{ cow.name }}</strong>
+                    <span class="quick-cow-id">{{ cow.internalId }} • {{ cow.breed }}</span>
+                  </div>
+                </div>
+
+                <div class="quick-cow-yield-row">
+                  <span class="yield-lbl">Rendement estimé</span>
+                  <strong class="yield-val">{{ cow.dailyMilkYield || 14 }} L/j</strong>
+                </div>
+
+                <!-- Action Buttons: Matin & Soir -->
+                <div class="quick-cow-actions" *ngIf="cow.status !== 'FEVER_TREATMENT'">
+                  <!-- Bouton Traite Matin -->
+                  <button 
+                    class="btn-quick-milk btn-morn" 
+                    [class.btn-milked]="isMilkedToday(cow.internalId, 'MORNING')"
+                    [disabled]="isMilkedToday(cow.internalId, 'MORNING')"
+                    (click)="openQuickMilkingModal(cow, 'MORNING')"
+                    [title]="isMilkedToday(cow.internalId, 'MORNING') ? 'Traite Matin déjà validée aujourd\'hui' : 'Enregistrer la traite du matin'">
+                    <span *ngIf="!isMilkedToday(cow.internalId, 'MORNING')">
+                      Matin
+                    </span>
+                    <span *ngIf="isMilkedToday(cow.internalId, 'MORNING')">
+                      Matin Fait
+                    </span>
+                  </button>
+
+                  <!-- Bouton Traite Soir -->
+                  <button 
+                    class="btn-quick-milk btn-eve" 
+                    [class.btn-milked]="isMilkedToday(cow.internalId, 'EVENING')"
+                    [disabled]="isMilkedToday(cow.internalId, 'EVENING')"
+                    (click)="openQuickMilkingModal(cow, 'EVENING')"
+                    [title]="isMilkedToday(cow.internalId, 'EVENING') ? 'Traite Soir déjà validée aujourd\'hui' : 'Enregistrer la traite du soir'">
+                    <span *ngIf="!isMilkedToday(cow.internalId, 'EVENING')">
+                      Soir
+                    </span>
+                    <span *ngIf="isMilkedToday(cow.internalId, 'EVENING')">
+                      Soir Fait
+                    </span>
+                  </button>
+                </div>
+
+                <div *ngIf="cow.status === 'FEVER_TREATMENT'" class="quick-cow-blocked">
+                  <span style="color:#dc2626;font-size:0.75rem;font-weight:700">Traitement en cours (Lait écarté)</span>
+                </div>
               </div>
             </div>
-            <div class="tank-badge-status">
-              <span class="badge-pill" [style.background]="(tankStatus()?.currentVolume || 0) > 0 ? '#dcfce7' : '#fee2e2'" [style.color]="(tankStatus()?.currentVolume || 0) > 0 ? '#166534' : '#991b1b'">
-                {{ (tankStatus()?.currentVolume || 0) > 0 ? ('✅ ' + (tankStatus()?.qualityStatus || 'CONFORME BIO')) : '⚠️ CUVE ÉPUISÉE (0 L RESTANT)' }}
-              </span>
-              <span class="badge-pedigree-tag">Lot : {{ tankStatus()?.targetBatch || 'LOT-TR-20260818-01' }}</span>
+
+            <!-- Pagination Bar: Vaches en Lactation -->
+            <div class="pagination-bar" *ngIf="milkingCows.length > milkingCowsPageSize()" style="margin-top:18px">
+              <button class="pagination-btn" (click)="prevMilkingCowsPage()" [disabled]="milkingCowsCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Précédent</span>
+              </button>
+
+              <div class="pagination-pages">
+                <button *ngFor="let page of milkingCowsPageNumbers"
+                        class="pagination-num-btn"
+                        [class.active]="milkingCowsCurrentPage() === page"
+                        (click)="setMilkingCowsPage(page)">
+                  {{ page }}
+                </button>
+              </div>
+
+              <div class="pagination-info-pill">
+                <span>Page <strong>{{ milkingCowsCurrentPage() }}</strong> / {{ totalMilkingCowsPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ milkingCows.length }}</strong> vaches en lactation</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextMilkingCowsPage()" [disabled]="milkingCowsCurrentPage() === totalMilkingCowsPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
             </div>
           </div>
 
-          <div class="tank-body-grid">
-            <!-- Left: Animated Liquid Gauge -->
-            <div class="tank-gauge-col">
-              <div class="tank-cylinder">
-                <div class="tank-liquid" [style.height]="(tankStatus()?.fillPercentage || 0) + '%'">
-                  <div class="liquid-wave"></div>
-                </div>
-                <div class="tank-gauge-label">
-                  <strong>{{ tankStatus()?.currentVolume || 0 }} L</strong>
-                  <span>/ {{ tankStatus()?.maxCapacity || 500.0 }} L</span>
-                </div>
-              </div>
-              <div class="tank-fill-info">
-                <span>Solde Net Cuve : <strong>{{ tankStatus()?.fillPercentage || 0 }}%</strong></span>
-              </div>
-              <div *ngIf="(tankStatus()?.currentVolume || 0) <= 0" style="margin-top:8px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:6px 10px;border-radius:6px;font-size:0.78rem;font-weight:700;text-align:center">
-                ⚠️ Tout le lait a été transformé (Cuve vide). Saisissez une collecte pour la remplir.
+          <!-- 3. Production Graph & History -->
+          <div class="chart-box" style="margin-top:20px">
+            <div class="chart-box-header">
+              <div>
+                <h3>Évolution de la Collecte Journalière & Moyenne par Vache</h3>
+                <p>Suivi comparatif des traites Matin vs Soir</p>
               </div>
             </div>
-
-            <!-- Right: Quality Indicators & Sessions -->
-            <div class="tank-metrics-col">
-              <div class="tank-stat-quad" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
-                <div class="tank-kpi-box">
-                  <span class="lbl">Collecte Brute (Jour)</span>
-                  <strong class="val" style="color:#16a34a">{{ (tankStatus()?.grossVolumeCollected || ((tankStatus()?.morningVolume || 0) + (tankStatus()?.eveningVolume || 0)) || tankStatus()?.currentVolume || 0) }} L</strong>
-                  <span class="sub-lbl">Matin {{ tankStatus()?.morningVolume || 0 }}L • Soir {{ tankStatus()?.eveningVolume || 0 }}L</span>
-                </div>
-                <div class="tank-kpi-box">
-                  <span class="lbl">Prélevé Transformation</span>
-                  <strong class="val" style="color:#dc2626">-{{ tankStatus()?.transformedVolume || 0 }} L</strong>
-                  <span class="sub-lbl">Lots en fabrication & finis</span>
-                </div>
-                <div class="tank-kpi-box">
-                  <span class="lbl">Température Cuve</span>
-                  <strong class="val" style="color:#16a34a">{{ tankStatus()?.temperature || 3.9 }} °C</strong>
-                  <span class="sub-lbl">Consigne : 3.8 - 4.2 °C</span>
-                </div>
-                <div class="tank-kpi-box">
-                  <span class="lbl">Acidité / pH</span>
-                  <strong class="val" style="color:#15803d">{{ tankStatus()?.phLevel || 6.68 }} pH</strong>
-                  <span class="sub-lbl">Optimal (6.60 - 6.80)</span>
-                </div>
-              </div>
-
-              <div class="tank-footer-alert">
-                <span>🛡️ <strong>Traçabilité & Qualité :</strong> Chaque lot lancé déduit automatiquement le lait de la cuve en temps réel.</span>
-              </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="monthlyMilkChart"></canvas>
             </div>
           </div>
         </div>
 
-        <!-- 2. Mode Bouvier / Saisie Rapide 1-Clic par Vache -->
-        <div class="content-card" style="margin-top:20px">
-          <div class="content-card-header">
-            <div>
-              <h3>⚡ Saisie Rapide Smartphone (Bouvier / Traite 1-Clic)</h3>
-              <p style="font-size:0.75rem;color:#526658">Cliquez pour valider instantanément la traite du matin ou du soir</p>
+        <!-- VUE 2: JOURNAL COMPLET DES RÉCOLTES & HISTORIQUE -->
+        <div *ngIf="activeMilkSubTab() === 'journal'">
+          <div class="page-header-row">
+            <div class="page-header-text">
+              <h2>Journal des Récoltes & Traites Laitières</h2>
+              <p>Historique exhaustif des traites individuelles avec recherche par date, animal, session et volume.</p>
             </div>
-            <span class="badge-pill badge-green">{{ milkingCows.length }} Vaches en lactation</span>
+            <div class="header-action-group">
+              <button class="btn-primary" (click)="isMilkModalOpen.set(true)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+                <span>+ Nouvelle Saisie Traite</span>
+              </button>
+              <button class="btn-secondary" (click)="navigateToMilkSubTab('milking')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 6H7L8 2z"/><path d="M7 8c0 10 2 12 5 12s5-2 5-12"/></svg>
+                <span>Poste de Traite</span>
+              </button>
+            </div>
           </div>
 
-          <div class="quick-milking-grid">
-            <div *ngFor="let cow of milkingCows" class="quick-cow-card" [class.card-alert-glow]="cow.status === 'FEVER_TREATMENT'">
-              <div class="quick-cow-top">
-                <div class="cow-mini-avatar">{{ cow.avatarEmoji || '🐄' }}</div>
-                <div class="cow-mini-meta">
-                  <strong>{{ cow.name }}</strong>
-                  <span>{{ cow.internalId }} • {{ cow.breed }}</span>
+          <!-- KPI Summary Cards Récoltes -->
+          <section class="kpi-grid" style="margin-bottom:20px">
+            <div class="kpi-card card-green">
+              <div class="kpi-header">
+                <span class="kpi-title">Volume Total Filtré</span>
+                <span class="kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 6H7L8 2z"/><path d="M7 8c0 10 2 12 5 12s5-2 5-12"/></svg>
+                </span>
+              </div>
+              <div class="kpi-value">{{ filteredMilkTotalVolume }} <span class="unit">Litres</span></div>
+              <div class="kpi-footer trend-up">
+                <span>Sur {{ filteredMilkProductions.length }} traites enregistrées</span>
+              </div>
+            </div>
+
+            <div class="kpi-card card-blue">
+              <div class="kpi-header">
+                <span class="kpi-title">Moyenne par Traite</span>
+                <span class="kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </span>
+              </div>
+              <div class="kpi-value">{{ filteredMilkAverageYield }} <span class="unit">L / traite</span></div>
+              <div class="kpi-footer">
+                <span>Rendement conforme bio</span>
+              </div>
+            </div>
+
+            <div class="kpi-card card-purple">
+              <div class="kpi-header">
+                <span class="kpi-title">Cheptel Actif à la Traite</span>
+                <span class="kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                </span>
+              </div>
+              <div class="kpi-value">{{ milkingCows.length }} <span class="unit">vaches</span></div>
+              <div class="kpi-footer trend-up">
+                <span>100% traçabilité RFID</span>
+              </div>
+            </div>
+
+            <div class="kpi-card card-gold">
+              <div class="kpi-header">
+                <span class="kpi-title">Conformité Qualité</span>
+                <span class="kpi-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </span>
+              </div>
+              <div class="kpi-value">100 <span class="unit">% Bio</span></div>
+              <div class="kpi-footer trend-up">
+                <span>Zéro résidu détecté</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- 4. Journal Détaillé & Filtres Stylisés Pro -->
+          <div class="content-card">
+            <div class="content-card-header" style="border-bottom:none;padding-bottom:12px">
+              <div>
+                <h3 style="margin:0;font-size:1.15rem;color:#0d381e">Registre Exhaustif des Traites</h3>
+                <p style="margin:2px 0 0 0;font-size:0.78rem;color:#526658">Filtrez l'historique par période, animal, session et volume</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span class="badge-pill badge-green">{{ filteredMilkProductions.length }} résultat(s)</span>
+                <button *ngIf="milkFilterStartDate() || milkFilterEndDate() || milkFilterAnimalId() !== 'ALL' || milkFilterSession() !== 'ALL' || milkFilterMinVolume() || milkFilterSearch()" 
+                        class="filter-reset-btn" (click)="resetMilkFilters()">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <span>Réinitialiser</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filtres Bar Stylisée Pro -->
+            <div class="filter-card-pro">
+              <div class="filter-grid-pro">
+                <div class="filter-field-group">
+                  <label class="filter-field-label">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Date Début
+                  </label>
+                  <input type="date" class="filter-input-pro" [ngModel]="milkFilterStartDate()" (ngModelChange)="milkFilterStartDate.set($event); milkCurrentPage.set(1)" />
                 </div>
-                <span class="badge-pill badge-purple" style="font-size:0.68rem">DIM: {{ cow.daysInMilk || 120 }}j</span>
-              </div>
 
-              <div class="quick-cow-yield">
-                <span>Rendement moyen : <strong>{{ cow.dailyMilkYield || 18 }} L/j</strong></span>
-              </div>
+                <div class="filter-field-group">
+                  <label class="filter-field-label">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Date Fin
+                  </label>
+                  <input type="date" class="filter-input-pro" [ngModel]="milkFilterEndDate()" (ngModelChange)="milkFilterEndDate.set($event); milkCurrentPage.set(1)" />
+                </div>
 
-              <!-- Action buttons -->
-              <div *ngIf="cow.status !== 'FEVER_TREATMENT'" class="quick-cow-actions">
-                <button class="btn-quick-milk btn-morn" (click)="quickMilking(cow, 'MORNING')">
-                  ☀️ Matin ({{ ((cow.dailyMilkYield || 18) * 0.58) | number:'1.1-1' }}L)
-                </button>
-                <button class="btn-quick-milk btn-eve" (click)="quickMilking(cow, 'EVENING')">
-                  🌙 Soir ({{ ((cow.dailyMilkYield || 18) * 0.42) | number:'1.1-1' }}L)
-                </button>
-              </div>
+                <div class="filter-field-group">
+                  <label class="filter-field-label">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    Filtre par Vache
+                  </label>
+                  <select class="filter-input-pro" [ngModel]="milkFilterAnimalId()" (ngModelChange)="filterMilkByAnimal($event)">
+                    <option value="ALL">Toutes les vaches</option>
+                    <option *ngFor="let c of milkingCows" [value]="c.internalId">{{ c.name }} ({{ c.internalId }}) — {{ c.breed }}</option>
+                  </select>
+                </div>
 
-              <div *ngIf="cow.status === 'FEVER_TREATMENT'" class="quick-cow-blocked">
-                <span style="color:#dc2626;font-size:0.75rem;font-weight:700">🚫 Traitement actif (Lait exclu)</span>
+                <div class="filter-field-group">
+                  <label class="filter-field-label">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    Session de Traite
+                  </label>
+                  <select class="filter-input-pro" [ngModel]="milkFilterSession()" (ngModelChange)="filterMilkBySession($event)">
+                    <option value="ALL">Toutes les sessions</option>
+                    <option value="MORNING">Traite du Matin</option>
+                    <option value="EVENING">Traite du Soir</option>
+                  </select>
+                </div>
+
+                <div class="filter-field-group">
+                  <label class="filter-field-label">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2h8l1 6H7L8 2z"/><path d="M7 8c0 10 2 12 5 12s5-2 5-12"/></svg>
+                    Volume Min (L)
+                  </label>
+                  <select class="filter-input-pro" [ngModel]="milkFilterMinVolume()" (ngModelChange)="milkFilterMinVolume.set($event ? +$event : null); milkCurrentPage.set(1)">
+                    <option [ngValue]="null">Tout volume</option>
+                    <option [ngValue]="5">≥ 5 Litres</option>
+                    <option [ngValue]="8">≥ 8 Litres</option>
+                    <option [ngValue]="12">≥ 12 Litres</option>
+                    <option [ngValue]="15">≥ 15 Litres</option>
+                  </select>
+                </div>
+
+                <div class="filter-field-group">
+                  <label class="filter-field-label">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Recherche Rapide
+                  </label>
+                  <input type="text" class="filter-input-pro" [ngModel]="milkFilterSearch()" (ngModelChange)="milkFilterSearch.set($event); milkCurrentPage.set(1)" 
+                         placeholder="Nom de vache, identifiant..." />
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- 3. Production Graph & History -->
-        <div class="chart-box" style="margin-top:20px">
-          <div class="chart-box-header">
-            <div>
-              <h3>📈 Évolution de la Collecte Journalière & Moyenne par Vache</h3>
-              <p>Suivi comparatif des traites Matin vs Soir</p>
+            <!-- Table des Récoltes -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date Traite</th>
+                    <th>Session</th>
+                    <th>Vache & Identifiant</th>
+                    <th>Race</th>
+                    <th>Volume (Litres)</th>
+                    <th>Température</th>
+                    <th>Qualité Bio</th>
+                    <th>Destination Cuve</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let p of paginatedMilkProductions">
+                    <td>
+                      <div style="font-size:0.85rem;font-weight:700;color:#0f172a">{{ p.productionDate }}</div>
+                    </td>
+                    <td>
+                      <span class="badge-pill" [ngClass]="p.session === 'MORNING' ? 'badge-yellow' : 'badge-purple'" style="font-size:0.72rem">
+                        {{ p.session === 'MORNING' ? 'Matin' : 'Soir' }}
+                      </span>
+                    </td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:6px">
+                        <strong style="color:#0d381e">{{ p.animalName || getSelectedCowName(p.animalInternalId) }}</strong>
+                        <span class="badge-pedigree-tag" style="font-size:0.7rem">{{ p.animalInternalId }}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span style="font-size:0.8rem;color:#475569">{{ getSelectedCowBreed(p.animalInternalId) }}</span>
+                    </td>
+                    <td>
+                      <strong style="color:#15803d;font-size:1rem">{{ p.volumeLiters }} L</strong>
+                    </td>
+                    <td>
+                      <span style="font-size:0.82rem">{{ p.milkTemperature || 34.2 }} °C</span>
+                    </td>
+                    <td>
+                      <span class="badge-pill badge-green" style="font-size:0.7rem">
+                        {{ p.isOrganicCompliant ? '100% Bio' : 'Standard' }}
+                      </span>
+                    </td>
+                    <td>
+                      <code style="font-size:0.78rem;color:#0284c7">{{ p.destinationTank || 'Cuve Bio N°1' }}</code>
+                    </td>
+                  </tr>
+                  <tr *ngIf="filteredMilkProductions.length === 0">
+                    <td colspan="8" style="text-align:center;padding:30px;color:#64748b">
+                      Aucune collecte ne correspond aux critères de filtre sélectionnés.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
-          <div class="chart-canvas-wrap">
-            <canvas id="monthlyMilkChart"></canvas>
+
+            <!-- Pagination: Traite -->
+            <div class="pagination-bar" *ngIf="filteredMilkProductions.length > 0" style="margin-top:16px">
+              <button class="pagination-btn" (click)="prevMilkPage()" [disabled]="milkCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Précédent</span>
+              </button>
+
+              <div class="pagination-pages">
+                <button *ngFor="let page of milkPageNumbers"
+                        class="pagination-num-btn"
+                        [class.active]="milkCurrentPage() === page"
+                        (click)="setMilkPage(page)">
+                  {{ page }}
+                </button>
+              </div>
+
+              <div class="pagination-info-pill">
+                <span>Page <strong>{{ milkCurrentPage() }}</strong> / {{ totalMilkPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ filteredMilkProductions.length }}</strong> traites</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextMilkPage()" [disabled]="milkCurrentPage() === totalMilkPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1242,21 +1579,8 @@
           </div>
         </section>
 
-        <!-- Main Content Card -->
+        <!-- Main Content Card (Piloté par les sous-menus latéraux) -->
         <div class="content-card" style="margin-top:20px;padding:0;overflow:hidden">
-          
-          <!-- Sub-Tab Header Bar -->
-          <div style="display:flex;border-bottom:1px solid #e2e8f0;background:#f8fafc;padding:0 16px;flex-wrap:wrap">
-            <button type="button" class="sub-tab-btn" [class.active]="activeFeedSubTab() === 'stocks'" (click)="switchFeedSubTab('stocks')">
-              <span>🌾 Stocks de Matières Premières & Fourrages ({{ feedStocks().length }})</span>
-            </button>
-            <button type="button" class="sub-tab-btn" [class.active]="activeFeedSubTab() === 'rations'" (click)="switchFeedSubTab('rations')">
-              <span>📋 Fiches Rations Équilibrées ({{ feedRations().length }})</span>
-            </button>
-            <button type="button" class="sub-tab-btn" [class.active]="activeFeedSubTab() === 'suppliers'" (click)="switchFeedSubTab('suppliers')">
-              <span>🤝 Répertoire Fournisseurs & Achats ({{ suppliers().length }})</span>
-            </button>
-          </div>
 
           <!-- ==========================================
                SUB-TAB 1: STOCKS DE FOURRAGES & CONCENTRÉS
@@ -1265,12 +1589,15 @@
             
             <!-- Filters & Search Toolbar -->
             <div class="filter-search-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
-              <div class="filter-pills-group">
-                <button class="filter-pill" [class.active]="feedCategoryFilter() === 'ALL'" (click)="filterFeedStocks('ALL')">Tous ({{ feedStocks().length }})</button>
-                <button class="filter-pill" [class.active]="feedCategoryFilter() === 'FORAGE_GREEN'" (click)="filterFeedStocks('FORAGE_GREEN')">🌱 Fourrage Vert</button>
-                <button class="filter-pill" [class.active]="feedCategoryFilter() === 'FORAGE_DRY'" (click)="filterFeedStocks('FORAGE_DRY')">🌾 Fourrage Sec</button>
-                <button class="filter-pill" [class.active]="feedCategoryFilter() === 'CONCENTRATE'" (click)="filterFeedStocks('CONCENTRATE')">🌽 Concentrés</button>
-                <button class="filter-pill" [class.active]="feedCategoryFilter() === 'MINERALS_VITAMINS'" (click)="filterFeedStocks('MINERALS_VITAMINS')">🧂 Minéraux & CMV</button>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <label style="font-size:0.82rem;font-weight:700;color:#526658;white-space:nowrap">Catégorie :</label>
+                <select [ngModel]="feedCategoryFilter()" (ngModelChange)="filterFeedStocks($event)" style="padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem;font-weight:600;color:#0d381e;background:#ffffff;min-width:220px">
+                  <option value="ALL">Toutes les catégories ({{ feedStocks().length }})</option>
+                  <option value="FORAGE_GREEN">🌱 Fourrage Vert / Ensilage</option>
+                  <option value="FORAGE_DRY">🌾 Fourrage Sec & Foins</option>
+                  <option value="CONCENTRATE">🌽 Concentrés & Tourteaux</option>
+                  <option value="MINERALS_VITAMINS">🧂 Minéraux & CMV</option>
+                </select>
               </div>
 
               <div class="search-input-box" style="position:relative;min-width:260px">
@@ -1384,27 +1711,96 @@
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
               <div>
                 <h3 style="margin:0;font-size:1.1rem;color:#0d381e">Formules Nutritionnelles & Rations Journalières</h3>
-                <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Équilibrage de la Matière Sèche (MS), Énergie (UFL) et Protéines Digestibles (PDI) par stade de lactation.</p>
+                <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Équilibrage de la Matière Sèche (MS), Énergie (UFL) et Protéines Digestibles (PDI) par race et groupe d'animaux.</p>
               </div>
-              <button class="btn-primary" (click)="openNewFeedRationModal()">
-                <span>+ Nouvelle Formule</span>
-              </button>
+              <div style="display:flex;gap:10px;align-items:center">
+                <span class="badge-pill badge-green">{{ filteredFeedRations.length }} formule(s)</span>
+                <button class="btn-primary" (click)="openNewFeedRationModal()">
+                  <span>+ Créer une Formule</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Toolbar Filtres & Recherche Rations Pro -->
+            <div class="filter-card-pro">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+                <span style="font-size:0.82rem;font-weight:700;color:#1e293b;display:flex;align-items:center;gap:6px">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  Filtrer les Fiches Rations & Formules :
+                </span>
+                <button *ngIf="rationSearchTerm() || rationCategoryFilter() !== 'ALL' || rationBreedFilter() !== 'ALL'"
+                        class="filter-reset-btn" (click)="resetRationFilters()">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <span>Réinitialiser</span>
+                </button>
+              </div>
+
+              <div class="filter-grid-pro">
+                <div class="filter-field-group">
+                  <label class="filter-field-label">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                    Catégorie Cible
+                  </label>
+                  <select class="filter-input-pro" [ngModel]="rationCategoryFilter()" (ngModelChange)="rationCategoryFilter.set($event); rationsCurrentPage.set(1)">
+                    <option value="ALL">Toutes les catégories cibles</option>
+                    <option value="Vaches Haute Lactation">Vaches Haute Lactation (> 20 L/j)</option>
+                    <option value="Vaches en Lactation Standard">Vaches en Lactation Standard (14-18 L/j)</option>
+                    <option value="Vaches Taries & Gestantes">Vaches Taries & Gestantes</option>
+                    <option value="Génisses de Renouvellement">Génisses de Renouvellement</option>
+                    <option value="Taureaux & Reproducteurs">Taureaux & Reproducteurs</option>
+                    <option value="Veaux au Sevrage">Veaux au Sevrage</option>
+                  </select>
+                </div>
+
+                <div class="filter-field-group">
+                  <label class="filter-field-label">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    Race Cible
+                  </label>
+                  <select class="filter-input-pro" [ngModel]="rationBreedFilter()" (ngModelChange)="rationBreedFilter.set($event); rationsCurrentPage.set(1)">
+                    <option value="ALL">Toutes les races</option>
+                    <option *ngFor="let b of availableBreeds" [value]="b">{{ b }}</option>
+                  </select>
+                </div>
+
+                <div class="filter-field-group">
+                  <label class="filter-field-label">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Recherche par Mot-Clé
+                  </label>
+                  <input type="text" class="filter-input-pro" [ngModel]="rationSearchTerm()" (ngModelChange)="rationSearchTerm.set($event); rationsCurrentPage.set(1)" 
+                         placeholder="Nom formule, aliment, dosage..." />
+                </div>
+              </div>
             </div>
 
             <!-- Rations Cards Grid -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:16px">
-              <div *ngFor="let r of feedRations()" class="ration-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.03);display:flex;flex-direction:column;justify-content:space-between">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));gap:16px">
+              <div *ngFor="let r of paginatedFeedRations" class="ration-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.03);display:flex;flex-direction:column;justify-content:space-between">
                 <div>
                   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-                    <h4 style="margin:0;font-size:1rem;color:#0d381e">{{ r.rationName }}</h4>
-                    <span class="badge-pill badge-green">{{ r.targetCategory }}</span>
+                    <div>
+                      <h4 style="margin:0;font-size:1.05rem;color:#0d381e;font-weight:700">{{ r.rationName }}</h4>
+                      <span style="font-size:0.75rem;color:#64748b">{{ r.targetCategory }}</span>
+                    </div>
+                    <span class="badge-pill badge-green" style="font-size:0.72rem">{{ (r.totalFreshWeightKg || 22) }} kg brut/tête</span>
                   </div>
 
-                  <div style="background:#f0fdf4;border-left:3px solid #16a34a;padding:10px 12px;border-radius:0 8px 8px 0;margin-bottom:12px;font-size:0.85rem;color:#1e293b">
-                    <strong>Composition de la ration :</strong>
-                    <div style="margin-top:4px;color:#334155">{{ r.compositionDescription }}</div>
+                  <!-- Targeted Breeds Badges -->
+                  <div *ngIf="r.targetBreeds && r.targetBreeds.length > 0" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
+                    <span style="font-size:0.72rem;color:#475569;font-weight:600;align-self:center">Races cibles :</span>
+                    <span *ngFor="let b of r.targetBreeds" class="badge-pill badge-purple" style="font-size:0.68rem;padding:2px 8px">
+                      🐄 {{ b }}
+                    </span>
                   </div>
 
+                  <!-- Ingredients & Composition Breakdown -->
+                  <div style="background:#f0fdf4;border-left:3px solid #16a34a;padding:10px 12px;border-radius:0 8px 8px 0;margin-bottom:12px;font-size:0.82rem;color:#1e293b">
+                    <strong style="color:#15803d">Aliments & Dosages (par vache/j) :</strong>
+                    <div style="margin-top:4px;color:#334155;line-height:1.4">{{ r.compositionDescription }}</div>
+                  </div>
+
+                  <!-- Nutritional Ratios 3-Box -->
                   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;background:#f8fafc;padding:10px;border-radius:8px;text-align:center;margin-bottom:12px">
                     <div>
                       <div style="font-size:0.7rem;color:#64748b">Matière Sèche</div>
@@ -1421,16 +1817,228 @@
                   </div>
                 </div>
 
-                <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:6px">
+                <!-- Footer Card: Coût & Action Distribuer -->
+                <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:12px;margin-top:6px;gap:8px">
                   <div>
-                    <span style="font-size:0.75rem;color:#64748b">Coût journalier / tête :</span>
-                    <strong style="color:#0d381e;font-size:1rem;display:block">{{ r.dailyCostFcfa.toLocaleString() }} FCFA</strong>
+                    <span style="font-size:0.72rem;color:#64748b">Coût journalier / tête :</span>
+                    <strong style="color:#0d381e;font-size:1.05rem;display:block">{{ r.dailyCostFcfa.toLocaleString() }} FCFA</strong>
                   </div>
-                  <button class="table-icon-btn" style="color:#dc2626" (click)="deleteFeedRation(r.id)" title="Supprimer la formule">
-                    🗑️
-                  </button>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <button class="btn-primary" style="font-size:0.8rem;padding:7px 14px;display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg, #15803d, #166534)" (click)="openDistributionModal(r)">
+                      <span>🚜 Produire & Nourrir</span>
+                    </button>
+                    <button class="table-icon-btn" style="color:#dc2626" (click)="deleteFeedRation(r.id)" title="Supprimer la formule">
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            <!-- Empty State if no rations match -->
+            <div *ngIf="filteredFeedRations.length === 0" style="text-align:center;padding:40px 20px;background:#ffffff;border:1px dashed #cbd5e1;border-radius:12px;margin-top:16px">
+              <div style="font-size:2.2rem;margin-bottom:8px">🥣</div>
+              <strong style="font-size:1rem;color:#334155;display:block">Aucune formule de ration trouvée</strong>
+              <p style="font-size:0.82rem;color:#64748b;margin:4px 0 12px 0">Modifiez vos filtres ou effectuez une autre recherche.</p>
+              <button class="btn-secondary" (click)="resetRationFilters()" style="font-size:0.8rem">Réinitialiser les filtres</button>
+            </div>
+
+            <!-- Pagination Bar Rations -->
+            <div class="pagination-bar" *ngIf="filteredFeedRations.length > rationsItemsPerPage()" style="margin-top:18px">
+              <button class="pagination-btn" (click)="prevRationsPage()" [disabled]="rationsCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Précédent</span>
+              </button>
+
+              <div class="pagination-pages">
+                <button *ngFor="let page of rationsPageNumbers"
+                        class="pagination-num-btn"
+                        [class.active]="rationsCurrentPage() === page"
+                        (click)="setRationsPage(page)">
+                  {{ page }}
+                </button>
+              </div>
+
+              <div class="pagination-info-pill">
+                <span>🥣</span>
+                <span>Page <strong>{{ rationsCurrentPage() }}</strong> / {{ totalRationsPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ filteredFeedRations.length }}</strong> formules</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextRationsPage()" [disabled]="rationsCurrentPage() === totalRationsPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- ==========================================
+               SUB-TAB 3: JOURNAL & HISTORIQUE DES DISTRIBUTIONS
+               ========================================== -->
+          <div *ngIf="activeFeedSubTab() === 'distributions'" style="padding:20px">
+            
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+              <div>
+                <h3 style="margin:0;font-size:1.1rem;color:#0d381e">🚜 Journal des Distributions Journalières & Nourrissage</h3>
+                <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Suivi en temps réel des repas servis, des quantités distribuées et de l'impact sur les stocks d'aliments.</p>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center">
+                <span class="badge-pill badge-green">{{ filteredDistributions.length }} distribution(s)</span>
+                <button class="btn-primary" (click)="openDistributionModal()">
+                  <span>🚜 + Enregistrer une Distribution</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- KPI Summary Cards for Distribution -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-bottom:16px">
+              <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px">
+                <span style="font-size:0.72rem;color:#166534;font-weight:700;text-transform:uppercase">Total Aliment Distribué</span>
+                <div style="font-size:1.4rem;font-weight:800;color:#15803d">{{ totalDistributedKg.toLocaleString() }} <span style="font-size:0.85rem">kg</span></div>
+              </div>
+              <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:10px 14px">
+                <span style="font-size:0.72rem;color:#1e40af;font-weight:700;text-transform:uppercase">Animaux Nourris</span>
+                <div style="font-size:1.4rem;font-weight:800;color:#1d4ed8">{{ totalAnimalsNourished }} <span style="font-size:0.85rem">repas</span></div>
+              </div>
+              <div style="background:#faf5ff;border:1px solid #d8b4fe;border-radius:8px;padding:10px 14px">
+                <span style="font-size:0.72rem;color:#6b21a8;font-weight:700;text-transform:uppercase">Coût Total Alimentaire</span>
+                <div style="font-size:1.4rem;font-weight:800;color:#7e22ce">{{ totalDistributedCostFcfa.toLocaleString() }} <span style="font-size:0.85rem">FCFA</span></div>
+              </div>
+              <div style="background:#fefce8;border:1px solid #fde047;border-radius:8px;padding:10px 14px">
+                <span style="font-size:0.72rem;color:#854d0e;font-weight:700;text-transform:uppercase">Nombre de Services</span>
+                <div style="font-size:1.4rem;font-weight:800;color:#a16207">{{ filteredDistributions.length }} <span style="font-size:0.85rem">distributions</span></div>
+              </div>
+            </div>
+
+            <!-- Toolbar Filtres Distribution -->
+            <div style="background:#ffffff;border:1px solid #e2e8dd;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+                <span style="font-size:0.8rem;font-weight:700;color:#334155">🔎 Filtrer le Journal d'Alimentation :</span>
+                <button *ngIf="distFilterStartDate() || distFilterEndDate() || distFilterRation() !== 'ALL' || distFilterAnimalOrBreed() !== 'ALL' || distFilterSearch()"
+                        class="btn-secondary" style="font-size:0.75rem;padding:4px 10px" (click)="resetDistFilters()">
+                  ✕ Réinitialiser filtres
+                </button>
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:10px;align-items:end">
+                <div>
+                  <label style="font-size:0.75rem;font-weight:700;color:#526658;display:block;margin-bottom:3px">📅 Date Début</label>
+                  <input type="date" [ngModel]="distFilterStartDate()" (ngModelChange)="distFilterStartDate.set($event); distCurrentPage.set(1)" 
+                         style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem" />
+                </div>
+                <div>
+                  <label style="font-size:0.75rem;font-weight:700;color:#526658;display:block;margin-bottom:3px">📅 Date Fin</label>
+                  <input type="date" [ngModel]="distFilterEndDate()" (ngModelChange)="distFilterEndDate.set($event); distCurrentPage.set(1)" 
+                         style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem" />
+                </div>
+                <div>
+                  <label style="font-size:0.75rem;font-weight:700;color:#526658;display:block;margin-bottom:3px">📋 Formule de Ration</label>
+                  <select [ngModel]="distFilterRation()" (ngModelChange)="distFilterRation.set($event); distCurrentPage.set(1)"
+                          style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem">
+                    <option value="ALL">Toutes les formules</option>
+                    <option *ngFor="let r of feedRations()" [value]="r.rationName">{{ r.rationName }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:0.75rem;font-weight:700;color:#526658;display:block;margin-bottom:3px">🐄 Filtre par Race / Groupe</label>
+                  <select [ngModel]="distFilterAnimalOrBreed()" (ngModelChange)="distFilterAnimalOrBreed.set($event); distCurrentPage.set(1)"
+                          style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem">
+                    <option value="ALL">Toutes les races / groupes</option>
+                    <option *ngFor="let b of availableBreeds" [value]="b">{{ b }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:0.75rem;font-weight:700;color:#526658;display:block;margin-bottom:3px">🔍 Recherche</label>
+                  <input type="text" [ngModel]="distFilterSearch()" (ngModelChange)="distFilterSearch.set($event); distCurrentPage.set(1)" 
+                         placeholder="Distributeur, note..."
+                         style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Table of Distributions -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date & Heure</th>
+                    <th>Session</th>
+                    <th>Formule Servie</th>
+                    <th>Quantité Distribuée</th>
+                    <th>Animaux & Races Nourries</th>
+                    <th>Coût Total (FCFA)</th>
+                    <th>Distributeur</th>
+                    <th>Observations</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let d of paginatedDistributions">
+                    <td>
+                      <strong>{{ d.distributionDate }}</strong>
+                      <div style="font-size:0.75rem;color:#64748b">⏰ {{ d.distributionTime }}</div>
+                    </td>
+                    <td>
+                      <span class="badge-pill" [style.background]="d.session === 'MATIN' ? '#fef3c7' : (d.session === 'MIDI' ? '#e0f2fe' : '#e0e7ff')" [style.color]="d.session === 'MATIN' ? '#b45309' : (d.session === 'MIDI' ? '#0369a1' : '#3730a3')">
+                        {{ d.session === 'MATIN' ? '☀️ Matin' : (d.session === 'MIDI' ? '🌤️ Midi' : '🌙 Soir') }}
+                      </span>
+                    </td>
+                    <td>
+                      <strong style="color:#0d381e;font-size:0.9rem">{{ d.rationName }}</strong>
+                    </td>
+                    <td>
+                      <strong style="color:#15803d;font-size:1rem">{{ d.quantityDistributedKg }} kg</strong>
+                    </td>
+                    <td>
+                      <div style="font-weight:700;color:#0f172a">{{ d.animalsCountNourished }} têtes</div>
+                      <div style="font-size:0.75rem;color:#7c3aed">🐄 {{ d.targetGroupOrRace }}</div>
+                    </td>
+                    <td>
+                      <strong style="color:#0d381e">{{ d.totalCostFcfa.toLocaleString() }} FCFA</strong>
+                    </td>
+                    <td>
+                      <span style="font-size:0.82rem;color:#334155">👤 {{ d.distributorName }}</span>
+                    </td>
+                    <td>
+                      <span style="font-size:0.78rem;color:#64748b">{{ d.notes || 'R.A.S' }}</span>
+                    </td>
+                  </tr>
+                  <tr *ngIf="filteredDistributions.length === 0">
+                    <td colspan="8" style="text-align:center;padding:30px;color:#94a3b8">
+                      Aucune distribution trouvée pour ces critères de recherche.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination Bar: Distributions -->
+            <div class="pagination-bar" *ngIf="filteredDistributions.length > 0" style="margin-top:16px">
+              <button class="pagination-btn" (click)="prevDistPage()" [disabled]="distCurrentPage() === 1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <span>Précédent</span>
+              </button>
+
+              <div class="pagination-pages">
+                <button *ngFor="let page of distPageNumbers"
+                        class="pagination-num-btn"
+                        [class.active]="distCurrentPage() === page"
+                        (click)="setDistPage(page)">
+                  {{ page }}
+                </button>
+              </div>
+
+              <div class="pagination-info-pill">
+                <span>🚜</span>
+                <span>Page <strong>{{ distCurrentPage() }}</strong> / {{ totalDistPages }}</span>
+                <span style="opacity:0.4">•</span>
+                <span><strong>{{ filteredDistributions.length }}</strong> distributions</span>
+              </div>
+
+              <button class="pagination-btn" (click)="nextDistPage()" [disabled]="distCurrentPage() === totalDistPages">
+                <span>Suivant</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
             </div>
           </div>
 
@@ -1657,11 +2265,49 @@
               </div>
             </div>
 
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
-              <div class="filter-pill-tabs">
-                <button class="pill-tab-btn" [class.active]="transformationFilter() === 'all'" (click)="filterTransformation('all')">Tous les lots</button>
-                <button class="pill-tab-btn" [class.active]="transformationFilter() === 'in_progress'" (click)="filterTransformation('in_progress')">⚙️ En cours / Maturation</button>
-                <button class="pill-tab-btn" [class.active]="transformationFilter() === 'completed'" (click)="filterTransformation('completed')">✅ Terminés & Stockés</button>
+            <!-- Filter Bar: Statut, Dates, Produit & Recherche -->
+            <div style="background:#ffffff;border:1px solid #e2e8dd;border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <label style="font-size:0.82rem;font-weight:700;color:#526658;white-space:nowrap">Statut du Lot :</label>
+                  <select [ngModel]="transformationFilter()" (ngModelChange)="filterTransformation($event)" style="padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem;font-weight:600;color:#0d381e;background:#ffffff;min-width:210px">
+                    <option value="all">Tous les lots ({{ transformationBatches().length }})</option>
+                    <option value="in_progress">⚙️ En cours / Maturation</option>
+                    <option value="completed">✅ Terminés & Stockés</option>
+                  </select>
+                </div>
+
+                <button *ngIf="batchFilterStartDate() || batchFilterEndDate() || batchFilterProduct() !== 'ALL' || batchFilterSearch()" 
+                        class="btn-secondary" style="font-size:0.75rem;padding:5px 10px" (click)="resetBatchFilters()">
+                  ✕ Réinitialiser filtres
+                </button>
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;align-items:end">
+                <div>
+                  <label style="font-size:0.75rem;font-weight:700;color:#526658;display:block;margin-bottom:3px">📅 Date Début</label>
+                  <input type="date" [ngModel]="batchFilterStartDate()" (ngModelChange)="batchFilterStartDate.set($event); batchesCurrentPage.set(1)" 
+                         style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem" />
+                </div>
+                <div>
+                  <label style="font-size:0.75rem;font-weight:700;color:#526658;display:block;margin-bottom:3px">📅 Date Fin</label>
+                  <input type="date" [ngModel]="batchFilterEndDate()" (ngModelChange)="batchFilterEndDate.set($event); batchesCurrentPage.set(1)" 
+                         style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem" />
+                </div>
+                <div>
+                  <label style="font-size:0.75rem;font-weight:700;color:#526658;display:block;margin-bottom:3px">🧀 Produit / Recette</label>
+                  <select [ngModel]="batchFilterProduct()" (ngModelChange)="batchFilterProduct.set($event); batchesCurrentPage.set(1)"
+                          style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem">
+                    <option value="ALL">Tous les produits</option>
+                    <option *ngFor="let p of uniqueBatchProducts" [value]="p">{{ p }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:0.75rem;font-weight:700;color:#526658;display:block;margin-bottom:3px">🔍 Recherche (N° Lot, Opérateur)</label>
+                  <input type="text" [ngModel]="batchFilterSearch()" (ngModelChange)="batchFilterSearch.set($event); batchesCurrentPage.set(1)" 
+                         placeholder="Ex: LOT-TR-01, Mamadou..."
+                         style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.82rem" />
+                </div>
               </div>
             </div>
 
@@ -1802,9 +2448,33 @@
                 <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Paramétrage des besoins en lait brut par unité de produit fini valorisé.</p>
               </div>
 
-              <button class="btn-primary" style="font-size:0.85rem;padding:6px 14px" (click)="openRecipeModal()">
-                <span>+ Nouvelle Recette Standard</span>
-              </button>
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <span class="badge-pill badge-green">{{ filteredRecipes.length }} recette(s)</span>
+                <button class="btn-primary" style="font-size:0.85rem;padding:6px 14px" (click)="openRecipeModal()">
+                  <span>+ Nouvelle Recette Standard</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Toolbar Recherche & Filtres Type de Produit -->
+            <div style="background:#ffffff;border:1px solid #e2e8dd;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <label style="font-size:0.82rem;font-weight:700;color:#526658;white-space:nowrap">Type de Produit :</label>
+                <select [ngModel]="recipeTypeFilter()" (ngModelChange)="recipeTypeFilter.set($event); recipesCurrentPage.set(1)" style="padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem;font-weight:600;color:#0d381e;background:#ffffff;min-width:210px">
+                  <option value="ALL">Toutes les recettes ({{ recipes().length }})</option>
+                  <option value="PASTEURIZED_MILK">🥛 Lait Pasteurisé</option>
+                  <option value="YOGURT">🥣 Yaourt Bio</option>
+                  <option value="CHEESE">🧀 Fromage Fermier</option>
+                  <option value="CURDLED_MILK">🥛 Lait Caillé (Sow)</option>
+                  <option value="BUTTER">🧈 Beurre</option>
+                </select>
+              </div>
+
+              <div class="search-input-box" style="position:relative;min-width:280px;flex:1;max-width:380px">
+                <input type="text" [ngModel]="recipeSearchQuery()" (ngModelChange)="recipeSearchQuery.set($event); recipesCurrentPage.set(1)" 
+                       placeholder="🔍 Rechercher produit, code (REC-01), ingrédient..." 
+                       style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem" />
+              </div>
             </div>
 
             <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:16px">
@@ -1896,12 +2566,15 @@
                ========================================== -->
           <div *ngIf="activeTransformationSubTab() === 'stocks'" style="padding:20px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
-              <div class="filter-pill-tabs">
-                <button class="pill-tab-btn" [class.active]="stockCategoryFilter() === 'all'" (click)="filterStock('all')">Tous les stocks ({{ productStocks().length }})</button>
-                <button class="pill-tab-btn" [class.active]="stockCategoryFilter() === 'CHEESE'" (click)="filterStock('CHEESE')">🧀 Fromages</button>
-                <button class="pill-tab-btn" [class.active]="stockCategoryFilter() === 'YOGURT'" (click)="filterStock('YOGURT')">🥣 Yaourts</button>
-                <button class="pill-tab-btn" [class.active]="stockCategoryFilter() === 'CURDLED_MILK'" (click)="filterStock('CURDLED_MILK')">🥛 Lait Caillé (Sow)</button>
-                <button class="pill-tab-btn" [class.active]="stockCategoryFilter() === 'BUTTER'" (click)="filterStock('BUTTER')">🧈 Beurre</button>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <label style="font-size:0.82rem;font-weight:700;color:#526658;white-space:nowrap">Catégorie de Produit :</label>
+                <select [ngModel]="stockCategoryFilter()" (ngModelChange)="filterStock($event)" style="padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem;font-weight:600;color:#0d381e;background:#ffffff;min-width:220px">
+                  <option value="all">Tous les stocks ({{ productStocks().length }})</option>
+                  <option value="CHEESE">🧀 Fromages Fermiers</option>
+                  <option value="YOGURT">🥣 Yaourts Bio</option>
+                  <option value="CURDLED_MILK">🥛 Lait Caillé (Sow)</option>
+                  <option value="BUTTER">🧈 Beurre</option>
+                </select>
               </div>
 
               <div style="font-size:0.9rem;font-weight:700;color:#0d381e">
@@ -2161,12 +2834,15 @@
             
             <!-- Filters & Search Toolbar -->
             <div class="filter-search-row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
-              <div class="filter-pills-group">
-                <button class="filter-pill" [class.active]="invoiceFilterStatus() === 'ALL'" (click)="filterInvoices('ALL')">Toutes ({{ invoices().length }})</button>
-                <button class="filter-pill" [class.active]="invoiceFilterStatus() === 'PAID'" (click)="filterInvoices('PAID')">Soldées / Payées</button>
-                <button class="filter-pill" [class.active]="invoiceFilterStatus() === 'PARTIALLY_PAID'" (click)="filterInvoices('PARTIALLY_PAID')">Acomptes</button>
-                <button class="filter-pill" [class.active]="invoiceFilterStatus() === 'ISSUED'" (click)="filterInvoices('ISSUED')">En Attente</button>
-                <button class="filter-pill" [class.active]="invoiceFilterStatus() === 'OVERDUE'" (click)="filterInvoices('OVERDUE')">En Retard</button>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <label style="font-size:0.82rem;font-weight:700;color:#526658;white-space:nowrap">Statut de Règlement :</label>
+                <select [ngModel]="invoiceFilterStatus()" (ngModelChange)="filterInvoices($event)" style="padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.85rem;font-weight:600;color:#0d381e;background:#ffffff;min-width:210px">
+                  <option value="ALL">Toutes les factures ({{ invoices().length }})</option>
+                  <option value="PAID">✅ Soldées / Payées</option>
+                  <option value="PARTIALLY_PAID">⏳ Acomptes</option>
+                  <option value="ISSUED">📋 En Attente</option>
+                  <option value="OVERDUE">🚨 En Retard</option>
+                </select>
               </div>
 
               <div class="search-input-box" style="position:relative;min-width:260px">
@@ -2870,7 +3546,7 @@
         </div>
         <div>
           <h3>Saisie de Collecte de Traite</h3>
-          <p style="font-size:0.75rem;color:rgba(255,255,255,0.75)">Enregistrement direct dans la table `milk_productions` (PostgreSQL)</p>
+          <p style="font-size:0.75rem;color:rgba(255,255,255,0.75)">Enregistrement de la production laitière journalière</p>
         </div>
       </div>
       <button class="modal-close-btn" (click)="isMilkModalOpen.set(false)">✕</button>
@@ -2896,14 +3572,22 @@
         <div class="form-grid-layout">
           <div>
             <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Session de Traite</label>
-            <select [(ngModel)]="milkForm.session" name="session" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px">
-              <option value="Matin">Matin</option>
-              <option value="Soir">Soir</option>
-            </select>
+            <div style="padding:9px 12px;border:1px solid #e2e8dd;border-radius:6px;background:#f8fafc;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:6px">
+              <span>{{ milkForm.session === 'Matin' ? '☀️ Traite du Matin' : '🌙 Traite du Soir' }}</span>
+            </div>
           </div>
           <div>
             <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Volume Collecté (Litres) *</label>
-            <input type="number" step="0.5" min="0.5" [(ngModel)]="milkForm.litres" name="litres" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" required />
+            <input 
+              type="number" 
+              step="0.1" 
+              min="0.1" 
+              [(ngModel)]="milkForm.litres" 
+              name="litres" 
+              placeholder="Ex: 8.5" 
+              style="width:100%;padding:9px 12px;border:1px solid #e2e8dd;border-radius:6px;font-weight:700;font-size:1.05rem;color:#15803d" 
+              required 
+              autofocus />
           </div>
         </div>
 
@@ -2917,16 +3601,6 @@
             <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Matière Grasse (% MG)</label>
             <input type="number" step="0.1" [(ngModel)]="milkForm.fatPercentage" name="fatPercentage" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px" placeholder="3.9" />
           </div>
-        </div>
-
-        <!-- Destination Cuve & Conformité Bio -->
-        <div>
-          <label style="font-size:0.8rem;font-weight:700;display:block;margin-bottom:4px">Destination Cuve Laitière</label>
-          <select [(ngModel)]="milkForm.tank" name="tank" style="width:100%;padding:8px;border:1px solid #e2e8dd;border-radius:6px">
-            <option value="Cuve Réfrigérée N°1 (Bio)">Cuve Réfrigérée N°1 (Bio) — 3.9°C</option>
-            <option value="Cuve Réfrigérée N°2">Cuve Réfrigérée N°2 — 4.1°C</option>
-            <option value="Cuve Caillage N°2 (Sow)">Cuve Caillage N°2 (Sow)</option>
-          </select>
         </div>
 
         <div style="display:flex;gap:12px;margin-top:10px">
@@ -3944,16 +4618,19 @@
           <div>Date de Fabrication : <strong>{{ selectedBatchForCompletion()?.productionDate }}</strong></div>
         </div>
 
-        <!-- Row 1: Quantité Réelle et Pertes -->
+        <!-- Row 1: Quantité Réelle et Pertes Automatiques -->
         <div class="form-grid-layout">
           <div class="form-group-item">
             <label>Quantité Réelle Obtenue & Conditionnée ({{ selectedBatchForCompletion()?.unit }}) *</label>
-            <input type="number" step="0.1" min="0" [(ngModel)]="completeBatchForm.actualQuantityProduced" name="compQty" required />
+            <input type="number" step="0.1" min="0" [(ngModel)]="completeBatchForm.actualQuantityProduced" name="compQty" required autofocus />
           </div>
 
           <div class="form-group-item">
-            <label>Pertes ou Rebuts Constatés ({{ selectedBatchForCompletion()?.unit }})</label>
-            <input type="number" step="0.1" min="0" [(ngModel)]="completeBatchForm.wasteLossQuantity" name="compWaste" placeholder="0" />
+            <label>Pertes / Rebuts Calculés Automatiquement</label>
+            <div style="padding:10px 14px;border:1px solid #fed7aa;border-radius:6px;background:#fff7ed;color:#c2410c;font-weight:700;display:flex;align-items:center;justify-content:space-between">
+              <span>⚠️ {{ calculatedBatchWasteLoss }} {{ selectedBatchForCompletion()?.unit }}</span>
+              <span style="font-size:0.75rem;background:#ffedd5;padding:2px 6px;border-radius:4px">Auto-calculé</span>
+            </div>
           </div>
         </div>
 
@@ -4576,14 +5253,14 @@
 <!-- ==========================================
      SPRINT 5 MODAL 1: NOUVEL ALIMENT / STOCK FOURRAGE
      ========================================== -->
-<div class="modal-overlay" *ngIf="isFeedStockModalOpen()">
-  <div class="modal-card" style="max-width:580px">
+<div class="modal-overlay" *ngIf="isFeedStockModalOpen()" (click)="closeFeedStockModal()">
+  <div class="modal-card" style="max-width:580px" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
         <h3 style="margin:0;font-size:1.2rem;color:#0d381e">🌾 Enregistrer un Aliment / Matière Première</h3>
         <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Gestion des approvisionnements et des seuils d'alerte.</p>
       </div>
-      <button class="modal-close-btn" (click)="closeFeedStockModal()">✕</button>
+      <button type="button" class="modal-close-btn" (click)="closeFeedStockModal()" title="Fermer">✕</button>
     </div>
 
     <form (ngSubmit)="saveFeedStock()" style="padding:20px">
@@ -4661,25 +5338,26 @@
 </div>
 
 <!-- ==========================================
-     SPRINT 5 MODAL 2: NOUVELLE FICHE RATION
+     SPRINT 5 MODAL 2: NOUVELLE FICHE RATION MULTI-INGRÉDIENTS & CIBLAGE
      ========================================== -->
-<div class="modal-overlay" *ngIf="isFeedRationModalOpen()">
-  <div class="modal-card" style="max-width:620px">
+<div class="modal-overlay" *ngIf="isFeedRationModalOpen()" (click)="closeFeedRationModal()">
+  <div class="modal-card modal-card-lg" style="max-width:780px" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
-        <h3 style="margin:0;font-size:1.2rem;color:#0d381e">📋 Créer une Formule de Ration Équilibrée</h3>
-        <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Paramétrage des besoins en MS, Énergie (UFL) et Protéines (PDI).</p>
+        <h3 style="margin:0;font-size:1.2rem;color:#0d381e">📋 Créer une Formule de Ration Multi-Aliments</h3>
+        <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Composition détaillée par aliment en stock, calcul automatique de la Matière Sèche (MS) et du coût total.</p>
       </div>
-      <button class="modal-close-btn" (click)="closeFeedRationModal()">✕</button>
+      <button type="button" class="modal-close-btn" (click)="closeFeedRationModal()" title="Fermer">✕</button>
     </div>
 
-    <form (ngSubmit)="saveFeedRation()" style="padding:20px">
-      <div style="display:flex;flex-direction:column;gap:14px">
+    <form (ngSubmit)="saveFeedRation()" style="padding:22px;overflow-y:auto;max-height:calc(88vh - 70px)">
+      <div style="display:flex;flex-direction:column;gap:16px">
         
+        <!-- Nom & Catégorie -->
         <div class="form-grid-layout">
           <div class="form-group-item">
             <label>Nom de la Formule / Ration *</label>
-            <input type="text" [(ngModel)]="feedRationForm.rationName" name="frName" placeholder="Ex: Ration Haute Production (> 20 L/j)" required />
+            <input type="text" [(ngModel)]="feedRationForm.rationName" name="frName" placeholder="Ex: Ration Haute Production (> 20 L/j)" required autofocus />
           </div>
           <div class="form-group-item">
             <label>Catégorie Animale Cible</label>
@@ -4688,33 +5366,119 @@
               <option value="Vaches en Lactation Standard">Vaches Lactation Standard (14-18 L/j)</option>
               <option value="Vaches Taries & Gestantes">Vaches Taries & Gestantes</option>
               <option value="Génisses de Renouvellement">Génisses de Renouvellement</option>
+              <option value="Taureaux & Reproducteurs">Taureaux & Reproducteurs</option>
+              <option value="Veaux au Sevrage">Veaux au Sevrage</option>
             </select>
           </div>
         </div>
 
+        <!-- Ciblage des Races (Boutons à cocher multi-select) -->
         <div class="form-group-item">
-          <label>Composition détaillée de la ration (Ingrédients & Doses)</label>
-          <textarea rows="3" [(ngModel)]="feedRationForm.compositionDescription" name="frComp" placeholder="15 kg Ensilage Maïs + 4 kg Foin Niébé + 3.5 kg Tourteau Arachide + 150g CMV..." required></textarea>
+          <label style="display:flex;justify-content:space-between;align-items:center">
+            <span>🐄 Races d'Animaux Ciblées par la Formule</span>
+            <span style="font-size:0.75rem;color:#64748b;font-weight:normal">Cliquez pour sélectionner / désélectionner</span>
+          </label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+            <button type="button" 
+                    *ngFor="let breed of availableBreeds"
+                    class="pill-tab-btn" 
+                    [class.active]="isBreedSelected(breed)"
+                    (click)="toggleBreedInRation(breed)"
+                    style="font-size:0.8rem;padding:6px 14px">
+              <span *ngIf="isBreedSelected(breed)">✅</span>
+              <span *ngIf="!isBreedSelected(breed)">＋</span>
+              {{ breed }}
+            </button>
+          </div>
         </div>
 
-        <div class="form-grid-layout" style="grid-template-columns:1fr 1fr 1fr">
-          <div class="form-group-item">
-            <label>Matière Sèche (kg MS)</label>
-            <input type="number" step="0.5" min="1" [(ngModel)]="feedRationForm.dailyDryMatterKg" name="frMs" required />
+        <!-- Composition Multi-Ingrédients des Stocks -->
+        <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px;background:#f8fafc">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div>
+              <strong style="color:#0d381e;font-size:0.95rem">🌾 Composition Multi-Aliments en Stock (par vache / jour)</strong>
+              <div style="font-size:0.75rem;color:#64748b">Ajoutez chaque aliment et sa dose en kg pour calculer la ration</div>
+            </div>
+            <button type="button" class="btn-secondary" style="font-size:0.78rem;padding:5px 10px;background:#ffffff" (click)="addIngredientToRation()">
+              ➕ Ajouter un Aliment
+            </button>
           </div>
-          <div class="form-group-item">
-            <label>Énergie (UFL)</label>
-            <input type="number" step="0.1" min="1" [(ngModel)]="feedRationForm.energyUfl" name="frUfl" />
-          </div>
-          <div class="form-group-item">
-            <label>Protéines (g PDI)</label>
-            <input type="number" step="50" min="0" [(ngModel)]="feedRationForm.proteinPdiGrams" name="frPdi" />
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div *ngFor="let ing of (feedRationForm.ingredients || []); let idx = index" 
+                 style="background:#ffffff;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:2.5fr 1fr 1fr 1fr auto;gap:10px;align-items:center">
+              
+              <!-- Sélection Aliment -->
+              <div>
+                <label style="font-size:0.7rem;font-weight:700;color:#64748b;display:block;margin-bottom:2px">Aliment en Stock</label>
+                <select [ngModel]="ing.feedStockId" (ngModelChange)="onIngredientStockChange(idx, $event)" name="ingStock_{{idx}}" style="width:100%;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;font-weight:600">
+                  <option *ngFor="let st of feedStocks()" [value]="st.id">{{ st.name }} ({{ st.currentStockKg }}kg dispo • {{ st.unitPricePerKgFcfa }}F/kg)</option>
+                </select>
+              </div>
+
+              <!-- Quantité Kg -->
+              <div>
+                <label style="font-size:0.7rem;font-weight:700;color:#64748b;display:block;margin-bottom:2px">Quantité (kg)</label>
+                <input type="number" step="0.1" min="0.1" [(ngModel)]="ing.quantityKg" (ngModelChange)="recalculateRationTotals()" name="ingQty_{{idx}}" style="width:100%;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem;font-weight:700;color:#166534" required />
+              </div>
+
+              <!-- % Matière Sèche -->
+              <div>
+                <label style="font-size:0.7rem;font-weight:700;color:#64748b;display:block;margin-bottom:2px">% MS (M. Sèche)</label>
+                <input type="number" step="1" min="1" max="100" [(ngModel)]="ing.dryMatterPercentage" (ngModelChange)="recalculateRationTotals()" name="ingDm_{{idx}}" style="width:100%;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.85rem" />
+              </div>
+
+              <!-- Coût Calculé -->
+              <div style="text-align:right">
+                <label style="font-size:0.7rem;font-weight:700;color:#64748b;display:block;margin-bottom:2px">Coût Estimé</label>
+                <strong style="color:#0d381e;font-size:0.85rem">{{ ing.calculatedCostFcfa || ((ing.quantityKg || 0) * (ing.unitPriceFcfa || 80)) | number }} F</strong>
+              </div>
+
+              <!-- Supprimer ligne -->
+              <div>
+                <button type="button" class="table-icon-btn" style="color:#dc2626;margin-top:14px" (click)="removeIngredientFromRation(idx)" title="Retirer cet aliment">
+                  🗑️
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="(feedRationForm.ingredients?.length || 0) === 0" style="text-align:center;padding:16px;color:#94a3b8;font-size:0.85rem">
+              Aucun aliment ajouté. Cliquez sur <strong>« + Ajouter un Aliment »</strong> pour composer la formule.
+            </div>
           </div>
         </div>
 
-        <div class="form-group-item">
-          <label>Coût Journalier Estimé / Tête (FCFA)</label>
-          <input type="number" step="50" min="0" [(ngModel)]="feedRationForm.dailyCostFcfa" name="frCost" placeholder="2400" required />
+        <!-- Live Totals Banner (Poids, MS & Coût Financier Total) -->
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:14px 18px">
+          <div style="font-size:0.75rem;color:#166534;font-weight:700;text-transform:uppercase;margin-bottom:8px">
+            📊 Résumé Automatique de la Ration (par vache / jour)
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;text-align:center">
+            <div style="background:#ffffff;padding:8px 12px;border-radius:8px;border:1px solid #bbf7d0">
+              <span style="font-size:0.72rem;color:#64748b;display:block">Poids Brut Total</span>
+              <strong style="font-size:1.2rem;color:#0d381e">{{ feedRationForm.totalFreshWeightKg }} kg</strong>
+            </div>
+            <div style="background:#ffffff;padding:8px 12px;border-radius:8px;border:1px solid #bbf7d0">
+              <span style="font-size:0.72rem;color:#64748b;display:block">Matière Sèche (MS)</span>
+              <strong style="font-size:1.2rem;color:#15803d">{{ feedRationForm.dailyDryMatterKg }} kg MS</strong>
+            </div>
+            <div style="background:#ffffff;padding:8px 12px;border-radius:8px;border:1px solid #bbf7d0">
+              <span style="font-size:0.72rem;color:#64748b;display:block">Coût Financier Total</span>
+              <strong style="font-size:1.2rem;color:#0369a1">{{ feedRationForm.dailyCostFcfa | number }} FCFA</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row: Énergie UFL & PDI -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Énergie Nette (UFL)</label>
+            <input type="number" step="0.1" min="1" [(ngModel)]="feedRationForm.energyUfl" name="frUfl" placeholder="13.0" />
+          </div>
+          <div class="form-group-item">
+            <label>Protéines Vraies Digestibles (g PDI)</label>
+            <input type="number" step="50" min="0" [(ngModel)]="feedRationForm.proteinPdiGrams" name="frPdi" placeholder="1250" />
+          </div>
         </div>
 
         <div style="display:flex;gap:12px;margin-top:6px">
@@ -4722,7 +5486,117 @@
             Annuler
           </button>
           <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
-            Valider la Formule de Ration
+            Valider & Enregistrer la Formule
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     MODAL DE DISTRIBUTION JOURNALIÈRE & NOURRISSAGE
+     ========================================== -->
+<div class="modal-overlay" *ngIf="isDistributionModalOpen()" (click)="closeDistributionModal()">
+  <div class="modal-card modal-card-lg" style="max-width:680px" (click)="$event.stopPropagation()">
+    <div class="modal-top-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title-icon-box" style="background:linear-gradient(135deg, #15803d, #166534);color:#ffffff">
+          🚜
+        </div>
+        <div>
+          <h3>Produire & Distribuer l'Alimentation</h3>
+          <p>Distribution journalière avec déduction automatique et proportionnelle des stocks.</p>
+        </div>
+      </div>
+      <button class="modal-close-btn" (click)="closeDistributionModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="submitFeedDistribution()" style="padding:22px;overflow-y:auto;max-height:calc(88vh - 70px)">
+      <div style="display:flex;flex-direction:column;gap:16px">
+        
+        <!-- Formule & Session -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Formule de Ration à Distribuer *</label>
+            <select [ngModel]="distributionForm.rationId" (ngModelChange)="onRationSelectInDistribution($event)" name="distRation" required>
+              <option *ngFor="let r of feedRations()" [value]="r.id">{{ r.rationName }} ({{ r.targetCategory }})</option>
+            </select>
+          </div>
+          <div class="form-group-item">
+            <label>Session de Nourrissage</label>
+            <select [(ngModel)]="distributionForm.session" name="distSession">
+              <option value="MATIN">☀️ Matin</option>
+              <option value="MIDI">🌤️ Midi</option>
+              <option value="SOIR">🌙 Soir</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Date & Heure -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Date de Distribution</label>
+            <input type="date" [(ngModel)]="distributionForm.distributionDate" name="distDate" required />
+          </div>
+          <div class="form-group-item">
+            <label>Heure de Service</label>
+            <input type="time" [(ngModel)]="distributionForm.distributionTime" name="distTime" required />
+          </div>
+        </div>
+
+        <!-- Animaux & Quantité -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Nombre d'Animaux Nourris (Têtes) *</label>
+            <input type="number" min="1" [(ngModel)]="distributionForm.animalsCountNourished" (ngModelChange)="onAnimalCountChange()" name="distCount" required autofocus />
+          </div>
+          <div class="form-group-item">
+            <label>Poids Total Préparé & Distribué (kg) *</label>
+            <input type="number" step="0.5" min="0.5" [(ngModel)]="distributionForm.quantityDistributedKg" name="distTotalQty" style="font-weight:700;color:#15803d" required />
+          </div>
+        </div>
+
+        <!-- Groupe / Races & Distributeur -->
+        <div class="form-grid-layout">
+          <div class="form-group-item">
+            <label>Groupe ou Races Cibles</label>
+            <input type="text" [(ngModel)]="distributionForm.targetGroupOrRace" name="distRace" placeholder="Ex: Holstein & Guzerat Laitières" required />
+          </div>
+          <div class="form-group-item">
+            <label>Nom du Soigneur / Distributeur</label>
+            <input type="text" [(ngModel)]="distributionForm.distributorName" name="distPerson" placeholder="Moussa Bouvier" required />
+          </div>
+        </div>
+
+        <!-- Live Impact Banner -->
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px 16px">
+          <div style="font-size:0.75rem;color:#166534;font-weight:700;text-transform:uppercase;margin-bottom:4px">
+            🛡️ Impact Stocks & Coût Total du Service
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:6px">
+            <div>
+              <span style="font-size:0.8rem;color:#334155">Coût financier du repas servi : </span>
+              <strong style="color:#0d381e;font-size:1.1rem">{{ distributionForm.totalCostFcfa | number }} FCFA</strong>
+            </div>
+            <span class="badge-pill badge-green" style="font-size:0.75rem">
+              ⚡ Déduction automatique sur les stocks
+            </span>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group-item">
+          <label>Observations du Soigneur</label>
+          <input type="text" [(ngModel)]="distributionForm.notes" name="distNotes" placeholder="Appétence normale, eau fraîche renouvelée..." />
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:6px">
+          <button type="button" class="btn-secondary" style="flex:1;justify-content:center" (click)="closeDistributionModal()">
+            Annuler
+          </button>
+          <button type="submit" class="modal-submit-btn" style="flex:2;margin-top:0">
+            Valider la Distribution & Déduire les Stocks
           </button>
         </div>
       </div>
@@ -4733,14 +5607,14 @@
 <!-- ==========================================
      SPRINT 5 MODAL 3: EXPORTATION AUDIT BIO & FINANCES
      ========================================== -->
-<div class="modal-overlay" *ngIf="isAuditReportModalOpen()">
-  <div class="modal-card" style="max-width:560px">
+<div class="modal-overlay" *ngIf="isAuditReportModalOpen()" (click)="closeAuditReportModal()">
+  <div class="modal-card" style="max-width:560px" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
         <h3 style="margin:0;font-size:1.2rem;color:#0d381e">📋 Exportation de Rapports d'Audit Officiels</h3>
         <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Génération de documents certifiés pour les auditeurs bio et la direction.</p>
       </div>
-      <button class="modal-close-btn" (click)="closeAuditReportModal()">✕</button>
+      <button type="button" class="modal-close-btn" (click)="closeAuditReportModal()" title="Fermer">✕</button>
     </div>
 
     <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
@@ -4779,14 +5653,14 @@
 <!-- ==========================================
      MODAL RAPIDE: CRÉATION FOURNISSEUR EN LIGNE
      ========================================== -->
-<div class="modal-overlay" *ngIf="isQuickSupplierModalOpen()" style="z-index:1100">
-  <div class="modal-card" style="max-width:520px">
+<div class="modal-overlay" *ngIf="isQuickSupplierModalOpen()" style="z-index:1100" (click)="closeQuickSupplierModal()">
+  <div class="modal-card" style="max-width:520px" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
         <h3 style="margin:0;font-size:1.15rem;color:#0d381e">🤝 Ajout Rapide d'un Fournisseur</h3>
         <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Enregistrez le fournisseur pour l'associer directement à votre approvisionnement.</p>
       </div>
-      <button class="modal-close-btn" (click)="closeQuickSupplierModal()">✕</button>
+      <button type="button" class="modal-close-btn" (click)="closeQuickSupplierModal()" title="Fermer">✕</button>
     </div>
 
     <form (ngSubmit)="saveQuickSupplier()" style="padding:20px">
@@ -4845,14 +5719,14 @@
 <!-- ==========================================
      MODAL COMPLET: FOURNISSEUR (CRÉATION / MODIF)
      ========================================== -->
-<div class="modal-overlay" *ngIf="isSupplierModalOpen()" style="z-index:1050">
-  <div class="modal-card" style="max-width:620px">
+<div class="modal-overlay" *ngIf="isSupplierModalOpen()" style="z-index:1050" (click)="closeSupplierModal()">
+  <div class="modal-card" style="max-width:620px" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <div>
         <h3 style="margin:0;font-size:1.2rem;color:#0d381e">{{ supplierForm.id ? '✏️ Modifier Fournisseur' : '🤝 Nouveau Fournisseur Partenaire' }}</h3>
         <p style="margin:2px 0 0 0;font-size:0.8rem;color:#64748b">Fiche détaillée du fournisseur d'intrants et matières premières.</p>
       </div>
-      <button class="modal-close-btn" (click)="closeSupplierModal()">✕</button>
+      <button type="button" class="modal-close-btn" (click)="closeSupplierModal()" title="Fermer">✕</button>
     </div>
 
     <form (ngSubmit)="saveSupplier()" style="padding:20px">
